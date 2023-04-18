@@ -10,6 +10,8 @@ import { initMagentoOrderAddress } from './MagentoOrderAddress/magentoOrderAddre
 import { initOrderComment } from './OrderComment/orderComment'
 import { initBrands } from './Brand/brand'
 import { initProducts } from './Product/product'
+import { initProductConfigurations } from './ProductConfiguration/productConfiguration'
+import { initProductOptions } from './ProductOption/productOption'
 
 function initModels(db: Sequelize) {
   initMagentoOrder(db)
@@ -23,6 +25,8 @@ function initModels(db: Sequelize) {
   initOrderComment(db)
   initBrands(db)
   initProducts(db)
+  initProductConfigurations(db)
+  initProductOptions(db)
 }
 
 export default initModels

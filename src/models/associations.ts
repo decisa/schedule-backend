@@ -9,6 +9,8 @@ import { Order } from './Order/order'
 import { OrderAddress } from './OrderAddress/orderAddress'
 import { OrderComment } from './OrderComment/orderComment'
 import { Product } from './Product/product'
+import { ProductConfiguration } from './ProductConfiguration/productConfiguration'
+import { ProductOption } from './ProductOption/productOption'
 
 function createAssociations() {
   // some orders have a magento record
@@ -137,6 +139,53 @@ function createAssociations() {
   Product.belongsTo(Brand, {
     as: 'brand',
     foreignKey: 'brandId',
+  })
+
+  // PRODUCT CONFIGURATIONS:
+  /**
+   * belongsTo:
+   * 'foreignKey' << added to SOURCE object
+   * 'as' - how the target will be called on source object
+   */
+
+  /**
+   * hasMany:
+   * 'foreignKey' >> added to TARGET object
+   * 'as' - how the target will be called on source in PLURAL form
+   */
+  Product.hasMany(ProductConfiguration, {
+    as: 'configurations',
+    foreignKey: 'productId',
+    onDelete: 'NO ACTION',
+    onUpdate: 'CASCADE',
+  })
+  ProductConfiguration.belongsTo(Product, {
+    foreignKey: 'productId',
+    as: 'product',
+  })
+
+  // Every order consists of product configurations
+  Order.hasMany(ProductConfiguration, {
+    as: 'products',
+    foreignKey: 'orderId',
+    onDelete: 'NO ACTION',
+    onUpdate: 'CASCADE',
+  })
+  ProductConfiguration.belongsTo(Order, {
+    as: 'order',
+    foreignKey: 'orderId',
+  })
+
+  // Every product configuration has options
+  ProductConfiguration.hasMany(ProductOption, {
+    as: 'options',
+    foreignKey: 'configId',
+    onDelete: 'NO ACTION',
+    onUpdate: 'CASCADE',
+  })
+  ProductOption.belongsTo(ProductConfiguration, {
+    as: 'configuration',
+    foreignKey: 'configId',
   })
 }
 

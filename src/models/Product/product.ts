@@ -3,9 +3,20 @@ import {
   BelongsToCreateAssociationMixin,
   BelongsToGetAssociationMixin,
   BelongsToSetAssociationMixin,
-  CreationOptional, DataTypes, ForeignKey, InferAttributes, InferCreationAttributes, Model, Sequelize,
+  CreationOptional, DataTypes, ForeignKey, InferAttributes, InferCreationAttributes, Model, NonAttribute, Sequelize,
+  HasManyCreateAssociationMixin,
+  HasManyGetAssociationsMixin,
+  HasManyCountAssociationsMixin,
+  HasManyHasAssociationMixin,
+  HasManyHasAssociationsMixin,
+  HasManySetAssociationsMixin,
+  HasManyAddAssociationMixin,
+  HasManyAddAssociationsMixin,
+  HasManyRemoveAssociationMixin,
+  HasManyRemoveAssociationsMixin,
 } from 'sequelize'
 import type { Brand } from '../Brand/brand'
+import type { ProductConfiguration } from '../ProductConfiguration/productConfiguration'
 
 export class Product extends Model<InferAttributes<Product>, InferCreationAttributes<Product>> {
   declare id: CreationOptional<number>
@@ -34,8 +45,13 @@ export class Product extends Model<InferAttributes<Product>, InferCreationAttrib
 
   declare brandId: ForeignKey<Brand['id']>
 
+  declare brand: NonAttribute<Brand>
+
+  declare configurations?: NonAttribute<ProductConfiguration[]>
+
   declare public static associations: {
-    products: Association<Product, Brand>,
+    brand: Association<Product, Brand>,
+    configurations: Association<Product, ProductConfiguration>,
   }
 
   // MIXINS
@@ -45,6 +61,27 @@ export class Product extends Model<InferAttributes<Product>, InferCreationAttrib
   declare setBrand: BelongsToSetAssociationMixin<Brand, number>
 
   declare createBrand: BelongsToCreateAssociationMixin<Brand>
+
+  // configurations:
+  declare createProductConfiguration: HasManyCreateAssociationMixin<ProductConfiguration, 'productId'>
+
+  declare getProductConfigurations: HasManyGetAssociationsMixin<ProductConfiguration>
+
+  declare countProductConfigurations: HasManyCountAssociationsMixin
+
+  declare hasProductConfiguration: HasManyHasAssociationMixin<ProductConfiguration, number>
+
+  declare hasProductConfigurations: HasManyHasAssociationsMixin<ProductConfiguration, number>
+
+  declare setProductConfigurations: HasManySetAssociationsMixin<ProductConfiguration, number>
+
+  declare addProductConfiguration: HasManyAddAssociationMixin<ProductConfiguration, number>
+
+  declare addProductConfigurations: HasManyAddAssociationsMixin<ProductConfiguration, number>
+
+  declare removeProductConfiguration: HasManyRemoveAssociationMixin<ProductConfiguration, number>
+
+  declare removeProductConfigurations: HasManyRemoveAssociationsMixin<ProductConfiguration, number>
 }
 
 export function initProducts(db: Sequelize) {

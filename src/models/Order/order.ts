@@ -31,6 +31,7 @@ import type { MagentoOrder } from '../MagentoOrder/magentoOrder'
 import type { Customer } from '../Customer/customer'
 import type { OrderAddress } from '../OrderAddress/orderAddress'
 import type { OrderComment } from '../OrderComment/orderComment'
+import { ProductConfiguration } from '../ProductConfiguration/productConfiguration'
 
 console.log('running model module')
 
@@ -69,9 +70,11 @@ export class Order extends Model<InferAttributes<Order>, InferCreationAttributes
 
   declare magento?: NonAttribute<MagentoOrder>
 
-  declare addresses?: NonAttribute<OrderAddress>
+  declare addresses?: NonAttribute<OrderAddress[]>
 
-  declare comments?: NonAttribute<OrderComment>
+  declare comments?: NonAttribute<OrderComment[]>
+
+  declare products?: NonAttribute<ProductConfiguration[]>
 
   declare public static associations: {
     magento: Association<Order, MagentoOrder>,
@@ -80,6 +83,7 @@ export class Order extends Model<InferAttributes<Order>, InferCreationAttributes
     comments: Association<Order, OrderComment>,
     billingAddress: Association<Order, OrderAddress>,
     shippingAddress: Association<Order, OrderAddress>,
+    products: Association<Order, ProductConfiguration>,
   }
 
   // MIXINS
@@ -152,6 +156,27 @@ export class Order extends Model<InferAttributes<Order>, InferCreationAttributes
   declare removeComment: HasManyRemoveAssociationMixin<OrderComment, number>
 
   declare removeComments: HasManyRemoveAssociationsMixin<OrderComment, number>
+
+  // productConfigurations:
+  declare createProductConfiguration: HasManyCreateAssociationMixin<ProductConfiguration, 'orderId'>
+
+  declare getProductConfigurations: HasManyGetAssociationsMixin<ProductConfiguration>
+
+  declare countProductConfigurations: HasManyCountAssociationsMixin
+
+  declare hasProductConfiguration: HasManyHasAssociationMixin<ProductConfiguration, number>
+
+  declare hasProductConfigurations: HasManyHasAssociationsMixin<ProductConfiguration, number>
+
+  declare setProductConfigurations: HasManySetAssociationsMixin<ProductConfiguration, number>
+
+  declare addProductConfiguration: HasManyAddAssociationMixin<ProductConfiguration, number>
+
+  declare addProductConfigurations: HasManyAddAssociationsMixin<ProductConfiguration, number>
+
+  declare removeProductConfiguration: HasManyRemoveAssociationMixin<ProductConfiguration, number>
+
+  declare removeProductConfigurations: HasManyRemoveAssociationsMixin<ProductConfiguration, number>
 }
 
 export function initOrder(db: Sequelize) {
