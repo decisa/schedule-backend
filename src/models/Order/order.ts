@@ -30,6 +30,7 @@ import {
 import type { MagentoOrder } from '../MagentoOrder/magentoOrder'
 import type { Customer } from '../Customer/customer'
 import type { OrderAddress } from '../OrderAddress/orderAddress'
+import type { OrderComment } from '../OrderComment/orderComment'
 
 console.log('running model module')
 
@@ -70,10 +71,13 @@ export class Order extends Model<InferAttributes<Order>, InferCreationAttributes
 
   declare addresses?: NonAttribute<OrderAddress>
 
+  declare comments?: NonAttribute<OrderComment>
+
   declare public static associations: {
     magento: Association<Order, MagentoOrder>,
     customer: Association<Order, Customer>,
     addresses: Association<Order, OrderAddress>,
+    comments: Association<Order, OrderComment>,
     billingAddress: Association<Order, OrderAddress>,
     shippingAddress: Association<Order, OrderAddress>,
   }
@@ -127,6 +131,27 @@ export class Order extends Model<InferAttributes<Order>, InferCreationAttributes
   declare setShippingAddress: BelongsToSetAssociationMixin<OrderAddress, number>
 
   declare createShippingAddress: BelongsToCreateAssociationMixin<OrderAddress>
+
+  // comments:
+  declare createComment: HasManyCreateAssociationMixin<OrderComment, 'orderId'>
+
+  declare getComments: HasManyGetAssociationsMixin<OrderComment>
+
+  declare countComments: HasManyCountAssociationsMixin
+
+  declare hasComment: HasManyHasAssociationMixin<OrderComment, number>
+
+  declare hasComments: HasManyHasAssociationsMixin<OrderComment, number>
+
+  declare setComments: HasManySetAssociationsMixin<OrderComment, number>
+
+  declare addComment: HasManyAddAssociationMixin<OrderComment, number>
+
+  declare addComments: HasManyAddAssociationsMixin<OrderComment, number>
+
+  declare removeComment: HasManyRemoveAssociationMixin<OrderComment, number>
+
+  declare removeComments: HasManyRemoveAssociationsMixin<OrderComment, number>
 }
 
 export function initOrder(db: Sequelize) {

@@ -6,6 +6,7 @@ import { MagentoOrder } from './MagentoOrder/magentoOrder'
 import { MagentoOrderAddress } from './MagentoOrderAddress/magentoOrderAddress'
 import { Order } from './Order/order'
 import { OrderAddress } from './OrderAddress/orderAddress'
+import { OrderComment } from './OrderComment/orderComment'
 
 function createAssociations() {
   // some orders have a magento record
@@ -114,6 +115,16 @@ function createAssociations() {
   MagentoAddress.belongsTo(Address, {
     as: 'address',
     foreignKey: 'addressId',
+  })
+
+  // ORDER COMMENTS
+  Order.hasMany(OrderComment, {
+    as: 'comments',
+    foreignKey: 'orderId',
+  })
+  OrderComment.belongsTo(Order, {
+    as: 'order',
+    foreignKey: 'orderId',
   })
 }
 

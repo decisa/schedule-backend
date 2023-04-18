@@ -7,6 +7,7 @@ import { initAddress } from './Address/address'
 import { initMagentoAddress } from './MagentoAddress/magentoAddress'
 import { initOrderAddress } from './OrderAddress/orderAddress'
 import { initMagentoOrderAddress } from './MagentoOrderAddress/magentoOrderAddress'
+import { initOrderComment } from './OrderComment/orderComment'
 
 function initModels(db: Sequelize) {
   initMagentoOrder(db)
@@ -17,6 +18,7 @@ function initModels(db: Sequelize) {
   initAddress(db)
   initMagentoAddress(db)
   initMagentoOrderAddress(db)
+  initOrderComment(db)
 }
 
 export default initModels
