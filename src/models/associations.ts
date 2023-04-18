@@ -1,4 +1,5 @@
 import { Address } from './Address/address'
+import { Brand } from './Brand/brand'
 import { Customer } from './Customer/customer'
 import { MagentoAddress } from './MagentoAddress/magentoAddress'
 import { MagentoCustomer } from './MagentoCustomer/magentoCustomer'
@@ -7,6 +8,7 @@ import { MagentoOrderAddress } from './MagentoOrderAddress/magentoOrderAddress'
 import { Order } from './Order/order'
 import { OrderAddress } from './OrderAddress/orderAddress'
 import { OrderComment } from './OrderComment/orderComment'
+import { Product } from './Product/product'
 
 function createAssociations() {
   // some orders have a magento record
@@ -125,6 +127,16 @@ function createAssociations() {
   OrderComment.belongsTo(Order, {
     as: 'order',
     foreignKey: 'orderId',
+  })
+
+  // Each product has a brand
+  Brand.hasMany(Product, {
+    as: 'prdoducts',
+    foreignKey: 'brandId',
+  })
+  Product.belongsTo(Brand, {
+    as: 'brand',
+    foreignKey: 'brandId',
   })
 }
 

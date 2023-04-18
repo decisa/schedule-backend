@@ -20,11 +20,10 @@ import {
   HasManyAddAssociationsMixin,
   HasManyRemoveAssociationMixin,
   HasManyRemoveAssociationsMixin,
-  ForeignKey,
-  BelongsToGetAssociationMixin,
-  BelongsToSetAssociationMixin,
-  BelongsToCreateAssociationMixin,
-
+  // ForeignKey,
+  // BelongsToGetAssociationMixin,
+  // BelongsToSetAssociationMixin,
+  // BelongsToCreateAssociationMixin,
 } from 'sequelize'
 import type { MagentoCustomer } from '../MagentoCustomer/magentoCustomer'
 import type { Order } from '../Order/order'

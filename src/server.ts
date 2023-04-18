@@ -1,38 +1,34 @@
 import {
-  Attributes, InferAttributes, Model, QueryTypes, Sequelize,
+  InferAttributes, Model, QueryTypes, Sequelize,
 } from 'sequelize'
-import app from './app'
+// import app from './app'
 import db from './models'
 import { Address } from './models/Address/address'
 import { Customer } from './models/Customer/customer'
 import { MagentoCustomer } from './models/MagentoCustomer/magentoCustomer'
-import { MagentoOrder } from './models/MagentoOrder/magentoOrder'
 import { Order } from './models/Order/order'
 import { OrderAddress } from './models/OrderAddress/orderAddress'
 // import Customer from './models/Customer/customer'
 // import MagentoOrder from './models/MagentoOrder/magentoOrder'
 // import Order from './models/Order/order'
 // import createAssociations from './models/associations'
-
-const port = 9000
-
 // console.log('order instance:', Order)
 
-const constraintExistsQuery = ({
-  dbName,
-  tableName,
-  constraintName,
-}: {
-  dbName: string,
-  tableName: string,
-  constraintName: string,
-}) => `
-SELECT COUNT(*)
-FROM information_schema.referential_constraints
-WHERE constraint_schema = '${dbName}'
-  AND table_name = '${tableName}'
-  AND constraint_name = '${constraintName}';
-`
+// const constraintExistsQuery = ({
+//   dbName,
+//   tableName,
+//   constraintName,
+// }: {
+//   dbName: string,
+//   tableName: string,
+//   constraintName: string,
+// }) => `
+// SELECT COUNT(*)
+// FROM information_schema.referential_constraints
+// WHERE constraint_schema = '${dbName}'
+//   AND table_name = '${tableName}'
+//   AND constraint_name = '${constraintName}';
+// `
 
 type AddConstraintArgs<Table extends Model, RefTable extends Model> = {
   dbInstance: Sequelize,
@@ -70,6 +66,7 @@ async function addConstraintIfNotExists<Table extends Model, RefTable extends Mo
 
   const constraint = `fk_${tableName}_${String(field)}_${refTableName}`
 
+  // check if the constraint exists on the table
   const results = await dbInstance.query<{ 'COUNT(*)': number }>(`
     SELECT COUNT(*)
     FROM information_schema.referential_constraints
@@ -78,7 +75,7 @@ async function addConstraintIfNotExists<Table extends Model, RefTable extends Mo
       AND constraint_name = '${constraint}';
   `, { type: QueryTypes.SELECT })
 
-  const totalCount = results[0]['COUNT(*)'] // as [{'COUNT(*)': number}]
+  const totalCount = results[0]['COUNT(*)']
   const constraintExists = totalCount > 0
 
   // const constraintExists = parseInt(results[0]['COUNT(*)'], 10) > 0
@@ -293,18 +290,6 @@ db
     //   // longitude: -56.1121231,
     //   notes: 'custom notes',
     // })
-
-    const assignAddress = async () => {
-      const cust = await Customer.findByPk(2)
-      const count = await cust?.countAddresses()
-
-      console.log(`customer has ${count} addresses`)
-      const addr = await Address.findByPk(1)
-      if (cust && addr) {
-        await cust.addAddress(addr)
-      }
-    }
-    // assignAddress()
 
     // Customer.findByPk(2, { include: 'addresses' })
     //   .then((record) => {
