@@ -15,7 +15,7 @@ import {
   HasManyRemoveAssociationMixin,
   HasManyRemoveAssociationsMixin,
 } from 'sequelize'
-import type { Brand } from '../Brand/brand'
+import type { Brand } from '../../Brand/brand'
 import type { ProductConfiguration } from '../ProductConfiguration/productConfiguration'
 
 export class Product extends Model<InferAttributes<Product>, InferCreationAttributes<Product>> {

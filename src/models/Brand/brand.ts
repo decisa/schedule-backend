@@ -12,7 +12,7 @@ import {
   HasManyRemoveAssociationMixin,
   HasManyRemoveAssociationsMixin,
 } from 'sequelize'
-import type { Product } from '../Product/product'
+import type { Product } from '../Sales/Product/product'
 
 export class Brand extends Model<InferAttributes<Brand>, InferCreationAttributes<Brand>> {
   declare id: CreationOptional<number>
