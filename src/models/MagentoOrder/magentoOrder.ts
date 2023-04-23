@@ -24,6 +24,7 @@ export type OrderStatus =
   | 'preparing_shipment'
   | 'complete'
   | 'closed'
+  | 'unknown'
 
 export class MagentoOrder extends Model<InferAttributes<MagentoOrder>, InferCreationAttributes<MagentoOrder>> {
   declare externalId: number
@@ -92,6 +93,7 @@ export function initMagentoOrder(db: Sequelize) {
     },
   }, {
     sequelize: db,
+    timestamps: false,
   })
 }
 

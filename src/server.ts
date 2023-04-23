@@ -8,6 +8,8 @@ import { Customer } from './models/Customer/customer'
 import { MagentoCustomer } from './models/MagentoCustomer/magentoCustomer'
 import { Order } from './models/Order/order'
 import { OrderAddress } from './models/OrderAddress/orderAddress'
+import importOrder from './Data/importOrder'
+import { printYellowLine } from './utils/utils'
 // import Customer from './models/Customer/customer'
 // import MagentoOrder from './models/MagentoOrder/magentoOrder'
 // import Order from './models/Order/order'
@@ -218,6 +220,10 @@ db
     }))
     .catch((e) => console.log('there was an error:', e)))
   .then(() => {
+    printYellowLine('IMPORT ORDER')
+    importOrder()
+      .then(() => console.log('SUCCESS!!'))
+      .catch((e) => console.log('ERROR!', e))
     // addCustomers().then(() => {
     //   console.log('record success')
     // })

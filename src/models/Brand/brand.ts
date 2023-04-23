@@ -19,7 +19,7 @@ export class Brand extends Model<InferAttributes<Brand>, InferCreationAttributes
 
   declare name: string
 
-  declare externalId: number
+  declare externalId?: number
 
   // associations
   declare products?: NonAttribute<Product>

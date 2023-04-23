@@ -18,7 +18,7 @@ export class ProductOption extends Model<InferAttributes<ProductOption>, InferCr
 
   declare externalId?: number
 
-  declare externalValue?: number
+  declare externalValue?: string
 
   // associations
   // declare configId:

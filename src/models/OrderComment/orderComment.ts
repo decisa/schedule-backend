@@ -7,7 +7,7 @@ import {
 } from 'sequelize'
 import { Order } from '../Order/order'
 
-type CommentType = 'order' | 'shipping' | 'invoice' // TODO: credit memo?
+export type CommentType = 'order' | 'shipping' | 'invoice' // TODO: credit memo?
 
 export class OrderComment extends Model<InferAttributes<OrderComment>, InferCreationAttributes<OrderComment>> {
   declare id: CreationOptional<number>
