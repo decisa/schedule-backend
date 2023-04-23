@@ -1,3 +1,4 @@
+// TODO: // One-to-many relationship between Brands and PurchaseOrders.
 import {
   Association,
   CreationOptional, DataTypes, InferAttributes, InferCreationAttributes, Model, NonAttribute, Sequelize,

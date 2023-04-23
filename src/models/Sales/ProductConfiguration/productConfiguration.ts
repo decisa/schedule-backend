@@ -1,3 +1,4 @@
+// TODO: One-to-many relationship between ProductConfigurations and PurchaseOrderItems.
 import {
   Association,
   BelongsToCreateAssociationMixin,
