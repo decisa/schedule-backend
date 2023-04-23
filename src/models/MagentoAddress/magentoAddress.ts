@@ -10,7 +10,7 @@ import type { Address } from '../Address/address'
 export class MagentoAddress extends Model<InferAttributes<MagentoAddress>, InferCreationAttributes<MagentoAddress>> {
   declare externalId: number
 
-  declare externalCustomerAddressId: number
+  // declare externalCustomerAddressId: number
 
   declare addressType: string
 
@@ -38,7 +38,7 @@ export function initMagentoAddress(db: Sequelize) {
         // unique: true, // defined in indexes
         primaryKey: true,
       },
-      externalCustomerAddressId: DataTypes.INTEGER,
+      // externalCustomerAddressId: DataTypes.INTEGER,
       // externalOrderId: DataTypes.INTEGER,
       addressType: {
         type: DataTypes.STRING,

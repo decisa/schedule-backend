@@ -94,7 +94,7 @@ function createAssociations() {
     onUpdate: 'CASCADE',
   })
   MagentoOrderAddress.belongsTo(OrderAddress, {
-    as: 'address',
+    as: 'orderAddress',
     foreignKey: 'orderAddressId',
   })
 
@@ -184,7 +184,7 @@ function createAssociations() {
     onUpdate: 'CASCADE',
   })
   ProductOption.belongsTo(ProductConfiguration, {
-    as: 'configuration',
+    as: 'product',
     foreignKey: 'configId',
   })
 }

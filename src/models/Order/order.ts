@@ -127,7 +127,8 @@ export class Order extends Model<InferAttributes<Order>, InferCreationAttributes
 
   declare setBillingAddress: BelongsToSetAssociationMixin<OrderAddress, number>
 
-  declare createBillingAddress: BelongsToCreateAssociationMixin<OrderAddress>
+  // disable createBillingAddress, since sequelize could not create proper foreign key constraint:
+  // declare createBillingAddress: BelongsToCreateAssociationMixin<OrderAddress>
 
   // shippingAddress:
   declare getShippingAddress: BelongsToGetAssociationMixin<OrderAddress>
