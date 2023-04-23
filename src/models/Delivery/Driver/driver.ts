@@ -10,5 +10,5 @@
 // created_at
 // updated_at
 
-// Many-to-many relationship between DeliveryRoutes and Drivers (through the RouteDrivers table).
+// Many-to-many relationship between TripRoutes and Drivers (through the RouteDrivers table).
 // One-to-many relationship between Drivers and DriverDowntime.

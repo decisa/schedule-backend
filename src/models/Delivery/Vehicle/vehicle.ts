@@ -11,4 +11,4 @@
 // created_at
 // updated_at
 
-// One-to-many relationship between Vehicles and DeliveryRoutes.
+// One-to-many relationship between Vehicles and TripRoutes.

@@ -2,9 +2,7 @@
 
 // id (PK)
 // purchase_order_id (FK from PurchaseOrders)
-
-// TODO: is it productconfiguration_id?
-// product_id (FK from Products)
+// product_configuration_id (FK from ProductConfigurations)
 // quantity_ordered
 // quantity_received
 // created_at
