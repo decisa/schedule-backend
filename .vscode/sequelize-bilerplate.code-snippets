@@ -35,11 +35,11 @@
 	"Sequelize belongs to mixins": {
 		"prefix": "belongsto",
 		"body": [
-			"// $1:",
+			"// ${1/(.)(.*)/${1:/downcase}$2/}:",
 			"declare get$1: BelongsToGetAssociationMixin<$1>\n",
 			"declare set$1: BelongsToSetAssociationMixin<$1, number>\n",
 			"declare create$1: BelongsToCreateAssociationMixin<$1>\n",
-			"BelongsToGetAssociationMixin,\nBelongsToSetAssociationMixin,\nBelongsToCreateAssociationMixin,",
+			"${2:BelongsToGetAssociationMixin,\nBelongsToSetAssociationMixin,\nBelongsToCreateAssociationMixin,}",
 		],
 		"description": "define belongs to mixins for TypeScript"
 	},
@@ -47,7 +47,7 @@
 		"prefix": "hasmany",
 		"body": [
 			"// $1s:",
-			"declare create$1: HasManyCreateAssociationMixin<$1, '${2:thisClassId}'>\n",
+			"declare create$1: HasManyCreateAssociationMixin<$1, '${2:$TM_FILENAME_BASE}Id'>\n",
 			"declare get$1s: HasManyGetAssociationsMixin<$1>\n",
 			"declare count$1s: HasManyCountAssociationsMixin\n",
 			"declare has$1: HasManyHasAssociationMixin<$1, number>\n",
@@ -56,17 +56,8 @@
 			"declare add$1: HasManyAddAssociationMixin<$1, number>\n",
 			"declare add$1s: HasManyAddAssociationsMixin<$1, number>\n",
 			"declare remove$1: HasManyRemoveAssociationMixin<$1, number>\n",
-			"declare remove$1s: HasManyRemoveAssociationsMixin<$1, number>\n\n",
-			"HasManyCreateAssociationMixin,",
-			"HasManyGetAssociationsMixin,",
-			"HasManyCountAssociationsMixin,",
-			"HasManyHasAssociationMixin,",
-			"HasManyHasAssociationsMixin,",
-			"HasManySetAssociationsMixin,",
-			"HasManyAddAssociationMixin,",
-			"HasManyAddAssociationsMixin,",
-			"HasManyRemoveAssociationMixin,",
-			"HasManyRemoveAssociationsMixin,\n$3",
+			"declare remove$1s: HasManyRemoveAssociationsMixin<$1, number>\n",
+			"${3:HasManyCreateAssociationMixin,\nHasManyGetAssociationsMixin,\nHasManyCountAssociationsMixin,\nHasManyHasAssociationMixin,\nHasManyHasAssociationsMixin,\nHasManySetAssociationsMixin,\nHasManyAddAssociationMixin,\nHasManyAddAssociationsMixin,\nHasManyRemoveAssociationMixin,\nHasManyRemoveAssociationsMixin,\n}",
 		],
 		"description": "define has many mixins for TypeScript"
 	},
