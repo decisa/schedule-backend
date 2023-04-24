@@ -1,0 +1,92 @@
+{
+	// Place your snippets for typescript here. Each snippet is defined under a snippet name and has a prefix, body and 
+	// description. The prefix is what is used to trigger the snippet and the body will be expanded and inserted. Possible variables are:
+	// $1, $2 for tab stops, $0 for the final cursor position, and ${1:label}, ${2:another} for placeholders. Placeholders with the 
+	// same ids are connected.
+	// Example:
+	"Create sequelize model": {
+		"prefix": "csm",
+		"body": [
+			"import { Association, CreationOptional, InferAttributes, InferCreationAttributes, Model, NonAttribute, Sequelize, DataTypes } from 'sequelize'\n",
+
+			"export class $1 extends Model<InferAttributes<$1>, InferCreationAttributes<$1>> {",
+  		"  declare id: CreationOptional<number>\n",
+
+  		"  $2",
+  		"  // associations\n",
+			"  // declare order?: NonAttribute<Order>",		
+			"  // declare orderId: ForeignKey<Order['id']>",
+
+  		"  declare public static associations: {\n  // products: Association<$1, Product>,\n  }\n",
+			"  // MIXINS\n  // products:\n}\n",
+			"export function init$1(db: Sequelize) {\n  $1.init(\n    {",
+			"      id: {\n        type: DataTypes.INTEGER,\n        unique: true,\n        autoIncrement: true,\n        primaryKey: true,\n      },\n",
+			"    },\n    {\n      sequelize: db,\n    },\n  )\n}\n"
+		],
+		"description": "Boilerplate for model creation in sequelize orm"
+	},
+	"Sequelize DataTypes": {
+    "prefix": "dt",
+    "body": [
+        "DataTypes.${1|UUIDV4,VIRTUAL,TINYINT,ENUM,DECIMAL,TIME,DATEONLY,DATE,STRING,CHAR,BOOLEAN,INTEGER|},"
+    ],
+    "description": "Sequelize DataTypes"    
+	},
+	"Sequelize belongs to mixins": {
+		"prefix": "belongsto",
+		"body": [
+			"// $1:",
+			"declare get$1: BelongsToGetAssociationMixin<$1>\n",
+			"declare set$1: BelongsToSetAssociationMixin<$1, number>\n",
+			"declare create$1: BelongsToCreateAssociationMixin<$1>\n",
+			"BelongsToGetAssociationMixin,\nBelongsToSetAssociationMixin,\nBelongsToCreateAssociationMixin,",
+		],
+		"description": "define belongs to mixins for TypeScript"
+	},
+	"Sequelize has many mixins": {
+		"prefix": "hasmany",
+		"body": [
+			"// $1s:",
+			"declare create$1: HasManyCreateAssociationMixin<$1, '${2:thisClassId}'>\n",
+			"declare get$1s: HasManyGetAssociationsMixin<$1>\n",
+			"declare count$1s: HasManyCountAssociationsMixin\n",
+			"declare has$1: HasManyHasAssociationMixin<$1, number>\n",
+			"declare has$1s: HasManyHasAssociationsMixin<$1, number>\n",
+			"declare set$1s: HasManySetAssociationsMixin<$1, number>\n",
+			"declare add$1: HasManyAddAssociationMixin<$1, number>\n",
+			"declare add$1s: HasManyAddAssociationsMixin<$1, number>\n",
+			"declare remove$1: HasManyRemoveAssociationMixin<$1, number>\n",
+			"declare remove$1s: HasManyRemoveAssociationsMixin<$1, number>\n\n",
+			"HasManyCreateAssociationMixin,",
+			"HasManyGetAssociationsMixin,",
+			"HasManyCountAssociationsMixin,",
+			"HasManyHasAssociationMixin,",
+			"HasManyHasAssociationsMixin,",
+			"HasManySetAssociationsMixin,",
+			"HasManyAddAssociationMixin,",
+			"HasManyAddAssociationsMixin,",
+			"HasManyRemoveAssociationMixin,",
+			"HasManyRemoveAssociationsMixin,\n$3",
+		],
+		"description": "define has many mixins for TypeScript"
+	},
+	"one2many association": {
+		"prefix": "one2many",
+    "body": [
+			"$1.hasMany($2, {",
+			"  as: '${2/(.)(.*)/${1:/downcase}$2/}s',",
+			"  foreignKey: '${1/(.)(.*)/${1:/downcase}$2/}Id',",
+			"  onDelete: 'NO ACTION',",
+			"  onUpdate: 'CASCADE',",
+		"})",
+		"$2.belongsTo($1, {",
+			"  as: '${1/(.)(.*)/${1:/downcase}$2/}',",
+			"  foreignKey: '${1/(.)(.*)/${1:/downcase}$2/}Id',",
+		"})"
+    ],
+    "description": "Define one-to-many association"
+	}
+	
+
+
+}
