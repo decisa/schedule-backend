@@ -17,5 +17,75 @@
   "editor.codeActionsOnSave": {
     "source.fixAll": true
   },
-  "eslint.format.enable": true
+  "eslint.format.enable": true,
+
+  "todohighlight.isEnable": true,
+  "todohighlight.isCaseSensitive": false,
+  "todohighlight.keywords": [
+      "DEBUG:",
+      "REVIEW:",
+      {
+          "text": "NOTE:",
+          "color": "#ff0000",
+          "backgroundColor": "yellow",
+          "overviewRulerColor": "grey"
+      },
+      {
+          "text": "HACK:",
+          "color": "#000",
+          "isWholeLine": false,
+      },
+      {
+          "text": "TODO:",
+          "color": "#f6e400",
+          "isWholeLine": true,
+          "border": "none",
+          "backgroundColor": "#fff66810",
+
+      },
+      {
+        "text": "DONE:",
+        "color": "#59f69050",
+        "border": "none",
+        "isWholeLine": true,
+        "backgroundColor": "#59f69005",
+        //other styling properties goes here ... 
+      }
+  ],
+  // "todohighlight.keywordsPattern": "TODO:|FIXME:|\\(([^)]+)\\)", //highlight `TODO:`,`FIXME:` or content between parentheses
+  "todohighlight.defaultStyle": {
+      "color": "blue",
+      "backgroundColor": "#ffab00",
+      "overviewRulerColor": "#ffab00",
+      // "cursor": "pointer",
+      // "border": "1px solid #eee",
+      // "borderRadius": "2px",
+      "isWholeLine": true,
+      //other styling properties goes here ... 
+  },
+  "todohighlight.include": [
+      "**/*.js",
+      "**/*.jsx",
+      "**/*.ts",
+      "**/*.tsx",
+      "**/*.html",
+      "**/*.php",
+      "**/*.css",
+      "**/*.scss"
+  ],
+  "todohighlight.exclude": [
+      "**/node_modules/**",
+      "**/bower_components/**",
+      "**/dist/**",
+      "**/build/**",
+      "**/.vscode/**",
+      "**/.github/**",
+      "**/_output/**",
+      "**/*.min.*",
+      "**/*.map",
+      "**/.next/**"
+  ],
+  "todohighlight.maxFilesForSearch": 5120,
+  "todohighlight.toggleURI": false
+
 }
