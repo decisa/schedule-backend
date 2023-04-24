@@ -1,6 +1,7 @@
 // TODO: One-to-many relationship between Order and PurchaseOrders.
 // TODO: One-to-many relationship between Order and RouteStops. (nullable)
-// TODO: One-to-many relationship between Order and OrderAvailability.
+// DONE: One-to-many relationship between Orders and OrderAvailability.
+
 import {
   InferAttributes,
   Model,
@@ -34,7 +35,8 @@ import type { MagentoOrder } from '../MagentoOrder/magentoOrder'
 import type { Customer } from '../Customer/customer'
 import type { OrderAddress } from '../OrderAddress/orderAddress'
 import type { OrderComment } from '../OrderComment/orderComment'
-import { ProductConfiguration } from '../ProductConfiguration/productConfiguration'
+import type { ProductConfiguration } from '../ProductConfiguration/productConfiguration'
+import type { OrderAvailability } from '../../Delivery/OrderAvailability/orderAvailability'
 
 console.log('running model module')
 
@@ -79,6 +81,8 @@ export class Order extends Model<InferAttributes<Order>, InferCreationAttributes
 
   declare products?: NonAttribute<ProductConfiguration[]>
 
+  declare orderAvailabilities?: NonAttribute<OrderAvailability[]>
+
   declare public static associations: {
     magento: Association<Order, MagentoOrder>,
     customer: Association<Order, Customer>,
@@ -87,6 +91,7 @@ export class Order extends Model<InferAttributes<Order>, InferCreationAttributes
     billingAddress: Association<Order, OrderAddress>,
     shippingAddress: Association<Order, OrderAddress>,
     products: Association<Order, ProductConfiguration>,
+    orderAvailabilities: Association<Order, OrderAvailability>,
   }
 
   // MIXINS
@@ -181,6 +186,27 @@ export class Order extends Model<InferAttributes<Order>, InferCreationAttributes
   declare removeProductConfiguration: HasManyRemoveAssociationMixin<ProductConfiguration, number>
 
   declare removeProductConfigurations: HasManyRemoveAssociationsMixin<ProductConfiguration, number>
+
+  // orderAvailabilities:
+  declare createOrderAvailability: HasManyCreateAssociationMixin<OrderAvailability, 'orderId'>
+
+  declare getOrderAvailabilities: HasManyGetAssociationsMixin<OrderAvailability>
+
+  declare countOrderAvailabilities: HasManyCountAssociationsMixin
+
+  declare hasOrderAvailability: HasManyHasAssociationMixin<OrderAvailability, number>
+
+  declare hasOrderAvailabilities: HasManyHasAssociationsMixin<OrderAvailability, number>
+
+  declare setOrderAvailabilities: HasManySetAssociationsMixin<OrderAvailability, number>
+
+  declare addOrderAvailability: HasManyAddAssociationMixin<OrderAvailability, number>
+
+  declare addOrderAvailabilities: HasManyAddAssociationsMixin<OrderAvailability, number>
+
+  declare removeOrderAvailability: HasManyRemoveAssociationMixin<OrderAvailability, number>
+
+  declare removeOrderAvailabilities: HasManyRemoveAssociationsMixin<OrderAvailability, number>
 }
 
 export function initOrder(db: Sequelize) {
