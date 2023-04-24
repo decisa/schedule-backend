@@ -12,6 +12,12 @@ import { initBrands } from './Brand/brand'
 import { initProducts } from './Sales/Product/product'
 import { initProductConfigurations } from './Sales/ProductConfiguration/productConfiguration'
 import { initProductOptions } from './Sales/ProductOption/productOption'
+import { initCarrier } from './Receiving/Carrier/carrier'
+import { initPurchaseOrder } from './Receiving/PurchaseOrder/purchaseOrder'
+import { initPurchaseOrderItem } from './Receiving/PurchaseOrderItem/purchaseOrderItem'
+import { initReceivedItem } from './Receiving/ReceivedItems/receivedItems'
+import { initShipment } from './Receiving/Shipment/shipment'
+import { initShipmentItem } from './Receiving/ShipmentItem/shipmentItem'
 
 function initModels(db: Sequelize) {
   initMagentoOrder(db)
@@ -27,6 +33,14 @@ function initModels(db: Sequelize) {
   initProducts(db)
   initProductConfigurations(db)
   initProductOptions(db)
+
+  // Receiving:
+  initCarrier(db)
+  initPurchaseOrder(db)
+  initPurchaseOrderItem(db)
+  initReceivedItem(db)
+  initShipment(db)
+  initShipmentItem(db)
 }
 
 export default initModels

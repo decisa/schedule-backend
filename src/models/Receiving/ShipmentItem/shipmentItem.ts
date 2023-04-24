@@ -2,39 +2,75 @@
 // id (PK)
 // shipment_id (FK from Shipments)
 // purchase_order_item_id (FK from PurchaseOrderItems)
+// qtyShipped
 // created_at
 // updated_at
 
-// ok One-to-many relationship between Shipments and ShipmentItems.
-// ok One-to-many relationship between PurchaseOrderItems and ShipmentItems.
+// done - One-to-many relationship between Shipments and ShipmentItems.
+// done - One-to-many relationship between PurchaseOrderItems and ShipmentItems.
+import {
+  Association, CreationOptional, InferAttributes, InferCreationAttributes, Model, NonAttribute, Sequelize, DataTypes, ForeignKey,
+  BelongsToGetAssociationMixin,
+  BelongsToSetAssociationMixin,
+  BelongsToCreateAssociationMixin,
+} from 'sequelize'
+import type { Shipment } from '../Shipment/shipment'
+import type { PurchaseOrderItem } from '../PurchaseOrderItem/purchaseOrderItem'
 
-// One-to-many relationship between Customers and CustomerAddresses.
-// One-to-many relationship between Customers and Orders.
-// One-to-many relationship between Orders and OrderComments.
-// One-to-many relationship between Orders and ProductConfigurations.
-// One-to-many relationship between Products and ProductConfigurations.
-// One-to-many relationship between ProductConfigurations and ConfigurationOptions.
-// One-to-many relationship between Brands and Products.
+export class ShipmentItem extends Model<InferAttributes<ShipmentItem>, InferCreationAttributes<ShipmentItem>> {
+  declare id: CreationOptional<number>
 
-// One-to-many relationship between Orders and PurchaseOrders.
+  declare qtyShipped: number
+  // shipment_id (FK from Shipments)
+  // purchase_order_item_id (FK from PurchaseOrderItems)
 
-// ok One-to-many relationship between Brands and PurchaseOrders.
-// ok One-to-many relationship between PurchaseOrders and PurchaseOrderItems.
+  // associations
 
-// ok One-to-many relationship between ProductConfigurations and PurchaseOrderItems.
-// ok One-to-many relationship between PurchaseOrderItems and ShipmentItems.
-// ok One-to-many relationship between PurchaseOrderItems and ReceivedItems.
-// ok One-to-many relationship between Shipments and ReceivedItems (nullable).
+  declare shipment?: NonAttribute<Shipment>
 
-// ok One-to-many relationship between Carriers and Shipments.
-// ok One-to-many relationship between Shipments and ShipmentItems.
+  declare shipmentId: ForeignKey<Shipment['id']>
 
-// ok One-to-many relationship between Vehicles and TripRoute.
+  declare purchaseOrderItem?: NonAttribute<PurchaseOrderItem>
 
-// ok One-to-many relationship between TripRoute and RouteStops.
-// ok One-to-many relationship between Orders and RouteStops. (nullable)
-// ok One-to-one relationship between RouteStops and Order Addresses. (nullable)
+  declare purchaseOrderItemId: ForeignKey<PurchaseOrderItem['id']>
 
-// ok Many-to-many relationship between TripRoute and Drivers (through the RouteDrivers table).
-// ok One-to-many relationship between Driver and DriverDowntime.
-// ok One-to-many relationship between Order and OrderAvailability.
+  declare public static associations: {
+    shipment: Association<ShipmentItem, Shipment>,
+    purchaseOrderItem: Association<ShipmentItem, PurchaseOrderItem>,
+  }
+
+  // MIXINS
+  // shipment:
+  declare getShipment: BelongsToGetAssociationMixin<Shipment>
+
+  declare setShipment: BelongsToSetAssociationMixin<Shipment, number>
+
+  declare createShipment: BelongsToCreateAssociationMixin<Shipment>
+
+  // purchaseOrderItem:
+  declare getPurchaseOrderItem: BelongsToGetAssociationMixin<PurchaseOrderItem>
+
+  declare setPurchaseOrderItem: BelongsToSetAssociationMixin<PurchaseOrderItem, number>
+
+  declare createPurchaseOrderItem: BelongsToCreateAssociationMixin<PurchaseOrderItem>
+}
+
+export function initShipmentItem(db: Sequelize) {
+  ShipmentItem.init(
+    {
+      id: {
+        type: DataTypes.INTEGER,
+        unique: true,
+        autoIncrement: true,
+        primaryKey: true,
+      },
+      qtyShipped: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+      },
+    },
+    {
+      sequelize: db,
+    },
+  )
+}
