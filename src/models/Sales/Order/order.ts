@@ -1,3 +1,6 @@
+// TODO: One-to-many relationship between Order and PurchaseOrders.
+// TODO: One-to-many relationship between Order and RouteStops. (nullable)
+// TODO: One-to-many relationship between Order and OrderAvailability.
 import {
   InferAttributes,
   Model,

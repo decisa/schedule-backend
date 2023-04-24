@@ -1,3 +1,4 @@
+// TODO: ??? One-to-one relationship between RouteStops and OrderAddresses. (nullable) IS IT ? one-to-MANY between orderAddress and Route Stops. Order can be delivered multiple attempts
 import {
   Association,
   BelongsToCreateAssociationMixin,

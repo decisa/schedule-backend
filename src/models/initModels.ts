@@ -1,17 +1,23 @@
 import type { Sequelize } from 'sequelize'
-import { initMagentoOrder } from './MagentoOrder/magentoOrder'
-import { initOrder } from './Order/order'
-import { initCustomer } from './Customer/customer'
-import { initMagentoCustomer } from './MagentoCustomer/magentoCustomer'
-import { initAddress } from './Address/address'
-import { initMagentoAddress } from './MagentoAddress/magentoAddress'
-import { initOrderAddress } from './OrderAddress/orderAddress'
-import { initMagentoOrderAddress } from './MagentoOrderAddress/magentoOrderAddress'
-import { initOrderComment } from './OrderComment/orderComment'
+import { initMagentoOrder } from './Sales/MagentoOrder/magentoOrder'
+import { initOrder } from './Sales/Order/order'
+import { initCustomer } from './Sales/Customer/customer'
+import { initMagentoCustomer } from './Sales/MagentoCustomer/magentoCustomer'
+import { initAddress } from './Sales/Address/address'
+import { initMagentoAddress } from './Sales/MagentoAddress/magentoAddress'
+import { initOrderAddress } from './Sales/OrderAddress/orderAddress'
+import { initMagentoOrderAddress } from './Sales/MagentoOrderAddress/magentoOrderAddress'
+import { initOrderComment } from './Sales/OrderComment/orderComment'
 import { initBrands } from './Brand/brand'
-import { initProducts } from './Product/product'
-import { initProductConfigurations } from './ProductConfiguration/productConfiguration'
-import { initProductOptions } from './ProductOption/productOption'
+import { initProducts } from './Sales/Product/product'
+import { initProductConfigurations } from './Sales/ProductConfiguration/productConfiguration'
+import { initProductOptions } from './Sales/ProductOption/productOption'
+import { initCarrier } from './Receiving/Carrier/carrier'
+import { initPurchaseOrder } from './Receiving/PurchaseOrder/purchaseOrder'
+import { initPurchaseOrderItem } from './Receiving/PurchaseOrderItem/purchaseOrderItem'
+import { initReceivedItem } from './Receiving/ReceivedItems/receivedItems'
+import { initShipment } from './Receiving/Shipment/shipment'
+import { initShipmentItem } from './Receiving/ShipmentItem/shipmentItem'
 
 function initModels(db: Sequelize) {
   initMagentoOrder(db)
@@ -27,6 +33,14 @@ function initModels(db: Sequelize) {
   initProducts(db)
   initProductConfigurations(db)
   initProductOptions(db)
+
+  // Receiving:
+  initCarrier(db)
+  initPurchaseOrder(db)
+  initPurchaseOrderItem(db)
+  initReceivedItem(db)
+  initShipment(db)
+  initShipmentItem(db)
 }
 
 export default initModels

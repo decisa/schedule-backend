@@ -1,3 +1,5 @@
+// TODO: One-to-many relationship between ProductConfigurations and PurchaseOrderItems.
+// TODO: many-to-many relationship between RouteStops and ProductConfigurations through RouteStopItems
 import {
   Association,
   BelongsToCreateAssociationMixin,

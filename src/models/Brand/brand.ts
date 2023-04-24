@@ -1,3 +1,4 @@
+// done - One-to-many relationship between Brands and PurchaseOrders.
 import {
   Association,
   CreationOptional, DataTypes, InferAttributes, InferCreationAttributes, Model, NonAttribute, Sequelize,
@@ -12,7 +13,8 @@ import {
   HasManyRemoveAssociationMixin,
   HasManyRemoveAssociationsMixin,
 } from 'sequelize'
-import type { Product } from '../Product/product'
+import type { Product } from '../Sales/Product/product'
+import type { PurchaseOrder } from '../Receiving/PurchaseOrder/purchaseOrder'
 
 export class Brand extends Model<InferAttributes<Brand>, InferCreationAttributes<Brand>> {
   declare id: CreationOptional<number>
@@ -22,10 +24,13 @@ export class Brand extends Model<InferAttributes<Brand>, InferCreationAttributes
   declare externalId?: number
 
   // associations
-  declare products?: NonAttribute<Product>
+  declare products?: NonAttribute<Product[]>
+
+  declare purchaseOrders?: NonAttribute<PurchaseOrder[]>
 
   declare public static associations: {
     products: Association<Brand, Product>,
+    purchaseOrders: Association<Brand, PurchaseOrder>,
   }
 
   // MIXINS
@@ -49,6 +54,27 @@ export class Brand extends Model<InferAttributes<Brand>, InferCreationAttributes
   declare removeProduct: HasManyRemoveAssociationMixin<Product, number>
 
   declare removeProducts: HasManyRemoveAssociationsMixin<Product, number>
+
+  // PurchaseOrders:
+  declare createPurchaseOrder: HasManyCreateAssociationMixin<PurchaseOrder, 'brandId'>
+
+  declare getPurchaseOrders: HasManyGetAssociationsMixin<PurchaseOrder>
+
+  declare countPurchaseOrders: HasManyCountAssociationsMixin
+
+  declare hasPurchaseOrder: HasManyHasAssociationMixin<PurchaseOrder, number>
+
+  declare hasPurchaseOrders: HasManyHasAssociationsMixin<PurchaseOrder, number>
+
+  declare setPurchaseOrders: HasManySetAssociationsMixin<PurchaseOrder, number>
+
+  declare addPurchaseOrder: HasManyAddAssociationMixin<PurchaseOrder, number>
+
+  declare addPurchaseOrders: HasManyAddAssociationsMixin<PurchaseOrder, number>
+
+  declare removePurchaseOrder: HasManyRemoveAssociationMixin<PurchaseOrder, number>
+
+  declare removePurchaseOrders: HasManyRemoveAssociationsMixin<PurchaseOrder, number>
 }
 
 export function initBrands(db: Sequelize) {

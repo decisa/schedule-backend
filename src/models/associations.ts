@@ -1,16 +1,22 @@
-import { Address } from './Address/address'
+import { Address } from './Sales/Address/address'
 import { Brand } from './Brand/brand'
-import { Customer } from './Customer/customer'
-import { MagentoAddress } from './MagentoAddress/magentoAddress'
-import { MagentoCustomer } from './MagentoCustomer/magentoCustomer'
-import { MagentoOrder } from './MagentoOrder/magentoOrder'
-import { MagentoOrderAddress } from './MagentoOrderAddress/magentoOrderAddress'
-import { Order } from './Order/order'
-import { OrderAddress } from './OrderAddress/orderAddress'
-import { OrderComment } from './OrderComment/orderComment'
-import { Product } from './Product/product'
-import { ProductConfiguration } from './ProductConfiguration/productConfiguration'
-import { ProductOption } from './ProductOption/productOption'
+import { Customer } from './Sales/Customer/customer'
+import { MagentoAddress } from './Sales/MagentoAddress/magentoAddress'
+import { MagentoCustomer } from './Sales/MagentoCustomer/magentoCustomer'
+import { MagentoOrder } from './Sales/MagentoOrder/magentoOrder'
+import { MagentoOrderAddress } from './Sales/MagentoOrderAddress/magentoOrderAddress'
+import { Order } from './Sales/Order/order'
+import { OrderAddress } from './Sales/OrderAddress/orderAddress'
+import { OrderComment } from './Sales/OrderComment/orderComment'
+import { Product } from './Sales/Product/product'
+import { ProductConfiguration } from './Sales/ProductConfiguration/productConfiguration'
+import { ProductOption } from './Sales/ProductOption/productOption'
+import { Carrier } from './Receiving/Carrier/carrier'
+import { Shipment } from './Receiving/Shipment/shipment'
+import { PurchaseOrder } from './Receiving/PurchaseOrder/purchaseOrder'
+import { PurchaseOrderItem } from './Receiving/PurchaseOrderItem/purchaseOrderItem'
+import { ShipmentItem } from './Receiving/ShipmentItem/shipmentItem'
+import { ReceivedItem } from './Receiving/ReceivedItems/receivedItems'
 
 function createAssociations() {
   // some orders have a magento record
@@ -186,6 +192,108 @@ function createAssociations() {
   ProductOption.belongsTo(ProductConfiguration, {
     as: 'product',
     foreignKey: 'configId',
+  })
+
+  // *************  RECEIVING ****************
+  // One-to-many relationship between Carriers and Shipments.
+  Carrier.hasMany(Shipment, {
+    as: 'shipments',
+    foreignKey: 'carrierId',
+    onDelete: 'NO ACTION',
+    onUpdate: 'CASCADE',
+  })
+  Shipment.belongsTo(Carrier, {
+    as: 'carrier',
+    foreignKey: 'carrierId',
+  })
+
+  //  One-to-many relationship between Orders and PurchaseOrders.
+  Order.hasMany(PurchaseOrder, {
+    as: 'purchaseOrders',
+    foreignKey: 'orderId',
+    onDelete: 'NO ACTION',
+    onUpdate: 'CASCADE',
+  })
+  PurchaseOrder.belongsTo(Order, {
+    as: 'order',
+    foreignKey: 'orderId',
+  })
+  //  One-to-many relationship between PurchaseOrders and PurchaseOrderItems.
+  PurchaseOrder.hasMany(PurchaseOrderItem, {
+    as: 'purchaseOrderItems',
+    foreignKey: 'purchaseOrderId',
+    onDelete: 'NO ACTION',
+    onUpdate: 'CASCADE',
+  })
+  PurchaseOrderItem.belongsTo(PurchaseOrder, {
+    as: 'purchaseOrder',
+    foreignKey: 'purchaseOrderId',
+  })
+  //  One-to-many relationship between Brands and PurchaseOrders.
+  Brand.hasMany(PurchaseOrder, {
+    as: 'purchaseOrders',
+    foreignKey: 'brandId',
+    onDelete: 'NO ACTION',
+    onUpdate: 'CASCADE',
+  })
+  PurchaseOrder.belongsTo(Brand, {
+    as: 'brand',
+    foreignKey: 'brandId',
+  })
+  // One-to-many relationship between ProductConfigurations and PurchaseOrderItems.
+  ProductConfiguration.hasMany(PurchaseOrderItem, {
+    as: 'purchaseOrderItems',
+    foreignKey: 'productConfigurationId',
+    onDelete: 'NO ACTION',
+    onUpdate: 'CASCADE',
+  })
+  PurchaseOrderItem.belongsTo(ProductConfiguration, {
+    as: 'productConfiguration',
+    foreignKey: 'productConfigurationId',
+  })
+  // One-to-many relationship between PurchaseOrderItems and ShipmentItems.
+  PurchaseOrderItem.hasMany(ShipmentItem, {
+    as: 'shipmentItems',
+    foreignKey: 'purchaseOrderItemId',
+    onDelete: 'NO ACTION',
+    onUpdate: 'CASCADE',
+  })
+  ShipmentItem.belongsTo(PurchaseOrderItem, {
+    as: 'purchaseOrderItem',
+    foreignKey: 'purchaseOrderItemId',
+  })
+  // One-to-many relationship between PurchaseOrderItems and ReceivedItems.
+  PurchaseOrderItem.hasMany(ReceivedItem, {
+    as: 'receivedItems',
+    foreignKey: 'purchaseOrderItemId',
+    onDelete: 'NO ACTION',
+    onUpdate: 'CASCADE',
+  })
+  ReceivedItem.belongsTo(PurchaseOrderItem, {
+    as: 'purchaseOrderItem',
+    foreignKey: 'purchaseOrderItemId',
+  })
+  // One-to-many relationship between Shipments and ReceivedItems (nullable).
+  Shipment.hasMany(ReceivedItem, {
+    as: 'receivedItems',
+    foreignKey: 'shipmentId',
+    onDelete: 'NO ACTION',
+    onUpdate: 'CASCADE',
+  })
+  ReceivedItem.belongsTo(Shipment, {
+    as: 'shipment',
+    foreignKey: 'shipmentId',
+  })
+  // One-to-many relationship between Shipments and ShipmentItems.
+  Shipment.hasMany(ShipmentItem, {
+    as: 'shipmentItems',
+    foreignKey: 'shipmentId',
+    onDelete: 'NO ACTION',
+    onUpdate: 'CASCADE',
+  })
+  ShipmentItem.belongsTo(Shipment, {
+    as: 'shipment',
+    foreignKey: 'shipmentId',
   })
 }
 
