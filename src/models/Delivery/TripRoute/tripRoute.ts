@@ -12,8 +12,8 @@
 // created_at
 // updated_at
 
-// todo: Many-to-many relationship between TripRoute and Drivers (through the routeDrivers table).
-// todo: One-to-many relationship between Vehicles and TripRoute.
+// done: Many-to-many relationship between TripRoute and Drivers (through the routeDrivers table).
+// done: One-to-many relationship between Vehicles and TripRoute.
 // todo: One-to-many relationship between TripRoute and RouteStops.
 import {
   Association, CreationOptional, InferAttributes, InferCreationAttributes, Model, NonAttribute, Sequelize, DataTypes,
@@ -27,8 +27,13 @@ import {
   BelongsToManyRemoveAssociationMixin,
   BelongsToManyRemoveAssociationsMixin,
   BelongsToManySetAssociationsMixin,
+  BelongsToGetAssociationMixin,
+  BelongsToSetAssociationMixin,
+  BelongsToCreateAssociationMixin,
+  ForeignKey,
 } from 'sequelize'
 import type { Driver } from '../Driver/driver'
+import type { Vehicle } from '../Vehicle/vehicle'
 // import type { RouteDriver } from '../RouteDriver/routeDrivers'
 
 type TripRouteStatus = 'scheduled' | 'in progress' | 'completed' | 'cancelled'
@@ -51,9 +56,13 @@ export class TripRoute extends Model<InferAttributes<TripRoute>, InferCreationAt
 
   declare drivers?: NonAttribute<Driver[]>
 
-  // declare orderId: ForeignKey<Order['id']>
+  declare vehicle?: NonAttribute<Vehicle>
+
+  declare vehicleId: ForeignKey<Vehicle['id']>
+
   declare public static associations: {
     drivers: Association<TripRoute, Driver>,
+    vehicle: Association<TripRoute, Vehicle>,
   }
 
   // MIXINS
@@ -77,6 +86,13 @@ export class TripRoute extends Model<InferAttributes<TripRoute>, InferCreationAt
   declare addDrivers: BelongsToManyAddAssociationsMixin<Driver, number>
 
   declare addDriver: BelongsToManyAddAssociationMixin<Driver, number>
+
+  // vehicle:
+  declare getVehicle: BelongsToGetAssociationMixin<Vehicle>
+
+  declare setVehicle: BelongsToSetAssociationMixin<Vehicle, number>
+
+  declare createVehicle: BelongsToCreateAssociationMixin<Vehicle>
 }
 
 export function initTripRoute(db: Sequelize) {

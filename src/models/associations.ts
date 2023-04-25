@@ -17,6 +17,9 @@ import { PurchaseOrder } from './Receiving/PurchaseOrder/purchaseOrder'
 import { PurchaseOrderItem } from './Receiving/PurchaseOrderItem/purchaseOrderItem'
 import { ShipmentItem } from './Receiving/ShipmentItem/shipmentItem'
 import { ReceivedItem } from './Receiving/ReceivedItems/receivedItems'
+import { TripRoute } from './Delivery/TripRoute/tripRoute'
+import { Driver } from './Delivery/Driver/driver'
+import { RouteDriver } from './Delivery/RouteDriver/routeDrivers'
 
 function createAssociations() {
   // some orders have a magento record
@@ -194,7 +197,7 @@ function createAssociations() {
     foreignKey: 'configId',
   })
 
-  // *************  RECEIVING ****************
+  // note: *************  RECEIVING ****************
   // One-to-many relationship between Carriers and Shipments.
   Carrier.hasMany(Shipment, {
     as: 'shipments',
@@ -294,6 +297,19 @@ function createAssociations() {
   ShipmentItem.belongsTo(Shipment, {
     as: 'shipment',
     foreignKey: 'shipmentId',
+  })
+
+  // note: *************  SHIPPING ****************
+  // Many-to-many relationship between TripRoutes and Drivers (through the RouteDrivers table)
+  TripRoute.belongsToMany(Driver, {
+    through: RouteDriver,
+    foreignKey: 'tripRouteId',
+    otherKey: 'driverId',
+  })
+  Driver.belongsToMany(TripRoute, {
+    through: RouteDriver,
+    foreignKey: 'driverId',
+    otherKey: 'tripRouteId',
   })
 }
 

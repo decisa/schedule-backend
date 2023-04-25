@@ -18,6 +18,9 @@ import { initPurchaseOrderItem } from './Receiving/PurchaseOrderItem/purchaseOrd
 import { initReceivedItem } from './Receiving/ReceivedItems/receivedItems'
 import { initShipment } from './Receiving/Shipment/shipment'
 import { initShipmentItem } from './Receiving/ShipmentItem/shipmentItem'
+import { initTripRoute } from './Delivery/TripRoute/tripRoute'
+import { initDriver } from './Delivery/Driver/driver'
+import { initRouteDriver } from './Delivery/RouteDriver/routeDrivers'
 
 function initModels(db: Sequelize) {
   initMagentoOrder(db)
@@ -41,6 +44,11 @@ function initModels(db: Sequelize) {
   initReceivedItem(db)
   initShipment(db)
   initShipmentItem(db)
+
+  // Shipping:
+  initTripRoute(db)
+  initDriver(db)
+  initRouteDriver(db)
 }
 
 export default initModels

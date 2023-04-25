@@ -26,9 +26,9 @@
       "REVIEW:",
       {
           "text": "NOTE:",
-          "color": "#ff0000",
-          "backgroundColor": "yellow",
-          "overviewRulerColor": "grey"
+          "color": "#fff",
+          "backgroundColor": "#9575cd",
+          "overviewRulerColor": "#9575cd"
       },
       {
           "text": "HACK:",
@@ -41,6 +41,7 @@
           "isWholeLine": true,
           "border": "none",
           "backgroundColor": "#fff66810",
+          "overviewRulerColor": "#f6e400"
 
       },
       {

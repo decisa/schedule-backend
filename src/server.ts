@@ -1,5 +1,5 @@
 import {
-  InferAttributes, Model, QueryTypes, Sequelize,
+  InferAttributes, Model, QueryTypes, Sequelize, col, fn,
 } from 'sequelize'
 // import app from './app'
 import db from './models'
@@ -10,6 +10,8 @@ import { Order } from './models/Sales/Order/order'
 import { OrderAddress } from './models/Sales/OrderAddress/orderAddress'
 import importOrder from './Data/importOrder'
 import { printYellowLine } from './utils/utils'
+import { TripRoute } from './models/Delivery/TripRoute/tripRoute'
+import { Driver } from './models/Delivery/Driver/driver'
 // import Customer from './models/Customer/customer'
 // import MagentoOrder from './models/MagentoOrder/magentoOrder'
 // import Order from './models/Order/order'
@@ -154,6 +156,73 @@ async function addCustomers() {
   }
 }
 
+async function addRoutes() {
+  await TripRoute.create({
+    startDate: new Date(2023, 3, 25, 8, 0),
+    endDate: new Date(2023, 3, 25, 18, 0),
+    startTime: 7 * 60,
+    endTime: 19 * 60,
+    name: 'Local Route',
+    status: 'in progress',
+  })
+
+  await TripRoute.create({
+    startDate: new Date(2023, 3, 28, 8, 0),
+    endDate: new Date(2023, 4, 5, 18, 0),
+    startTime: 8 * 60,
+    endTime: 5 * 60,
+    name: 'Florida trip April-May',
+    status: 'in progress',
+  })
+
+  await TripRoute.create({
+    startDate: new Date(2023, 4, 15, 8, 0),
+    endDate: new Date(2023, 4, 29, 18, 0),
+    startTime: 8 * 60,
+    endTime: 20 * 60,
+    name: 'CA May',
+    status: 'scheduled',
+  })
+}
+
+async function addDrivers() {
+  await Driver.create({
+    firstName: 'Akhror',
+    lastName: 'Doe',
+    licenceNumber: 'DL56412121',
+    phoneNumber: '215.676.6200',
+    // email,
+    driverRole: 'Master Installer',
+  })
+
+  await Driver.create({
+    firstName: 'Muzaffar',
+    lastName: 'Smith',
+    licenceNumber: '28 9665 4541',
+    phoneNumber: '215.676.6333',
+    // email,
+    driverRole: 'Master Installer',
+  })
+
+  await Driver.create({
+    firstName: 'Omurbek',
+    lastName: 'Azizov',
+    licenceNumber: '787 25 5641',
+    phoneNumber: '215.676.6444',
+    // email,
+    driverRole: 'Master Installer',
+  })
+
+  await Driver.create({
+    firstName: 'Azamat',
+    lastName: 'Johnson',
+    licenceNumber: '56 4121 121',
+    phoneNumber: '215.676.6555',
+    // email,
+    driverRole: 'Helper',
+  })
+}
+
 function addOrder() {
   Customer.findByPk(2)
     .then((customer) => {
@@ -219,11 +288,13 @@ db
       onDelete: 'SET NULL',
     }))
     .catch((e) => console.log('there was an error:', e)))
-  .then(() => {
-    printYellowLine('IMPORT ORDER')
-    importOrder()
-      .then(() => console.log('SUCCESS!!'))
-      .catch((e) => console.log('ERROR!', e))
+  .then(async () => {
+    // note: import orders:
+    // printYellowLine('IMPORT ORDER')
+    // importOrder()
+    //   .then(() => console.log('SUCCESS!!'))
+    //   .catch((e) => console.log('ERROR!', e))
+
     // addCustomers().then(() => {
     //   console.log('record success')
     // })
@@ -314,8 +385,10 @@ db
     //     }
     //   })
     //   .catch((err) => console.log('there was an error getting order', err))
+    // await addRoutes()
+    // await addDrivers()
+    // console.log('DATABASE NAME:', db.getDatabaseName(), Order.getTableName())
 
-    console.log('DATABASE NAME:', db.getDatabaseName(), Order.getTableName())
   })
   .catch((error) => {
     console.log('there was an error trying to connect to the database:', error)

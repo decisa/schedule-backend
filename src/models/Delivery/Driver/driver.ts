@@ -10,8 +10,8 @@
 // created_at
 // updated_at
 
-// TODO: Many-to-many relationship between TripRoutes and Drivers (through the RouteDrivers table).
-// DONE: One-to-many relationship between Drivers and DriverDowntime.
+// done: Many-to-many relationship between TripRoutes and Drivers (through the RouteDrivers table).
+// done: One-to-many relationship between Drivers and DriverDowntime.
 import {
   Association, CreationOptional, InferAttributes, InferCreationAttributes, Model, NonAttribute, Sequelize, DataTypes,
   HasManyCreateAssociationMixin,
@@ -37,7 +37,7 @@ import {
   ,
 } from 'sequelize'
 import type { DriverDowntime } from '../DriverDowntime/driverDowntime'
-import { TripRoute } from '../TripRoute/tripRoute'
+import type { TripRoute } from '../TripRoute/tripRoute'
 
 type DriverRole = 'Helper' | 'Master Installer'
 export class Driver extends Model<InferAttributes<Driver>, InferCreationAttributes<Driver>> {
@@ -59,9 +59,12 @@ export class Driver extends Model<InferAttributes<Driver>, InferCreationAttribut
 
   declare driverDowntimes?: NonAttribute<DriverDowntime>
 
+  declare tripRoutes?: NonAttribute<TripRoute>
+
   // declare orderId: ForeignKey<Order['id']>
   declare public static associations: {
     driverDowntimes: Association<Driver, DriverDowntime>,
+    tripRoutes: Association<Driver, TripRoute>
   }
 
   // MIXINS
