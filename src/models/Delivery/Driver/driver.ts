@@ -24,8 +24,20 @@ import {
   HasManyAddAssociationsMixin,
   HasManyRemoveAssociationMixin,
   HasManyRemoveAssociationsMixin,
+  BelongsToManyAddAssociationMixin,
+  BelongsToManyAddAssociationsMixin,
+  BelongsToManyCountAssociationsMixin,
+  BelongsToManyCreateAssociationMixin,
+  BelongsToManyGetAssociationsMixin,
+  BelongsToManyHasAssociationMixin,
+  BelongsToManyHasAssociationsMixin,
+  BelongsToManyRemoveAssociationMixin,
+  BelongsToManyRemoveAssociationsMixin,
+  BelongsToManySetAssociationsMixin
+  ,
 } from 'sequelize'
 import type { DriverDowntime } from '../DriverDowntime/driverDowntime'
+import { TripRoute } from '../TripRoute/tripRoute'
 
 type DriverRole = 'Helper' | 'Master Installer'
 export class Driver extends Model<InferAttributes<Driver>, InferCreationAttributes<Driver>> {
@@ -73,6 +85,27 @@ export class Driver extends Model<InferAttributes<Driver>, InferCreationAttribut
   declare removeDriverDowntime: HasManyRemoveAssociationMixin<DriverDowntime, number>
 
   declare removeDriverDowntimes: HasManyRemoveAssociationsMixin<DriverDowntime, number>
+
+  // tripRoutes:
+  declare createTripRoute: BelongsToManyCreateAssociationMixin<TripRoute>
+
+  declare setTripRoutes: BelongsToManySetAssociationsMixin<TripRoute, number>
+
+  declare removeTripRoute: BelongsToManyRemoveAssociationMixin<TripRoute, number>
+
+  declare removeTripRoutes: BelongsToManyRemoveAssociationsMixin<TripRoute, number>
+
+  declare hasTripRoutes: BelongsToManyHasAssociationsMixin<TripRoute, number>
+
+  declare hasTripRoute: BelongsToManyHasAssociationMixin<TripRoute, number>
+
+  declare getTripRoutes: BelongsToManyGetAssociationsMixin<TripRoute>
+
+  declare countTripRoutes: BelongsToManyCountAssociationsMixin
+
+  declare addTripRoutes: BelongsToManyAddAssociationsMixin<TripRoute, number>
+
+  declare addTripRoute: BelongsToManyAddAssociationMixin<TripRoute, number>
 }
 
 export function initDriver(db: Sequelize) {
