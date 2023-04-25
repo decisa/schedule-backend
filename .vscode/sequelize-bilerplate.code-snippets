@@ -76,8 +76,23 @@
 		"})"
     ],
     "description": "Define one-to-many association"
-	}
-	
-
-
+	},
+	"Sequelize belongs to many mixins": {
+		"prefix": "belongstomany",
+		"body": [
+			"// ${1/(.)(.*)/${1:/downcase}$2/}s:",
+			"declare create$1: BelongsToManyCreateAssociationMixin<$1>\n",
+			"declare set$1s: BelongsToManySetAssociationsMixin<$1, number>\n",
+			"declare remove$1: BelongsToManyRemoveAssociationMixin<$1, number>\n",
+			"declare remove$1s: BelongsToManyRemoveAssociationsMixin<$1, number>\n",
+			"declare has$1s: BelongsToManyHasAssociationsMixin<$1, number>\n",
+			"declare has$1: BelongsToManyHasAssociationMixin<$1, number>\n",
+			"declare get$1s: BelongsToManyGetAssociationsMixin<$1>\n",
+			"declare count$1s: BelongsToManyCountAssociationsMixin\n",
+			"declare add$1s: BelongsToManyAddAssociationsMixin<$1, number>\n",
+			"declare add$1: BelongsToManyAddAssociationMixin<$1, number>\n",
+			"${3:BelongsToManyAddAssociationMixin,\nBelongsToManyAddAssociationsMixin,\nBelongsToManyCountAssociationsMixin,\nBelongsToManyCreateAssociationMixin,\nBelongsToManyGetAssociationsMixin,\nBelongsToManyHasAssociationMixin,\nBelongsToManyHasAssociationsMixin,\nBelongsToManyRemoveAssociationMixin,\nBelongsToManyRemoveAssociationsMixin,\nBelongsToManySetAssociationsMixin\n,}",
+		],
+		"description": "define belongs to many mixins for TypeScript"
+	},
 }
