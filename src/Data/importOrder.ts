@@ -226,7 +226,7 @@ export default async function importOrder() {
     })
   }
   // check if billing address already assigned to the order, if not - assign
-  if (!orderRecord.billId && billingRecord) {
+  if (!orderRecord.billingAddressId && billingRecord) {
     await orderRecord.setBillingAddress(billingRecord)
   }
 
@@ -244,7 +244,7 @@ export default async function importOrder() {
     })
   }
   // check if billing address already assigned to the order, if not - assign
-  if (!orderRecord.shipId && shippingRecord) {
+  if (!orderRecord.shippingAddressId && shippingRecord) {
     await orderRecord.setShippingAddress(shippingRecord)
   }
 
@@ -396,8 +396,8 @@ export default async function importOrder() {
     }],
     attributes: {
       exclude: [
-        'billId',
-        'shipId',
+        'billingAddressId',
+        'shippingAddressId',
       ],
     },
   })

@@ -1,5 +1,4 @@
 .eslintrc.js
 /dist/*
 
-/src/data/data.ts
-/output.json
+
