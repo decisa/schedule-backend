@@ -31,6 +31,12 @@
           "overviewRulerColor": "#9575cd"
       },
       {
+        "text": "SECTION:",
+        "color": "#0088e2",
+        "backgroundColor": "#00203355",
+        "overviewRulerColor": "#334f65"
+      },
+      {
           "text": "HACK:",
           "color": "#000",
           "isWholeLine": false,

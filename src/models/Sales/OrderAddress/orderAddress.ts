@@ -1,14 +1,26 @@
-// TODO: ??? One-to-one relationship between RouteStops and OrderAddresses. (nullable) IS IT ? one-to-MANY between orderAddress and Route Stops. Order can be delivered multiple attempts
+// done: One-to-many relationship between OrderAddresses and RouteStops. (nullable)
 import {
   Association,
   BelongsToCreateAssociationMixin,
   BelongsToGetAssociationMixin,
   BelongsToSetAssociationMixin,
   CreationOptional, DataTypes, ForeignKey, HasOneCreateAssociationMixin, HasOneGetAssociationMixin, HasOneSetAssociationMixin, InferAttributes, InferCreationAttributes, Model, NonAttribute, Sequelize,
+  HasManyCreateAssociationMixin,
+  HasManyGetAssociationsMixin,
+  HasManyCountAssociationsMixin,
+  HasManyHasAssociationMixin,
+  HasManyHasAssociationsMixin,
+  HasManySetAssociationsMixin,
+  HasManyAddAssociationMixin,
+  HasManyAddAssociationsMixin,
+  HasManyRemoveAssociationMixin,
+  HasManyRemoveAssociationsMixin,
+
 } from 'sequelize'
 import type { Order } from '../Order/order'
 import type { Address } from '../Address/address'
-import { MagentoOrderAddress } from '../MagentoOrderAddress/magentoOrderAddress'
+import type { MagentoOrderAddress } from '../MagentoOrderAddress/magentoOrderAddress'
+import type { RouteStop } from '../../Delivery/RouteStop/routeStop'
 // import type { Customer } from '../Customer/customer'
 // import type { MagentoAddress } from '../MagentoAddress/magentoAddress'
 
@@ -57,9 +69,12 @@ export class OrderAddress extends Model<InferAttributes<OrderAddress>, InferCrea
 
   declare magento?: NonAttribute<MagentoOrderAddress>
 
+  declare routeStops?: NonAttribute<RouteStop[]>
+
   declare public static associations: {
     order: Association<OrderAddress, Order>,
     magento: Association<OrderAddress, MagentoOrderAddress>,
+    routeStops: Association<OrderAddress, RouteStop>,
   }
 
   // MIXINS:
@@ -76,6 +91,27 @@ export class OrderAddress extends Model<InferAttributes<OrderAddress>, InferCrea
   declare createMagento: HasOneCreateAssociationMixin<MagentoOrderAddress>
 
   declare setMagento: HasOneSetAssociationMixin<MagentoOrderAddress, number>
+
+  // routeStops:
+  declare createRouteStop: HasManyCreateAssociationMixin<RouteStop, 'orderAddressId'>
+
+  declare getRouteStops: HasManyGetAssociationsMixin<RouteStop>
+
+  declare countRouteStops: HasManyCountAssociationsMixin
+
+  declare hasRouteStop: HasManyHasAssociationMixin<RouteStop, number>
+
+  declare hasRouteStops: HasManyHasAssociationsMixin<RouteStop, number>
+
+  declare setRouteStops: HasManySetAssociationsMixin<RouteStop, number>
+
+  declare addRouteStop: HasManyAddAssociationMixin<RouteStop, number>
+
+  declare addRouteStops: HasManyAddAssociationsMixin<RouteStop, number>
+
+  declare removeRouteStop: HasManyRemoveAssociationMixin<RouteStop, number>
+
+  declare removeRouteStops: HasManyRemoveAssociationsMixin<RouteStop, number>
 }
 
 export function initOrderAddress(db: Sequelize) {

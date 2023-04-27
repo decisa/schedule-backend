@@ -65,11 +65,11 @@ export class Order extends Model<InferAttributes<Order>, InferCreationAttributes
 
   declare customer?: NonAttribute<Customer>
 
-  declare shipId?: ForeignKey<OrderAddress['id']>
+  declare shippingAddressId?: ForeignKey<OrderAddress['id']>
 
   declare shippingAddress?: NonAttribute<OrderAddress>
 
-  declare billId?: ForeignKey<OrderAddress['id']>
+  declare billingAddressId?: ForeignKey<OrderAddress['id']>
 
   declare billingAddress?: NonAttribute<OrderAddress>
 

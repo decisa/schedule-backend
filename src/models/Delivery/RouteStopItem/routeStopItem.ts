@@ -7,4 +7,56 @@
 // created_at
 // updated_at
 
-// many-to-many relationship between RouteStops and ProductConfigurations through RouteStopItems
+// note: for "super M:N relationship" need to add:
+// note: one-to-many between RouteStops and RouteStopItems
+// note: one-to-many between ProductConfigurations and RouteStopItems"
+
+import {
+  Association, CreationOptional, InferAttributes, InferCreationAttributes, Model, NonAttribute, Sequelize, DataTypes, ForeignKey,
+} from 'sequelize'
+import { RouteStop } from '../RouteStop/routeStop'
+import { ProductConfiguration } from '../../Sales/ProductConfiguration/productConfiguration'
+
+export class RouteStopItem extends Model<InferAttributes<RouteStopItem>, InferCreationAttributes<RouteStopItem>> {
+  declare id: CreationOptional<number>
+
+  declare qty: number
+
+  // associations
+  declare routeStopId: ForeignKey<RouteStop['id']>
+
+  declare productConfigurationId: ForeignKey<ProductConfiguration['id']>
+
+  declare routeStop?: NonAttribute<RouteStop>
+
+  declare productConfiguration?: NonAttribute<ProductConfiguration>
+
+  declare public static associations: {
+    routeStop: Association<RouteStopItem, RouteStop>,
+    productConfiguration: Association<RouteStopItem, ProductConfiguration>,
+  }
+
+  // MIXINS
+  // products:
+}
+
+export function initRouteStopItem(db: Sequelize) {
+  RouteStopItem.init(
+    {
+      id: {
+        type: DataTypes.INTEGER,
+        unique: true,
+        autoIncrement: true,
+        primaryKey: true,
+      },
+      qty: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+      },
+    },
+    {
+      sequelize: db,
+      timestamps: false,
+    },
+  )
+}

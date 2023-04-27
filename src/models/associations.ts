@@ -20,6 +20,11 @@ import { ReceivedItem } from './Receiving/ReceivedItems/receivedItems'
 import { TripRoute } from './Delivery/TripRoute/tripRoute'
 import { Driver } from './Delivery/Driver/driver'
 import { RouteDriver } from './Delivery/RouteDriver/routeDrivers'
+import { DriverDowntime } from './Delivery/DriverDowntime/driverDowntime'
+import { OrderAvailability } from './Delivery/OrderAvailability/orderAvailability'
+import { RouteStop } from './Delivery/RouteStop/routeStop'
+import { Vehicle } from './Delivery/Vehicle/vehicle'
+import { RouteStopItem } from './Delivery/RouteStopItem/routeStopItem'
 
 function createAssociations() {
   // some orders have a magento record
@@ -52,6 +57,7 @@ function createAssociations() {
   })
 
   // every order belongs to a customer
+  // One-to-many relationship between Customers and Orders.
   Order.belongsTo(Customer, {
     as: 'customer',
     foreignKey: {
@@ -69,7 +75,7 @@ function createAssociations() {
   Order.belongsTo(OrderAddress, {
     as: 'shippingAddress',
     targetKey: 'id',
-    foreignKey: 'shipId',
+    foreignKey: 'shippingAddressId',
     // onDelete: 'NO ACTION',
     constraints: false,
   })
@@ -77,11 +83,12 @@ function createAssociations() {
   // BILLING ADDRESS FOR ORDER:
   Order.belongsTo(OrderAddress, {
     as: 'billingAddress',
-    foreignKey: 'billId',
+    foreignKey: 'billingAddressId',
     // onDelete: 'NO ACTION',
     constraints: false,
   })
 
+  // One-to-many relationship between Orders and OrderAddresses.
   OrderAddress.belongsTo(Order, {
     as: 'order',
     targetKey: 'id',
@@ -95,6 +102,7 @@ function createAssociations() {
   })
 
   // some addresses have a magento record:
+  // One-to-one relationship between OrderAddresses and MagentoOrderAddresses
   OrderAddress.hasOne(MagentoOrderAddress, {
     as: 'magento',
     sourceKey: 'id',
@@ -108,6 +116,7 @@ function createAssociations() {
   })
 
   // Customer has many Addresses
+  // One-to-many relationship between Customers and Addresses.
   Customer.hasMany(Address, {
     as: 'addresses',
     foreignKey: 'customerId',
@@ -118,6 +127,7 @@ function createAssociations() {
   })
 
   // some addresses have a magento record:
+  // One-to-one relationship between Address and MagentoAddress.
   Address.hasOne(MagentoAddress, {
     as: 'magento',
     sourceKey: 'id',
@@ -131,6 +141,7 @@ function createAssociations() {
   })
 
   // ORDER COMMENTS
+  // One-to-many relationship between Orders and OrderComments.
   Order.hasMany(OrderComment, {
     as: 'comments',
     foreignKey: 'orderId',
@@ -140,7 +151,7 @@ function createAssociations() {
     foreignKey: 'orderId',
   })
 
-  // Each product has a brand
+  // One-to-many relationship between Brands and Products.
   Brand.hasMany(Product, {
     as: 'prdoducts',
     foreignKey: 'brandId',
@@ -162,6 +173,7 @@ function createAssociations() {
    * 'foreignKey' >> added to TARGET object
    * 'as' - how the target will be called on source in PLURAL form
    */
+  // One-to-many relationship between Products and ProductConfigurations.
   Product.hasMany(ProductConfiguration, {
     as: 'configurations',
     foreignKey: 'productId',
@@ -173,7 +185,7 @@ function createAssociations() {
     as: 'product',
   })
 
-  // Every order consists of product configurations
+  // One-to-many relationship between Orders and ProductConfigurations.
   Order.hasMany(ProductConfiguration, {
     as: 'products',
     foreignKey: 'orderId',
@@ -185,7 +197,7 @@ function createAssociations() {
     foreignKey: 'orderId',
   })
 
-  // Every product configuration has options
+  // One-to-many relationship between ProductConfigurations and ProductOptions.
   ProductConfiguration.hasMany(ProductOption, {
     as: 'options',
     foreignKey: 'configId',
@@ -311,6 +323,87 @@ function createAssociations() {
     foreignKey: 'driverId',
     otherKey: 'tripRouteId',
   })
+  // One-to-many relationship between Drivers and DriverDowntime.
+  Driver.hasMany(DriverDowntime, {
+    as: 'driverDowntimes',
+    foreignKey: 'driverId',
+    onDelete: 'NO ACTION',
+    onUpdate: 'CASCADE',
+  })
+  DriverDowntime.belongsTo(Driver, {
+    as: 'driver',
+    foreignKey: 'driverId',
+  })
+  // One-to-many relationship between Orders and OrderAvailability.
+  Order.hasMany(OrderAvailability, {
+    as: 'orderAvailabilities',
+    foreignKey: 'orderId',
+    onDelete: 'NO ACTION',
+    onUpdate: 'CASCADE',
+  })
+  OrderAvailability.belongsTo(Order, {
+    as: 'order',
+    foreignKey: 'orderId',
+  })
+  // One-to-many relationship between TripRoute and RouteStops.
+  TripRoute.hasMany(RouteStop, {
+    as: 'routeStops',
+    foreignKey: 'tripRouteId',
+    onDelete: 'NO ACTION',
+    onUpdate: 'CASCADE',
+  })
+  RouteStop.belongsTo(TripRoute, {
+    as: 'tripRoute',
+    foreignKey: 'tripRouteId',
+  })
+  // One-to-many relationship between Orders and RouteStops.
+  Order.hasMany(RouteStop, {
+    as: 'routeStops',
+    foreignKey: 'orderId',
+    onDelete: 'NO ACTION',
+    onUpdate: 'CASCADE',
+  })
+  RouteStop.belongsTo(Order, {
+    as: 'order',
+    foreignKey: 'orderId',
+  })
+  // One-to-many relationship between OrderAddresses and RouteStops. (nullable)
+  OrderAddress.hasMany(RouteStop, {
+    as: 'routeStops',
+    foreignKey: 'orderAddressId',
+    onDelete: 'NO ACTION',
+    onUpdate: 'CASCADE',
+  })
+  RouteStop.belongsTo(OrderAddress, {
+    as: 'orderAddress',
+    foreignKey: 'orderAddressId',
+  })
+  // Many-to-many relationship between RouteStops and ProductConfigurations through RouteStopItems
+  RouteStop.belongsToMany(ProductConfiguration, {
+    through: RouteStopItem,
+    foreignKey: 'routeStopId',
+    otherKey: 'productConfigurationId',
+  })
+  ProductConfiguration.belongsToMany(RouteStop, {
+    through: RouteStopItem,
+    foreignKey: 'productConfigurationId',
+    otherKey: 'routeStopId',
+  })
+  // One-to-many relationship between Vehicles and TripRoutes.
+  Vehicle.hasMany(TripRoute, {
+    as: 'tripRoutes',
+    foreignKey: 'vehicleId',
+    onDelete: 'NO ACTION',
+    onUpdate: 'CASCADE',
+  })
+  TripRoute.belongsTo(Vehicle, {
+    as: 'vehicle',
+    foreignKey: 'vehicleId',
+  })
+
+  // note: for "super M:N relationship" need to add:
+  // note: one-to-many between RouteStops and RouteStopItems
+  // note: one-to-many between ProductConfigurations and RouteStopItems"
 }
 
 export default createAssociations

@@ -1,5 +1,5 @@
-// TODO: One-to-many relationship between ProductConfigurations and PurchaseOrderItems.
-// TODO: many-to-many relationship between RouteStops and ProductConfigurations through RouteStopItems
+// done: One-to-many relationship between ProductConfigurations and PurchaseOrderItems.
+// done: many-to-many relationship between RouteStops and ProductConfigurations through RouteStopItems
 import {
   Association,
   BelongsToCreateAssociationMixin,
@@ -16,10 +16,22 @@ import {
   HasManyAddAssociationsMixin,
   HasManyRemoveAssociationMixin,
   HasManyRemoveAssociationsMixin,
+  BelongsToManyAddAssociationMixin,
+  BelongsToManyAddAssociationsMixin,
+  BelongsToManyCountAssociationsMixin,
+  BelongsToManyCreateAssociationMixin,
+  BelongsToManyGetAssociationsMixin,
+  BelongsToManyHasAssociationMixin,
+  BelongsToManyHasAssociationsMixin,
+  BelongsToManyRemoveAssociationMixin,
+  BelongsToManyRemoveAssociationsMixin,
+  BelongsToManySetAssociationsMixin,
 } from 'sequelize'
 import type { Product } from '../Product/product'
 import type { Order } from '../Order/order'
 import type { ProductOption } from '../ProductOption/productOption'
+import type { RouteStop } from '../../Delivery/RouteStop/routeStop'
+import { PurchaseOrderItem } from '../../Receiving/PurchaseOrderItem/purchaseOrderItem'
 
 export class ProductConfiguration extends Model<InferAttributes<ProductConfiguration>, InferCreationAttributes<ProductConfiguration>> {
   declare id: CreationOptional<number>
@@ -58,10 +70,16 @@ export class ProductConfiguration extends Model<InferAttributes<ProductConfigura
 
   declare options?: NonAttribute<ProductOption[]>
 
+  declare routeStops?: NonAttribute<RouteStop[]>
+
+  declare purchaseOrderItems?: NonAttribute<PurchaseOrderItem[]>
+
   declare public static associations: {
     product: Association<ProductConfiguration, Product>,
     order: Association<ProductConfiguration, Order>,
     options: Association<ProductConfiguration, ProductOption>,
+    routeStops: Association<ProductConfiguration, RouteStop>,
+    purchaseOrderItems: Association<ProductConfiguration, PurchaseOrderItem>,
   }
 
   // MIXINS
@@ -99,6 +117,48 @@ export class ProductConfiguration extends Model<InferAttributes<ProductConfigura
   declare removeProductOption: HasManyRemoveAssociationMixin<ProductOption, number>
 
   declare removeProductOptions: HasManyRemoveAssociationsMixin<ProductOption, number>
+
+  // routeStops:
+  declare createRouteStop: BelongsToManyCreateAssociationMixin<RouteStop>
+
+  declare setRouteStops: BelongsToManySetAssociationsMixin<RouteStop, number>
+
+  declare removeRouteStop: BelongsToManyRemoveAssociationMixin<RouteStop, number>
+
+  declare removeRouteStops: BelongsToManyRemoveAssociationsMixin<RouteStop, number>
+
+  declare hasRouteStops: BelongsToManyHasAssociationsMixin<RouteStop, number>
+
+  declare hasRouteStop: BelongsToManyHasAssociationMixin<RouteStop, number>
+
+  declare getRouteStops: BelongsToManyGetAssociationsMixin<RouteStop>
+
+  declare countRouteStops: BelongsToManyCountAssociationsMixin
+
+  declare addRouteStops: BelongsToManyAddAssociationsMixin<RouteStop, number>
+
+  declare addRouteStop: BelongsToManyAddAssociationMixin<RouteStop, number>
+
+  // purchaseOrderItems:
+  declare createPurchaseOrderItem: HasManyCreateAssociationMixin<PurchaseOrderItem, 'productConfigurationId'>
+
+  declare getPurchaseOrderItems: HasManyGetAssociationsMixin<PurchaseOrderItem>
+
+  declare countPurchaseOrderItems: HasManyCountAssociationsMixin
+
+  declare hasPurchaseOrderItem: HasManyHasAssociationMixin<PurchaseOrderItem, number>
+
+  declare hasPurchaseOrderItems: HasManyHasAssociationsMixin<PurchaseOrderItem, number>
+
+  declare setPurchaseOrderItems: HasManySetAssociationsMixin<PurchaseOrderItem, number>
+
+  declare addPurchaseOrderItem: HasManyAddAssociationMixin<PurchaseOrderItem, number>
+
+  declare addPurchaseOrderItems: HasManyAddAssociationsMixin<PurchaseOrderItem, number>
+
+  declare removePurchaseOrderItem: HasManyRemoveAssociationMixin<PurchaseOrderItem, number>
+
+  declare removePurchaseOrderItems: HasManyRemoveAssociationsMixin<PurchaseOrderItem, number>
 }
 
 export function initProductConfigurations(db: Sequelize) {

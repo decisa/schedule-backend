@@ -21,6 +21,11 @@ import { initShipmentItem } from './Receiving/ShipmentItem/shipmentItem'
 import { initTripRoute } from './Delivery/TripRoute/tripRoute'
 import { initDriver } from './Delivery/Driver/driver'
 import { initRouteDriver } from './Delivery/RouteDriver/routeDrivers'
+import { initDriverDowntime } from './Delivery/DriverDowntime/driverDowntime'
+import { initOrderAvailability } from './Delivery/OrderAvailability/orderAvailability'
+import { initRouteStop } from './Delivery/RouteStop/routeStop'
+import { initRouteStopItem } from './Delivery/RouteStopItem/routeStopItem'
+import { initVehicle } from './Delivery/Vehicle/vehicle'
 
 function initModels(db: Sequelize) {
   initMagentoOrder(db)
@@ -46,9 +51,14 @@ function initModels(db: Sequelize) {
   initShipmentItem(db)
 
   // Shipping:
-  initTripRoute(db)
   initDriver(db)
+  initDriverDowntime(db)
+  initOrderAvailability(db)
   initRouteDriver(db)
+  initRouteStop(db)
+  initRouteStopItem(db)
+  initTripRoute(db)
+  initVehicle(db)
 }
 
 export default initModels

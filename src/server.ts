@@ -263,7 +263,7 @@ db
   .then(() => addConstraintIfNotExists({
     dbInstance: db,
     table: Order,
-    field: 'shipId',
+    field: 'shippingAddressId',
     refTable: OrderAddress,
     refField: 'id',
     onUpdate: 'CASCADE',
@@ -272,7 +272,7 @@ db
     .then(() => addConstraintIfNotExists({
       dbInstance: db,
       table: Order,
-      field: 'billId',
+      field: 'billingAddressId',
       refTable: OrderAddress,
       refField: 'id',
       onUpdate: 'CASCADE',

@@ -8,10 +8,10 @@
 // created_at
 // updated_at
 
-// done - One-to-many relationship between PurchaseOrders and PurchaseOrderItems.
-// done - One-to-many relationship between ProductConfigurations and PurchaseOrderItems.
-// done - One-to-many relationship between PurchaseOrderItems and ShipmentItems.
-// done - One-to-many relationship between PurchaseOrderItems and ReceivedItems.
+// done: - One-to-many relationship between PurchaseOrders and PurchaseOrderItems.
+// done: - One-to-many relationship between ProductConfigurations and PurchaseOrderItems.
+// done: - One-to-many relationship between PurchaseOrderItems and ShipmentItems.
+// done: - One-to-many relationship between PurchaseOrderItems and ReceivedItems.
 import {
   Association, CreationOptional, InferAttributes, InferCreationAttributes, Model, NonAttribute, Sequelize, DataTypes, ForeignKey,
   BelongsToGetAssociationMixin,
@@ -46,7 +46,7 @@ export class PurchaseOrderItem extends Model<InferAttributes<PurchaseOrderItem>,
   // associations
   declare purchaseOrder?: NonAttribute<PurchaseOrder>
 
-  declare configuration?: NonAttribute<ProductConfiguration>
+  declare productConfiguration?: NonAttribute<ProductConfiguration>
 
   declare shipmentItems?: NonAttribute<ShipmentItem[]>
 
@@ -54,13 +54,13 @@ export class PurchaseOrderItem extends Model<InferAttributes<PurchaseOrderItem>,
 
   declare purchaseOrderId: ForeignKey<PurchaseOrder['id']>
 
-  declare configurationId: ForeignKey<ProductConfiguration['id']>
+  declare productConfigurationId: ForeignKey<ProductConfiguration['id']>
 
   // declare products?: NonAttribute<Products>
 
   declare public static associations: {
     purchaseOrder: Association<PurchaseOrderItem, PurchaseOrder>,
-    configuration: Association<PurchaseOrderItem, ProductConfiguration>,
+    productConfiguration: Association<PurchaseOrderItem, ProductConfiguration>,
     shipmentItems: Association<PurchaseOrderItem, ShipmentItem>,
     receivedItems: Association<PurchaseOrderItem, ReceivedItem>,
   }
@@ -73,12 +73,12 @@ export class PurchaseOrderItem extends Model<InferAttributes<PurchaseOrderItem>,
 
   declare createPurchaseOrder: BelongsToCreateAssociationMixin<PurchaseOrder>
 
-  // configuration:
-  declare getConfiguration: BelongsToGetAssociationMixin<ProductConfiguration>
+  // ProductConfiguration:
+  declare getProductConfiguration: BelongsToGetAssociationMixin<ProductConfiguration>
 
-  declare setConfiguration: BelongsToSetAssociationMixin<ProductConfiguration, number>
+  declare setProductConfiguration: BelongsToSetAssociationMixin<ProductConfiguration, number>
 
-  declare createConfiguration: BelongsToCreateAssociationMixin<ProductConfiguration>
+  declare createProductConfiguration: BelongsToCreateAssociationMixin<ProductConfiguration>
 
   // shipmentItems:
   declare createShipmentItem: HasManyCreateAssociationMixin<ShipmentItem, 'purchaseOrderItemId'>
