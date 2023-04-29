@@ -1,3 +1,6 @@
+import { parseISO } from 'date-fns'
+import { OrderStatus } from '../models/Sales/MagentoOrder/magentoOrder'
+
 type EmptyObject = null | undefined | 0 | '' | never[] | Record<string, never>
 type NotEmptyObject = Record<string, unknown> | string | number | Date
 
@@ -26,4 +29,47 @@ export function isNotEmptyObject(obj: unknown): obj is NotEmptyObject {
 
 export function printYellowLine(str = '') {
   console.log('\x1b[43m%s\x1b[0m', `                                 ${str.split('').join(' ')}                                 `)
+}
+
+/**
+ * Helper function that takes date string in ISO format or Date object and returns DateObject.
+ * Will throw an exception if string is not in ISO format.
+ * Will automatically add Z to the end if it's missing.
+ * @param {string | Date} stringOrDate - date in string format or date object
+ * @returns {Date} Date object
+ */
+export function getDate(stringOrDate: string | Date): Date {
+  if (stringOrDate instanceof Date) {
+    return stringOrDate
+  }
+  let stringDate = stringOrDate
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?(\+00:00|Z)?$/.test(stringDate)) {
+    console.log('trying to convert:', stringDate, typeof stringDate)
+    throw new Error('Invalid ISO date format')
+  }
+  // Check if the string ends with "Z", and add it if it's missing
+  if (!stringDate.endsWith('Z')) {
+    stringDate += 'Z'
+  }
+  return parseISO(stringDate)
+}
+
+/**
+ * Typeguard function that takes status string and returns proper order status or 'unknown'
+ * @param {string} status - order status string
+ * @returns {string} valid order status or 'unknown'
+ */
+export function getOrderStatus(status: string): OrderStatus {
+  if (
+    status === 'pending'
+    || status === 'processing'
+    || status === 'in_production'
+    || status === 'in_transit'
+    || status === 'preparing_shipment'
+    || status === 'complete'
+    || status === 'closed'
+  ) {
+    return status
+  }
+  return 'unknown'
 }

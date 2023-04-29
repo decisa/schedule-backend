@@ -6,6 +6,7 @@ import {
   CreationOptional, DataTypes, ForeignKey, InferAttributes, InferCreationAttributes, Model, NonAttribute, Sequelize,
 } from 'sequelize'
 import { Order } from '../Order/order'
+import { OrderStatus } from '../MagentoOrder/magentoOrder'
 
 export type CommentType = 'order' | 'shipping' | 'invoice' // TODO: credit memo?
 
@@ -26,7 +27,7 @@ export class OrderComment extends Model<InferAttributes<OrderComment>, InferCrea
 
   declare type: CommentType
 
-  declare status: string // TODO: OrderStatus
+  declare status: OrderStatus // TODO: OrderStatus
 
   // ASSOCIATIONS:
 

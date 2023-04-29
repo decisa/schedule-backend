@@ -4,15 +4,31 @@ import type { OrderAddessShape } from '../../models'
 import { MagentoOrderAddress } from '../MagentoOrderAddress/magentoOrderAddress'
 import { OrderAddress } from './orderAddress'
 import { Order } from '../Order/order'
-import { printYellowLine } from '../../../utils/utils'
+// import { printYellowLine } from '../../../utils/utils'
 
 export default class OrderAddressController {
-  static async upsertMagentoAddress(magentoAddress: OrderAddessShape, orderInstance?: Order, t?: Transaction) {
+/**
+ * create or update Order Address Record (must have Magento info).
+ * @param magentoAddress - Address
+ * @param orderInstanceOrId - orderId or Order instance to which to assign the address
+ * @param t - transaction. If transaction is not provided, method will create its own transaction for this operation
+ * @returns Order Address Instance with Magento record or null if there was a rollback and no transaction provided.
+ */
+  static async upsertMagentoAddress(magentoAddress: OrderAddessShape, orderInstanceOrId?: Order | number, t?: Transaction): Promise<OrderAddress & { magento: MagentoOrderAddress } | null> {
     let transaction: Transaction
     if (t) {
       transaction = t
     } else {
       transaction = await db.transaction()
+    }
+
+    // extract orderId if it was provided
+    let orderId: number | null = null
+    if (orderInstanceOrId instanceof Order) {
+      orderId = orderInstanceOrId.id
+    }
+    if (typeof orderInstanceOrId === 'number' && Number.isFinite(orderInstanceOrId)) {
+      orderId = orderInstanceOrId
     }
 
     try {
@@ -31,11 +47,12 @@ export default class OrderAddressController {
         throw new Error('magento record was not provided')
       }
 
-      if (orderInstance) {
-        address.orderId = orderInstance.id
+      if (orderId) {
+        address.orderId = orderId
       }
 
       let addressRecord = await OrderAddress.findOne({
+        transaction,
         include: [{
           association: 'magento',
           where: {
@@ -44,118 +61,42 @@ export default class OrderAddressController {
         }],
       })
 
-      printYellowLine()
-
-      console.log('found order :', addressRecord?.toJSON())
       if (addressRecord) {
         // if the address already existed, update it:
+        // need to provide address id for upsert to update properly
         address.id = addressRecord.id
 
-        await OrderAddress.upsert(address, {
+        // update order record
+        await OrderAddress.update(address, {
           transaction,
-          fields: [
-            'id',
-            'firstName',
-            'lastName',
-            'company',
-            'street1',
-            'street2',
-            'city',
-            'state',
-            'zipCode',
-            'country',
-            'phone',
-            'altPhone',
-            'notes',
-            'longitude',
-            'latitude',
-            'coordinates',
-            'street',
-            'orderId',
-            'customerAddressId'],
+          where: {
+            id: addressRecord.id,
+          },
+          // fields: [
+          //   'id', 'firstName', 'lastName', 'company', 'street1', 'street2',
+          //   'city', 'state', 'zipCode', 'country', 'phone', 'altPhone', 'notes',
+          //   'longitude', 'latitude', 'coordinates', 'street', 'orderId', 'customerAddressId'],
         })
 
-        // addressRecord = await OrderAddress.findOne({
-        //   include: [{
-        //     association: 'magento',
-        //     where: {
-        //       externalId: address.magento.externalId,
-        //     },
-        //   }],
-        // })
-        if (addressRecord) {
-          console.log('FINAL:', addressRecord.toJSON())
-        }
+        await MagentoOrderAddress.update(address.magento, {
+          transaction,
+          where: {
+            externalId: magentoAddress.magento.externalId,
+          },
+        })
       } else {
         // create new address
         addressRecord = await OrderAddress.create(magentoAddress, {
-          include: 'magento',
           transaction,
+          include: 'magento',
         })
         if (!addressRecord) {
           throw new Error('Error encountered while creating the order address')
         }
       }
-      // see if magento record exists
-      // const orderAddressMagentoRecord = await MagentoOrderAddress.findByPk(magentoAddress?.magento?.externalId)
-      // let orderAddressRecord: OrderAddress | null
-      // // printYellowLine('billing:')
-      // if (orderAddressMagentoRecord) {
-      //   console.log('magento record:', orderAddressMagentoRecord.toJSON())
-      //   // update the magento record:
-      //     // eslint-disable-next-line no-unexpected-multiline, @typescript-eslint/no-unsafe-member-access
-      //     [orderAddressMagentoRecord as any] = await MagentoOrderAddress.upsert(magentoAddress.magento, {
-      //       transaction,
-      //       fields: ['addressType', 'externalCustomerAddressId', 'externalOrderId', 'orderAddressId'],
-      //     })
 
-      //   console.log('magento record:', orderAddressMagentoRecord.toJSON())
-
-      //   if (orderAddressMagentoRecord.orderAddressId) {
-      //     [orderAddressRecord] = await OrderAddress.upsert({
-      //       ...magentoAddress,
-      //       id: orderAddressMagentoRecord.orderAddressId,
-      //     }, {
-      //       transaction,
-      //       fields: ['orderId', 'firstName', 'lastName', 'notes', 'company', 'street1', 'street2', 'city', 'state', 'zipCode', 'country', 'phone', 'altPhone', 'longitude', 'latitude', 'coordinates', 'street', 'customerAddressId'],
-      //     })
-
-      //     printYellowLine()
-      //     console.log('order:', orderAddressRecord.toJSON())
-      //     await orderAddressRecord.reload({ include: 'magento' })
-      //     console.log('order on reload:', orderAddressRecord.toJSON())
-      //   } else {
-      //     orderAddressRecord = null
-      //   }
-
-      //   // orderAddressMagentoRecord.orderAddressId
-
-      //   // find the order record
-      //   // orderAddressRecord = await orderAddressMagentoRecord.getOrderAddress()
-      //   // orderAddressRecord.update()
-      //   // await orderAddressRecord.reload()
-      // } else {
-      // // console.log('could not find magento address, CREATING NEW ONE')
-      //   if (orderInstance) {
-      //     orderAddressRecord = await orderInstance.createAddress(magentoAddress, {
-      //       include: 'magento',
-      //       transaction,
-      //     })
-      //   } else {
-      //     orderAddressRecord = await OrderAddress.create(magentoAddress, {
-      //       include: 'magento',
-      //       transaction,
-      //     })
-      //   }
-
-      //   console.log('bla bla bla')
-      // }
-
-      if (!t) {
-        // if no transaction was provided, commit the local transaction:
-        await transaction.commit()
-      }
-      return await OrderAddress.findOne({
+      addressRecord = await OrderAddress.findOne({
+        transaction,
         include: [{
           association: 'magento',
           where: {
@@ -163,6 +104,12 @@ export default class OrderAddressController {
           },
         }],
       })
+
+      if (!t) {
+        // if no transaction was provided, commit the local transaction:
+        await transaction.commit()
+      }
+      return addressRecord as (OrderAddress & { magento: MagentoOrderAddress }) | null
       // return orderAddressRecord
     } catch (error) {
       // if the t transaction was passed to the method, throw error again

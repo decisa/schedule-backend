@@ -4,7 +4,7 @@ const order = {
   paymentMethod: 'mageworx_ordereditor_payment_method',
   taxRate: 7,
   collectedTaxes: [],
-  orderDate: '2021-12-18T23:22:57.000Z',
+  orderDate: '2021-12-18T23:22:57.000',
   customer: {
     firstName: 'Eric',
     lastName: 'Smith',
@@ -1721,7 +1721,7 @@ const order = {
     externalQuoteId: 31877,
     state: 'processing',
     status: 'preparing_shipment',
-    updatedAt: '2023-03-21T13:25:23.000Z',
+    updatedAt: '2023-03-21T13:25:23.000',
   },
 }
 

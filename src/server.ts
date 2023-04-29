@@ -15,6 +15,7 @@ import { Driver } from './models/Delivery/Driver/driver'
 import OrderAddressController from './models/Sales/OrderAddress/orderAddressContoller'
 import order from './Data/data'
 import { OrderAddessShape } from './models/models'
+import OrderController from './models/Sales/Order/orderController'
 // import Customer from './models/Customer/customer'
 // import MagentoOrder from './models/MagentoOrder/magentoOrder'
 // import Order from './models/Order/order'
@@ -397,13 +398,21 @@ db
     // addr.magento.externalCustomerAddressId = 777
     // addr.id = 1
     if (addr.magento) {
-      addr.magento.externalId = 777
+      addr.magento.externalId = 778
+      addr.magento.externalCustomerAddressId = 6680 // 'shipping'
     }
-    addr.notes = undefined // 'test'
-    const address = await OrderAddressController.upsertMagentoAddress(addr)
-    if (address) {
-      console.log('new address:', address.toJSON())
-    }
+    addr.notes = 'testing !'
+    // addr.firstName = 'Tony'
+    // const address = await OrderAddressController.upsertMagentoAddress(addr, 0)
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+    const orderResult = await OrderController.importMagentoOrder(order as any)
+
+    // if (orderResult) {
+    printYellowLine('FINAL')
+    // console.log(address.magento.toJSON())
+    // console.log(orderResult.toJSON())
+    // }
   })
   .catch((error) => {
     console.log('there was an error trying to connect to the database:', error)

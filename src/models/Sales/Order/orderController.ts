@@ -12,7 +12,12 @@ import { Customer } from '../Customer/customer'
 import { MagentoCustomer } from '../MagentoCustomer/magentoCustomer'
 import { MagentoOrderAddress } from '../MagentoOrderAddress/magentoOrderAddress'
 import { OrderAddress } from '../OrderAddress/orderAddress'
-import { isEmptyObject, isNotEmptyObject } from '../../../utils/utils'
+import {
+  getDate, getOrderStatus, isEmptyObject, isNotEmptyObject, printYellowLine,
+} from '../../../utils/utils'
+import OrderAddressController from '../OrderAddress/orderAddressContoller'
+import { OrderComment } from '../OrderComment/orderComment'
+import OrderCommentController from '../OrderComment/orderCommentController'
 
 type CustomerAddressShape = CreationAttributes<Address> & {
   magento?: CreationAttributes<MagentoAddress>
@@ -38,262 +43,200 @@ type ProductConfigurationShape = CreationAttributes<ProductConfiguration>
 
 type ProductOptionShape = CreationAttributes<ProductOption>
 
+type OrderCommentShape = CreationAttributes<OrderComment>
+
 type OrderData = OrderShape & {
   orderDate: Date | string
   customer: CustomerShape,
   billingAddress: OrderAddessShape,
   shippingAddress: OrderAddessShape,
-}
-
-/**
- * Helper function that takes date string in ISO format or Date object and returns DateObject.
- * Will throw an exception if string is not in ISO format.
- * Will automatically add Z to the end if it's missing.
- * @param {string | Date} stringOrDate - date in string format or date object
- * @returns {Date} Date object
- */
-function getDate(stringOrDate: string | Date): Date {
-  if (stringOrDate instanceof Date) {
-    return stringOrDate
-  }
-  let stringDate = stringOrDate
-  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?$/.test(stringDate)) {
-    throw new Error('Invalid ISO date format')
-  }
-  // Check if the string ends with "Z", and add it if it's missing
-  if (!stringDate.endsWith('Z')) {
-    stringDate += 'Z'
-  }
-  return parseISO(stringDate)
-}
-
-/**
- * Typeguard function that takes status string and returns proper order status or 'unknown'
- * @param {string} status - order status string
- * @returns {string} valid order status or 'unknown'
- */
-function getOrderStatus(status: string): OrderStatus {
-  if (
-    status === 'pending'
-    || status === 'processing'
-    || status === 'in_production'
-    || status === 'in_transit'
-    || status === 'preparing_shipment'
-    || status === 'complete'
-    || status === 'closed'
-  ) {
-    return status
-  }
-  return 'unknown'
+  comments?: OrderCommentShape[],
 }
 
 export default class OrderController {
   static async importMagentoOrder(data: OrderData) {
-    // section: CUSTOMER INFO
-    const customerInfo = data.customer
+    try { // section: CUSTOMER INFO
+      const customerInfo = data.customer
 
-    let customerRecord: Customer | null
-    customerRecord = await Customer.findOne({
-      where: {
-        email: customerInfo.email,
-      },
-      include: {
-        model: MagentoCustomer,
-        as: 'magento',
-      },
-    })
-
-    if (!customerRecord) {
-      customerRecord = await Customer.create(customerInfo, {
-        include: 'magento',
+      let customerRecord: Customer | null
+      customerRecord = await Customer.findOne({
+        where: {
+          email: customerInfo.email,
+        },
+        include: {
+          model: MagentoCustomer,
+          as: 'magento',
+        },
       })
-    }
 
-    // if customer existed, but magento record was missing.
-    if (isEmptyObject(customerRecord.magento) && isNotEmptyObject(customerInfo.magento)) {
-      await customerRecord.createMagento(customerInfo.magento)
-    }
+      if (!customerRecord) {
+        customerRecord = await Customer.create(customerInfo, {
+          include: 'magento',
+        })
+      }
 
-    // CUSTOMER ADDRESSES
+      // if customer existed, but magento record was missing.
+      if (isEmptyObject(customerRecord.magento) && isNotEmptyObject(customerInfo.magento)) {
+        await customerRecord.createMagento(customerInfo.magento)
+      }
 
-    const { billingAddress, shippingAddress } = data
-    // check if billing address is saved to customer record
-    // note: No need to save address to customer record when importing the order
-    // await customerAddressCreateIfNotExists(customerRecord, billingAddress)
-    // await customerAddressCreateIfNotExists(customerRecord, shippingAddress)
+      // CUSTOMER ADDRESSES
 
-    // section: ORDER
-    const orderInfo: OrderShape = {
-      orderDate: getDate(data.orderDate),
-      orderNumber: data.orderNumber,
-      paymentMethod: data.paymentMethod,
-      shippingCost: data.shippingCost,
-      taxRate: data.taxRate,
-      magento: {
-        ...data.magento,
-        updatedAt: getDate(data.magento.updatedAt),
-        status: getOrderStatus(data.magento.status),
-      },
-    }
+      const { billingAddress, shippingAddress } = data
+      // check if billing address is saved to customer record
+      // note: No need to save address to customer record when importing the order
+      // await customerAddressCreateIfNotExists(customerRecord, billingAddress)
+      // await customerAddressCreateIfNotExists(customerRecord, shippingAddress)
 
-    let orderRecord = await Order.findOne({
-      where: {
-        orderNumber: orderInfo.orderNumber,
-      },
-    })
+      // section: ORDER
+      const orderInfo: OrderShape = {
+        orderDate: getDate(data.orderDate),
+        orderNumber: data.orderNumber,
+        paymentMethod: data.paymentMethod,
+        shippingCost: data.shippingCost,
+        taxRate: data.taxRate,
+        magento: {
+          ...data.magento,
+          updatedAt: getDate(data.magento.updatedAt),
+          status: getOrderStatus(data.magento.status),
+        },
+      }
 
-    if (!orderRecord) {
-      orderRecord = await customerRecord.createOrder(orderInfo, {
-        include: 'magento',
+      let orderRecord = await Order.findOne({
+        where: {
+          orderNumber: orderInfo.orderNumber,
+        },
       })
-      console.log('order not found')
-    } else {
-      console.log('order found', orderRecord.toJSON())
-    }
 
-    // section: ORDER ADDRESSES
+      if (!orderRecord) {
+        orderRecord = await customerRecord.createOrder(orderInfo, {
+          include: 'magento',
+        })
+        console.log('order not found')
+      } else {
+        console.log('order found', orderRecord.toJSON())
+      }
 
-    // see if magento record exists for billing
-    const billingMagentoRecord = await MagentoOrderAddress.findByPk(billingAddress?.magento?.externalId)
-    let billingRecord: OrderAddress
-    // printYellowLine('billing:')
-    if (billingMagentoRecord) {
-      // console.log('magento address record found')
-      billingRecord = await billingMagentoRecord.getOrderAddress()
-    } else {
-      // console.log('could not find magento address, CREATING NEW ONE')
-      billingRecord = await orderRecord.createAddress(billingAddress, {
-        include: 'magento',
-      })
-    }
-    // check if billing address already assigned to the order, if not - assign
-    if (!orderRecord.billingAddressId && billingRecord) {
-      await orderRecord.setBillingAddress(billingRecord)
-    }
+      // section: ORDER ADDRESSES
+      // TODO: test if orderId is properly assigned.
+      const billingRecord = await OrderAddressController.upsertMagentoAddress(billingAddress, orderRecord)
+      const shippingRecord = await OrderAddressController.upsertMagentoAddress(shippingAddress, orderRecord)
 
-    // see if magento record exists for billing
-    const shippingMagentoRecord = await MagentoOrderAddress.findByPk(shippingAddress?.magento?.externalId)
-    let shippingRecord: OrderAddress
-    // printYellowLine('billing:')
-    if (shippingMagentoRecord) {
-      // console.log('magento address record found')
-      shippingRecord = await shippingMagentoRecord.getOrderAddress()
-    } else {
-      // console.log('could not find magento address, CREATING NEW ONE')
-      shippingRecord = await orderRecord.createAddress(shippingAddress, {
-        include: 'magento',
-      })
-    }
-    // check if billing address already assigned to the order, if not - assign
-    if (!orderRecord.shippingAddressId && shippingRecord) {
-      await orderRecord.setShippingAddress(shippingRecord)
-    }
+      if (!billingRecord || !shippingRecord) {
+        throw new Error('error with billing and shipping addresses encountered')
+      }
 
-    // COMMENTS
+      // COMMENTS
 
-    if (data?.comments?.length > 0) {
+      if (data.comments && data?.comments?.length > 0) {
       // printYellowLine('comments')
-      for (let i = 0; i < data.comments.length; i += 1) {
-        const parsedComment: CreationAttributes<OrderComment> = {
-          ...data.comments[i],
-          createdAt: parseISO(data.comments[i].createdAt),
-          type: data.comments[i].type as CommentType,
-          orderId: orderRecord?.id,
-        }
-        // eslint-disable-next-line no-await-in-loop
-        await OrderComment.upsert(parsedComment)
-      }
-    }
+        for (let i = 0; i < data.comments.length; i += 1) {
+          // const parsedComment: CreationAttributes<OrderComment> = {
+          //   ...data.comments[i],
+          //   createdAt: parseISO(data.comments[i].createdAt),
+          //   type: data.comments[i].type as CommentType,
+          //   orderId: orderRecord?.id,
+          // }
 
-    // PRODUCTS
-
-    if (data?.products?.length > 0) {
-      printYellowLine('products')
-      for (let i = 0; i < data.products.length; i += 1) {
-        const {
-          configuration: {
-            options,
-            ...productConfiguration
-          },
-          brand,
-          ...product
-        } = data.products[i]
-
-        const parsedProduct: ProductShape = {
-          ...product,
-        }
-
-        if (isNotEmptyObject(parsedProduct)) {
-          const parsedBrand = parseBrandObject(brand)
-          if (parsedBrand) {
-            // eslint-disable-next-line no-await-in-loop
-            const [brandRecord] = await Brand.findOrCreate({
-              where: {
-                externalId: parsedBrand.externalId,
-              },
-              defaults: parsedBrand,
-            })
-            if (brandRecord) {
-              parsedProduct.brandId = brandRecord.id
-            }
-          }
-
-          let productRecord: Product | null
           // eslint-disable-next-line no-await-in-loop
-          productRecord = await Product.findOne({
-            where: {
-              externalId: parsedProduct.externalId,
-            },
-          })
-          if (!productRecord) {
-            // eslint-disable-next-line no-await-in-loop
-            productRecord = await Product.create(parsedProduct)
-          }
+          await OrderCommentController.upsertMagentoComment(data.comments[i], orderRecord)
 
-          if (productConfiguration) {
-            let productConfigRecord: ProductConfiguration | null
-            // eslint-disable-next-line no-await-in-loop
-            productConfigRecord = await ProductConfiguration.findOne({
-              where: {
-                externalId: productConfiguration.externalId,
-              },
-            })
-            if (!productConfigRecord) {
-              // eslint-disable-next-line no-await-in-loop
-              productConfigRecord = await ProductConfiguration.create({
-                ...productConfiguration,
-                productId: productRecord.id,
-                orderId: orderRecord.id,
-              })
-            } else {
-              // eslint-disable-next-line no-await-in-loop
-              await productConfigRecord.update({
-                ...productConfiguration,
-                productId: productRecord.id,
-                orderId: orderRecord.id,
-              })
-            }
-
-            // eslint-disable-next-line no-await-in-loop
-            await upsertOptions(productConfigRecord, options)
-
-            // if (isNotEmptyObject(optionRecords)) {
-            //   console.log('options:', optionRecords)
-            // }
-
-            // printYellowLine(`adding ${productConfiguration.sku} for ${productRecord.name} with id=${productRecord.id}`)
-            // // eslint-disable-next-line no-await-in-loop
-            // const [productConfigRecord] = await ProductConfiguration.upsert({
-            //   ...productConfiguration,
-            //   productId: productRecord.id,
-            //   orderId: orderRecord.id,
-            // })
-            // if (productConfigRecord) {
-            //   console.log('configID=',productConfigRecord.id.toString())
-            // }
-          }
+          // await OrderComment.upsert(parsedComment)
         }
       }
+
+      // PRODUCTS
+
+      // if (data?.products?.length > 0) {
+      //   printYellowLine('products')
+      //   for (let i = 0; i < data.products.length; i += 1) {
+      //     const {
+      //       configuration: {
+      //         options,
+      //         ...productConfiguration
+      //       },
+      //       brand,
+      //       ...product
+      //     } = data.products[i]
+
+      //     const parsedProduct: ProductShape = {
+      //       ...product,
+      //     }
+
+      //     if (isNotEmptyObject(parsedProduct)) {
+      //       const parsedBrand = parseBrandObject(brand)
+      //       if (parsedBrand) {
+      //       // eslint-disable-next-line no-await-in-loop
+      //         const [brandRecord] = await Brand.findOrCreate({
+      //           where: {
+      //             externalId: parsedBrand.externalId,
+      //           },
+      //           defaults: parsedBrand,
+      //         })
+      //         if (brandRecord) {
+      //           parsedProduct.brandId = brandRecord.id
+      //         }
+      //       }
+
+      //       let productRecord: Product | null
+      //       // eslint-disable-next-line no-await-in-loop
+      //       productRecord = await Product.findOne({
+      //         where: {
+      //           externalId: parsedProduct.externalId,
+      //         },
+      //       })
+      //       if (!productRecord) {
+      //       // eslint-disable-next-line no-await-in-loop
+      //         productRecord = await Product.create(parsedProduct)
+      //       }
+
+      //       if (productConfiguration) {
+      //         let productConfigRecord: ProductConfiguration | null
+      //         // eslint-disable-next-line no-await-in-loop
+      //         productConfigRecord = await ProductConfiguration.findOne({
+      //           where: {
+      //             externalId: productConfiguration.externalId,
+      //           },
+      //         })
+      //         if (!productConfigRecord) {
+      //         // eslint-disable-next-line no-await-in-loop
+      //           productConfigRecord = await ProductConfiguration.create({
+      //             ...productConfiguration,
+      //             productId: productRecord.id,
+      //             orderId: orderRecord.id,
+      //           })
+      //         } else {
+      //         // eslint-disable-next-line no-await-in-loop
+      //           await productConfigRecord.update({
+      //             ...productConfiguration,
+      //             productId: productRecord.id,
+      //             orderId: orderRecord.id,
+      //           })
+      //         }
+
+      //         // eslint-disable-next-line no-await-in-loop
+      //         await upsertOptions(productConfigRecord, options)
+
+      //         // if (isNotEmptyObject(optionRecords)) {
+      //         //   console.log('options:', optionRecords)
+      //         // }
+
+      //       // printYellowLine(`adding ${productConfiguration.sku} for ${productRecord.name} with id=${productRecord.id}`)
+      //       // // eslint-disable-next-line no-await-in-loop
+      //       // const [productConfigRecord] = await ProductConfiguration.upsert({
+      //       //   ...productConfiguration,
+      //       //   productId: productRecord.id,
+      //       //   orderId: orderRecord.id,
+      //       // })
+      //       // if (productConfigRecord) {
+      //       //   console.log('configID=',productConfigRecord.id.toString())
+      //       // }
+      //       }
+      //     }
+      //   }
+      // }
+    } catch (error) {
+      console.log('error encountered while importing order', error)
     }
 
     // CONFIGURATIONS
