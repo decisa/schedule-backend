@@ -14,6 +14,7 @@ import { TripRoute } from './models/Delivery/TripRoute/tripRoute'
 import { Driver } from './models/Delivery/Driver/driver'
 import OrderAddressController from './models/Sales/OrderAddress/orderAddressContoller'
 import order from './Data/data'
+import { OrderAddessShape } from './models/models'
 // import Customer from './models/Customer/customer'
 // import MagentoOrder from './models/MagentoOrder/magentoOrder'
 // import Order from './models/Order/order'
@@ -390,10 +391,15 @@ db
     // await addRoutes()
     // await addDrivers()
     // console.log('DATABASE NAME:', db.getDatabaseName(), Order.getTableName())
-    const addr = order.billingAddress
+    const addr: OrderAddessShape = order.billingAddress
     const { magento, ...noMagento } = addr
     // addr.city = 'Bensalem'
     // addr.magento.externalCustomerAddressId = 777
+    // addr.id = 1
+    if (addr.magento) {
+      addr.magento.externalId = 777
+    }
+    addr.notes = undefined // 'test'
     const address = await OrderAddressController.upsertMagentoAddress(addr)
     if (address) {
       console.log('new address:', address.toJSON())
