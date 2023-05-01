@@ -15,6 +15,7 @@ import { Product } from '../models/Sales/Product/product'
 import { Brand } from '../models/Brand/brand'
 import { ProductConfiguration } from '../models/Sales/ProductConfiguration/productConfiguration'
 import { ProductOption } from '../models/Sales/ProductOption/productOption'
+import { ProductOptionShape } from '../models/models'
 
 type CustomerAddressShape = CreationAttributes<Address> & {
   magento: CreationAttributes<MagentoAddress>
@@ -34,7 +35,7 @@ type ProductShape = CreationAttributes<Product>
 
 type ProductConfigurationShape = CreationAttributes<ProductConfiguration>
 
-type ProductOptionShape = CreationAttributes<ProductOption>
+
 
 async function upsertOptions(configInstance: ProductConfiguration, options?: ProductOptionShape[]): Promise<ProductOption[]> {
   if (configInstance.id === 4) {
@@ -83,7 +84,7 @@ async function upsertOptions(configInstance: ProductConfiguration, options?: Pro
   return result
 }
 
-function parseBrandObject(obj: Record<string, string | number | undefined> | undefined): BrandShape | null {
+export function function parseBrandObject(obj: Record<string, string | number | undefined> | undefined): BrandShape | null {
   let result: BrandShape
   if (obj?.name) {
     result = {

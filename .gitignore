@@ -2,6 +2,7 @@
 
 # temp data 
 /src/data/data.ts
+/src/Data/data.ts
 /output.json
 
 # python helpers

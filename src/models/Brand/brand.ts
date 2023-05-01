@@ -95,6 +95,7 @@ export function initBrands(db: Sequelize) {
     },
     {
       sequelize: db,
+      timestamps: false,
       indexes: [
         {
           unique: true,

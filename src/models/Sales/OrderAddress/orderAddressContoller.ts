@@ -1,10 +1,75 @@
 import { Transaction } from 'sequelize'
 import db from '../..'
-import type { OrderAddessShape } from '../../models'
+import type { OrderAddessShape, OrderShape, RouteStopShape } from '../../models'
 import { MagentoOrderAddress } from '../MagentoOrderAddress/magentoOrderAddress'
 import { OrderAddress } from './orderAddress'
 import { Order } from '../Order/order'
 // import { printYellowLine } from '../../../utils/utils'
+
+type MagentoOrderAddressJSON = {
+  externalId: number
+  externalCustomerAddressId?: number
+  externalOrderId: number
+  addressType: string
+  // ASSOCIATIONS:
+  // orderAddressId: ForeignKey<OrderAddress['id']>
+  // orderAddress?: NonAttribute<OrderAddress>
+}
+
+type OrderAddressJSON = {
+  id?: number
+  firstName: string
+  lastName: string
+  company?: string | null
+  street: string[]
+  city: string
+  state: string
+  zipCode: string
+  country: string
+  phone: string
+  altPhone?: string | null
+  notes?: string | null
+  coordinates: [number, number] | null
+  magento?: MagentoOrderAddressJSON
+  // ASSOCIATIONS:
+  // orderId?:
+  // order?: NonAttribute<Order>
+  // foreign key to keep record which address it was copied from.
+  // customerAddressId?:
+  // routeStops?: NonAttribute<RouteStop[]>
+}
+
+function cleanUpAddress(address: OrderAddessShape): OrderAddressJSON {
+  let result = address
+  if (address instanceof OrderAddress) {
+    result = address.toJSON()
+  }
+  delete result.longitude
+  delete result.latitude
+  delete result.street1
+  delete result.street2
+  // delete result.orderId
+  // delete result.customerAddressId
+  const streetAddress = result.street || []
+  const coordinates = result.coordinates || null
+  let magento: MagentoOrderAddressJSON | undefined
+  if (result.magento && result.magento?.externalId) {
+    // if externalId exists - it's a valid magento object
+    const temp = { ...result.magento }
+    // delete temp.orderAddressId
+    magento = temp
+  } else {
+    magento = undefined
+  }
+
+  const finalAddress: OrderAddressJSON = {
+    ...result,
+    street: streetAddress,
+    coordinates,
+    magento,
+  }
+  return finalAddress
+}
 
 export default class OrderAddressController {
 /**
@@ -121,5 +186,18 @@ export default class OrderAddressController {
       await transaction.rollback()
       return null
     }
+  }
+
+  /**
+   * convert ModelInstance to JSON object and clean up fields
+   * @param address - OrderAddress instance
+   * @returns JSON orderAddress with magento data, if exists
+   */
+  static toJSON(address: OrderAddress | null | undefined) {
+    if (!address) {
+      return null
+    }
+    const addressJson = address.toJSON()
+    return cleanUpAddress(addressJson)
   }
 }

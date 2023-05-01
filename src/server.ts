@@ -13,7 +13,7 @@ import { printYellowLine } from './utils/utils'
 import { TripRoute } from './models/Delivery/TripRoute/tripRoute'
 import { Driver } from './models/Delivery/Driver/driver'
 import OrderAddressController from './models/Sales/OrderAddress/orderAddressContoller'
-import order from './Data/data'
+import orders from './Data/data'
 import { OrderAddessShape } from './models/models'
 import OrderController from './models/Sales/Order/orderController'
 // import Customer from './models/Customer/customer'
@@ -392,22 +392,56 @@ db
     // await addRoutes()
     // await addDrivers()
     // console.log('DATABASE NAME:', db.getDatabaseName(), Order.getTableName())
-    const addr: OrderAddessShape = order.billingAddress
-    const { magento, ...noMagento } = addr
-    // addr.city = 'Bensalem'
-    // addr.magento.externalCustomerAddressId = 777
-    // addr.id = 1
-    if (addr.magento) {
-      addr.magento.externalId = 778
-      addr.magento.externalCustomerAddressId = 6680 // 'shipping'
-    }
-    addr.notes = 'testing !'
-    // addr.firstName = 'Tony'
-    // const address = await OrderAddressController.upsertMagentoAddress(addr, 0)
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-    const orderResult = await OrderController.importMagentoOrder(order as any)
+    // for (let i = 0; i < orders.length; i += 1) {
+    // for (let i = 4; i < 5; i += 1) {
+    //   const order = orders[i]
+    //   const addr: OrderAddessShape = order.billingAddress
+    //   const { magento, ...noMagento } = addr
+    //   // addr.city = 'Bensalem'
+    //   // addr.magento.externalCustomerAddressId = 777
+    //   // addr.id = 1
+    //   if (addr.magento) {
+    //     addr.magento.externalId = 778
+    //     addr.magento.externalCustomerAddressId = 6680 // 'shipping'
+    //   }
+    //   addr.notes = 'testing !'
+    //   // addr.firstName = 'Tony'
+    //   // const address = await OrderAddressController.upsertMagentoAddress(addr, 0)
 
+    //   // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+    //   const orderResult = await OrderController.importMagentoOrder(order as any)
+
+    //   printYellowLine()
+    //   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-var-requires, global-require
+    //   const fs = require('fs')
+
+    //   const filePath = 'output.json' // the path and filename of the file you want to write to
+
+    //   // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+    //   fs.writeFile(filePath, JSON.stringify(orderResult, null, 4), (err) => {
+    //     if (err) {
+    //       console.error(err)
+    //       return
+    //     }
+    //     console.log(`Data written to ${filePath}`)
+    //   })
+
+    //   console.log(orderResult?.products[0].configuration.options)
+    // }
+
+    // const order = await OrderController.getFullOrderByNumber('100006572')
+
+    const order = await OrderController.searchOrders('dem')
+
+    // const result = order.map((ord) => {
+    //   const { orderNumber, customer } = ord
+    //   const { firstName, lastName } = customer || {}
+    //   return firstName && lastName ? `${firstName} ${lastName} : ${orderNumber}` : orderNumber
+    // })
+
+    // console.log(result.join('\n'))
+    console.log(order)
     // if (orderResult) {
     printYellowLine('FINAL')
     // console.log(address.magento.toJSON())
