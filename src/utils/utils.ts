@@ -1,5 +1,6 @@
 import { parseISO } from 'date-fns'
 import { OrderStatus } from '../models/Sales/MagentoOrder/magentoOrder'
+import { BrandShape } from '../models/models'
 
 type EmptyObject = null | undefined | 0 | '' | never[] | Record<string, never>
 type NotEmptyObject = Record<string, unknown> | string | number | Date
@@ -72,4 +73,48 @@ export function getOrderStatus(status: string): OrderStatus {
     return status
   }
   return 'unknown'
+}
+
+export function parseBrandObject(obj: Record<string, string | number | undefined> | undefined): BrandShape | null {
+  let result: BrandShape
+  if (obj?.name) {
+    result = {
+      name: String(obj.name),
+    }
+    if (typeof obj?.externalId === 'string') {
+      const externalId = parseInt(obj.externalId, 10)
+      if (Number.isFinite(externalId)) {
+        result.externalId = externalId
+      }
+    }
+    if (typeof obj?.externalId === 'number') {
+      if (Number.isFinite(obj.externalId)) {
+        result.externalId = obj.externalId
+      }
+    }
+    return result
+  }
+  return null
+}
+
+export function parseMagentoBrand(obj: Record<string, string | number | undefined> | undefined): { name: string, externalId: number } | null {
+  let brandName: string | null = null
+  let externalId: number | null = null
+  if (obj?.name) {
+    brandName = String(obj.name)
+
+    if (typeof obj?.externalId === 'string') {
+      externalId = parseInt(obj.externalId, 10)
+    }
+    if (typeof obj?.externalId === 'number') {
+      externalId = obj.externalId
+    }
+  }
+  if (brandName && externalId && Number.isFinite(externalId)) {
+    return {
+      name: brandName,
+      externalId,
+    }
+  }
+  return null
 }

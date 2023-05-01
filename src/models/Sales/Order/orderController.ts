@@ -1,5 +1,5 @@
 import { parseISO } from 'date-fns'
-import { CreationAttributes } from 'sequelize'
+import { CreationAttributes, Op, Sequelize } from 'sequelize'
 import { Address } from '../Address/address'
 import { MagentoAddress } from '../MagentoAddress/magentoAddress'
 import { Order } from './order'
@@ -13,11 +13,13 @@ import { MagentoCustomer } from '../MagentoCustomer/magentoCustomer'
 import { MagentoOrderAddress } from '../MagentoOrderAddress/magentoOrderAddress'
 import { OrderAddress } from '../OrderAddress/orderAddress'
 import {
-  getDate, getOrderStatus, isEmptyObject, isNotEmptyObject, printYellowLine,
+  getDate, getOrderStatus, isEmptyObject, isNotEmptyObject, parseBrandObject, parseMagentoBrand, printYellowLine,
 } from '../../../utils/utils'
 import OrderAddressController from '../OrderAddress/orderAddressContoller'
 import { OrderComment } from '../OrderComment/orderComment'
 import OrderCommentController from '../OrderComment/orderCommentController'
+import { BrandShape } from '../../models'
+import ProductOptionController from '../ProductOption/productOptionController'
 
 type CustomerAddressShape = CreationAttributes<Address> & {
   magento?: CreationAttributes<MagentoAddress>
@@ -35,8 +37,6 @@ type OrderShape = CreationAttributes<Order> & {
   magento: CreationAttributes<MagentoOrder>
 }
 
-type BrandShape = CreationAttributes<Brand>
-
 type ProductShape = CreationAttributes<Product>
 
 type ProductConfigurationShape = CreationAttributes<ProductConfiguration>
@@ -45,17 +45,29 @@ type ProductOptionShape = CreationAttributes<ProductOption>
 
 type OrderCommentShape = CreationAttributes<OrderComment>
 
+type AppProduct = ProductShape & {
+  brand?: BrandShape
+  configuration?: Config
+}
+
+type Config = ProductConfigurationShape & {
+  options?: ProductOptionShape[]
+}
+
 type OrderData = OrderShape & {
   orderDate: Date | string
-  customer: CustomerShape,
-  billingAddress: OrderAddessShape,
-  shippingAddress: OrderAddessShape,
-  comments?: OrderCommentShape[],
+  customer: CustomerShape
+  billingAddress: OrderAddessShape
+  shippingAddress: OrderAddessShape
+  comments?: OrderCommentShape[]
+  products?: AppProduct[]
 }
 
 export default class OrderController {
   static async importMagentoOrder(data: OrderData) {
-    try { // section: CUSTOMER INFO
+    try {
+      // section: CUSTOMER INFO
+      // info: customer record is find or create
       const customerInfo = data.customer
 
       let customerRecord: Customer | null
@@ -84,7 +96,7 @@ export default class OrderController {
 
       const { billingAddress, shippingAddress } = data
       // check if billing address is saved to customer record
-      // note: No need to save address to customer record when importing the order
+      // TODO: check if externalCustomerAddressId is provided. if provided - add it too
       // await customerAddressCreateIfNotExists(customerRecord, billingAddress)
       // await customerAddressCreateIfNotExists(customerRecord, shippingAddress)
 
@@ -95,30 +107,21 @@ export default class OrderController {
         paymentMethod: data.paymentMethod,
         shippingCost: data.shippingCost,
         taxRate: data.taxRate,
+        customerId: customerRecord.id,
         magento: {
           ...data.magento,
-          updatedAt: getDate(data.magento.updatedAt),
           status: getOrderStatus(data.magento.status),
         },
       }
-
-      let orderRecord = await Order.findOne({
-        where: {
-          orderNumber: orderInfo.orderNumber,
-        },
-      })
-
-      if (!orderRecord) {
-        orderRecord = await customerRecord.createOrder(orderInfo, {
-          include: 'magento',
-        })
-        console.log('order not found')
-      } else {
-        console.log('order found', orderRecord.toJSON())
+      const [orderRecord] = await Order.upsert(orderInfo)
+      if (orderInfo.magento?.externalId) {
+        orderInfo.magento.orderId = orderRecord.id
+        printYellowLine('UPSERT MAGENTO')
+        const [test] = await MagentoOrder.upsert(orderInfo.magento)
+        console.log(test && test.toJSON())
       }
-
       // section: ORDER ADDRESSES
-      // TODO: test if orderId is properly assigned.
+      // done: test if orderId is properly assigned.
       const billingRecord = await OrderAddressController.upsertMagentoAddress(billingAddress, orderRecord)
       const shippingRecord = await OrderAddressController.upsertMagentoAddress(shippingAddress, orderRecord)
 
@@ -126,137 +129,145 @@ export default class OrderController {
         throw new Error('error with billing and shipping addresses encountered')
       }
 
+      await orderRecord.setBillingAddress(billingRecord)
+      await orderRecord.setShippingAddress(shippingRecord)
+
       // COMMENTS
 
       if (data.comments && data?.comments?.length > 0) {
       // printYellowLine('comments')
         for (let i = 0; i < data.comments.length; i += 1) {
-          // const parsedComment: CreationAttributes<OrderComment> = {
-          //   ...data.comments[i],
-          //   createdAt: parseISO(data.comments[i].createdAt),
-          //   type: data.comments[i].type as CommentType,
-          //   orderId: orderRecord?.id,
-          // }
-
-          // eslint-disable-next-line no-await-in-loop
           await OrderCommentController.upsertMagentoComment(data.comments[i], orderRecord)
-
-          // await OrderComment.upsert(parsedComment)
         }
       }
 
       // PRODUCTS
 
-      // if (data?.products?.length > 0) {
-      //   printYellowLine('products')
-      //   for (let i = 0; i < data.products.length; i += 1) {
-      //     const {
-      //       configuration: {
-      //         options,
-      //         ...productConfiguration
-      //       },
-      //       brand,
-      //       ...product
-      //     } = data.products[i]
+      if (data.products && data.products?.length > 0) {
+        printYellowLine('products')
+        for (let i = 0; i < data.products.length; i += 1) {
+          const {
+            configuration,
+            brand,
+            ...product
+          } = data.products[i]
 
-      //     const parsedProduct: ProductShape = {
-      //       ...product,
-      //     }
+          const parsedProduct: ProductShape = {
+            ...product,
+          }
 
-      //     if (isNotEmptyObject(parsedProduct)) {
-      //       const parsedBrand = parseBrandObject(brand)
-      //       if (parsedBrand) {
-      //       // eslint-disable-next-line no-await-in-loop
-      //         const [brandRecord] = await Brand.findOrCreate({
-      //           where: {
-      //             externalId: parsedBrand.externalId,
-      //           },
-      //           defaults: parsedBrand,
-      //         })
-      //         if (brandRecord) {
-      //           parsedProduct.brandId = brandRecord.id
-      //         }
-      //       }
+          let productConfiguration: Config | null = null
+          let options: ProductOptionShape[] | null = null
 
-      //       let productRecord: Product | null
-      //       // eslint-disable-next-line no-await-in-loop
-      //       productRecord = await Product.findOne({
-      //         where: {
-      //           externalId: parsedProduct.externalId,
-      //         },
-      //       })
-      //       if (!productRecord) {
-      //       // eslint-disable-next-line no-await-in-loop
-      //         productRecord = await Product.create(parsedProduct)
-      //       }
+          if (configuration) {
+            productConfiguration = {
+              ...configuration,
+            }
+            if (productConfiguration.options) {
+              options = productConfiguration.options
+              delete productConfiguration.options
+            }
+          }
 
-      //       if (productConfiguration) {
-      //         let productConfigRecord: ProductConfiguration | null
-      //         // eslint-disable-next-line no-await-in-loop
-      //         productConfigRecord = await ProductConfiguration.findOne({
-      //           where: {
-      //             externalId: productConfiguration.externalId,
-      //           },
-      //         })
-      //         if (!productConfigRecord) {
-      //         // eslint-disable-next-line no-await-in-loop
-      //           productConfigRecord = await ProductConfiguration.create({
-      //             ...productConfiguration,
-      //             productId: productRecord.id,
-      //             orderId: orderRecord.id,
-      //           })
-      //         } else {
-      //         // eslint-disable-next-line no-await-in-loop
-      //           await productConfigRecord.update({
-      //             ...productConfiguration,
-      //             productId: productRecord.id,
-      //             orderId: orderRecord.id,
-      //           })
-      //         }
+          if (isNotEmptyObject(parsedProduct)) {
+            // parse brand fields, find or create brand record in db
+            // assign brand id to the product
+            if (brand) {
+              const parsedBrand = parseMagentoBrand(brand)
+              if (parsedBrand) {
+                // eslint-disable-next-line no-await-in-loop
+                const [brandRecord] = await Brand.findOrCreate({
+                  where: {
+                    externalId: parsedBrand.externalId,
+                  },
+                  defaults: parsedBrand,
+                })
+                if (brandRecord) {
+                  parsedProduct.brandId = brandRecord.id
+                }
+              }
+            }
 
-      //         // eslint-disable-next-line no-await-in-loop
-      //         await upsertOptions(productConfigRecord, options)
+            if (!parsedProduct.externalId) {
+              throw new Error('Product external Id is missing')
+            }
+            const [productRecord] = await Product.upsert(parsedProduct)
 
-      //         // if (isNotEmptyObject(optionRecords)) {
-      //         //   console.log('options:', optionRecords)
-      //         // }
+            if (productConfiguration) {
+              if (!productConfiguration.externalId) {
+                throw new Error('product configuration id is missing')
+              }
 
-      //       // printYellowLine(`adding ${productConfiguration.sku} for ${productRecord.name} with id=${productRecord.id}`)
-      //       // // eslint-disable-next-line no-await-in-loop
-      //       // const [productConfigRecord] = await ProductConfiguration.upsert({
-      //       //   ...productConfiguration,
-      //       //   productId: productRecord.id,
-      //       //   orderId: orderRecord.id,
-      //       // })
-      //       // if (productConfigRecord) {
-      //       //   console.log('configID=',productConfigRecord.id.toString())
-      //       // }
-      //       }
-      //     }
-      //   }
-      // }
+              productConfiguration.productId = productRecord.id
+              productConfiguration.orderId = orderRecord.id
+
+              const [productConfigRecord] = await ProductConfiguration.upsert(productConfiguration)
+
+              if (options) {
+                await ProductOptionController.upsertMagentoProductOptions(options, productConfigRecord)
+              }
+            }
+          }
+        }
+      }
     } catch (error) {
       console.log('error encountered while importing order', error)
     }
 
-    // CONFIGURATIONS
+    // CONFIGURATIONS)
+    return this.getFullOrderByNumber(data.orderNumber)
+  }
 
-    const order = await Order.findByPk(1, {
+  static async getFullOrderByNumber(orderNumber: string) {
+    const order = await Order.findOne({
+      where: {
+        orderNumber,
+      },
       include: [{
         model: OrderAddress,
         as: 'billingAddress',
+        include: [
+          {
+            association: 'magento',
+            attributes: {
+              exclude: ['orderAddressId'],
+            },
+          },
+
+        ],
+        attributes: {
+          exclude: ['orderId', 'customerAddressId'],
+        },
       },
       {
         model: OrderAddress,
         as: 'shippingAddress',
+        include: [
+          {
+            association: 'magento',
+            attributes: {
+              exclude: ['orderAddressId'],
+            },
+          },
+
+        ],
+        attributes: {
+          exclude: ['orderId', 'customerAddressId'],
+        },
       },
       {
         model: OrderComment,
         as: 'comments',
+        attributes: {
+          exclude: ['orderId'],
+        },
       },
       {
         model: MagentoOrder,
         as: 'magento',
+        attributes: {
+          exclude: ['orderId'],
+        },
       },
       {
         model: Customer,
@@ -265,17 +276,36 @@ export default class OrderController {
           model: MagentoCustomer,
           as: 'magento',
         }],
+        attributes: {
+          exclude: ['defaultShippingId'],
+        },
       },
       {
         model: ProductConfiguration,
         as: 'products',
+        attributes: {
+          exclude: ['productId', 'orderId'],
+        },
         include: [{
           model: Product,
           as: 'product',
+          attributes: {
+            exclude: ['brandId'],
+          },
+          include: [{
+            association: 'brand',
+          }],
         },
         {
           model: ProductOption,
           as: 'options',
+          attributes: {
+            exclude: ['configId'],
+          },
+          // separate: true,
+          // order: [
+          //   ['sortOrder', 'ASC'],
+          // ],
         }],
       }],
       attributes: {
@@ -284,23 +314,61 @@ export default class OrderController {
           'shippingAddressId',
         ],
       },
+      order: [
+        [
+          { model: ProductConfiguration, as: 'products' },
+          { model: ProductOption, as: 'options' },
+          'sortOrder', 'ASC',
+        ],
+      ],
     })
-    if (order) {
-      // const {billingAddress, shippingAddress, customer, comments, magento, products} = order
-      // const reversedProducts = order.products?.map((configuration) => {
-      //   const { product, ...config } = configuration
-      //   return {
-      //     ...product,
-      //     configuration: {
-      //       ...config,
-      //     },
-      //   }
-      // })
+    return this.toJSON(order)
+  }
 
-      // const finalOrder = {
-      //   ...order.toJSON(),
-      //   products: reversedProducts,
-      // }
+  static async searchOrders(term: string) {
+    const wildCardTerm = `%${term}%`
+    const orders = await Order.findAll({
+      include: [
+        {
+          association: 'customer',
+          // where: {
+
+          // },
+        },
+      ],
+      where: {
+        [Op.or]: [
+          {
+            '$customer.firstName$': {
+              [Op.like]: wildCardTerm,
+            },
+          },
+          {
+            '$customer.lastName$': {
+              [Op.like]: wildCardTerm,
+            },
+          },
+          Sequelize.where(
+            Sequelize.fn('concat', Sequelize.col('customer.firstName'), ' ', Sequelize.col('customer.lastName')),
+            {
+              [Op.like]: wildCardTerm,
+            },
+          ),
+          {
+            orderNumber: {
+              [Op.like]: wildCardTerm,
+            },
+          },
+        ],
+      },
+    })
+    return orders.map((order) => this.toJSON(order))
+  }
+
+  static toJSON(order: Order | null) {
+    if (order) {
+      const billingAddress = OrderAddressController.toJSON(order.billingAddress)
+      const shippingAddress = OrderAddressController.toJSON(order.shippingAddress)
 
       const orderFinal = {
         ...order.toJSON(),
@@ -311,6 +379,8 @@ export default class OrderController {
 
       const result = {
         ...orderFinal,
+        billingAddress,
+        shippingAddress,
         products: orderFinal.products?.map((configuration: ProductConfiguration) => {
           const { product, ...config } = configuration
           return {
@@ -321,23 +391,8 @@ export default class OrderController {
           }
         }),
       }
-      printYellowLine()
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-var-requires, global-require
-      const fs = require('fs')
-
-      const filePath = 'output.json' // the path and filename of the file you want to write to
-
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-      fs.writeFile(filePath, JSON.stringify(result, null, 4), (err) => {
-        if (err) {
-          console.error(err)
-          return
-        }
-        console.log(`Data written to ${filePath}`)
-      })
-      // console.log('final order:', order.toJSON())
-      // console.log(JSON.stringify(order.toJSON(), null, 4))
+      return result
     }
-    // OPTIONS
+    return null
   }
 }

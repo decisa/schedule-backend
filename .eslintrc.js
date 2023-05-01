@@ -39,5 +39,6 @@ module.exports = {
     'no-console': 0,
     'max-len': 0,
     'import/prefer-default-export': 0,
+    'no-await-in-loop': 0,
   },
 }
