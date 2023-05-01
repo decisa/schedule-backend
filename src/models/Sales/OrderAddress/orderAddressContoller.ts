@@ -1,6 +1,6 @@
 import { Transaction } from 'sequelize'
 import db from '../..'
-import type { OrderAddessShape, OrderShape, RouteStopShape } from '../../models'
+import type { OrderAddessShape } from '../../models'
 import { MagentoOrderAddress } from '../MagentoOrderAddress/magentoOrderAddress'
 import { OrderAddress } from './orderAddress'
 import { Order } from '../Order/order'
@@ -16,7 +16,7 @@ type MagentoOrderAddressJSON = {
   // orderAddress?: NonAttribute<OrderAddress>
 }
 
-type OrderAddressJSON = {
+export type OrderAddressJSON = {
   id?: number
   firstName: string
   lastName: string

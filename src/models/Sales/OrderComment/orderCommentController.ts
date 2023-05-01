@@ -1,25 +1,39 @@
 import { Transaction, or } from 'sequelize'
-import { zhCN } from 'date-fns/locale'
 import db from '../..'
-import { OrderComment, CommentType } from './orderComment'
+import { OrderComment } from './orderComment'
+import type { CommentType } from './orderComment'
 import { Order } from '../Order/order'
-import { OrderCommentShape } from '../../models'
-import { OrderStatus } from '../MagentoOrder/magentoOrder'
+import type { OrderStatus } from '../MagentoOrder/magentoOrder'
 import { getDate, getOrderStatus } from '../../../utils/utils'
 
 // import { printYellowLine } from '../../../utils/utils'
 
 type CommentShape = {
+  id?: number
   comment: string
+  createdAt?: Date | string
   externalId: number
   externalParentId: number
   status: OrderStatus
   type: CommentType
-  createdAt?: Date | string
   customerNotified?: boolean | null
-  id?: number
   orderId?: number
   visibleOnFront?: boolean | null
+}
+
+export type CommentJSON = {
+  id?: number
+  comment: string
+  createdAt: Date
+  externalId?: number
+  externalParentId?: number
+  customerNotified?: boolean | null
+  visibleOnFront?: boolean | null
+  type: CommentType
+  status: OrderStatus
+  // order?: NonAttribute<Order>
+  // orderId: ForeignKey<Order['id']>
+  // ASSOCIATIONS:
 }
 
 export default class OrderCommentController {

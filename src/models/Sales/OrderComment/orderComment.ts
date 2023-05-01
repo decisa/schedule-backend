@@ -6,7 +6,7 @@ import {
   CreationOptional, DataTypes, ForeignKey, InferAttributes, InferCreationAttributes, Model, NonAttribute, Sequelize,
 } from 'sequelize'
 import { Order } from '../Order/order'
-import { OrderStatus } from '../MagentoOrder/magentoOrder'
+import type { OrderStatus } from '../MagentoOrder/magentoOrder'
 
 export type CommentType = 'order' | 'shipping' | 'invoice' // TODO: credit memo?
 

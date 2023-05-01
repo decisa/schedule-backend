@@ -331,9 +331,6 @@ export default class OrderController {
       include: [
         {
           association: 'customer',
-          // where: {
-
-          // },
         },
       ],
       where: {
@@ -362,7 +359,7 @@ export default class OrderController {
         ],
       },
     })
-    return orders.map((order) => this.toJSON(order))
+    return orders.map((order) => this.toJSON(order)).filter((x) => x)
   }
 
   static toJSON(order: Order | null) {
@@ -377,10 +374,21 @@ export default class OrderController {
 
       }
 
+      let customer: CustomerShape | undefined
+      if (order.customer) {
+        customer = {
+          ...order.customer.toJSON(),
+        }
+        if (order.customer.magento) {
+          customer.magento = order.customer.magento.toJSON()
+        }
+      }
+
       const result = {
         ...orderFinal,
         billingAddress,
         shippingAddress,
+        customer,
         products: orderFinal.products?.map((configuration: ProductConfiguration) => {
           const { product, ...config } = configuration
           return {

@@ -237,6 +237,7 @@ export function initOrder(db: Sequelize) {
       },
       shippingCost: {
         type: DataTypes.DECIMAL(8, 2), // max $999,999.99
+        defaultValue: 0,
         get() {
           const rawValue = this.getDataValue('shippingCost')
           return Number(rawValue)

@@ -432,16 +432,20 @@ db
 
     // const order = await OrderController.getFullOrderByNumber('100006572')
 
-    const order = await OrderController.searchOrders('dem')
+    const order = await OrderController.searchOrders('a')
 
-    // const result = order.map((ord) => {
-    //   const { orderNumber, customer } = ord
-    //   const { firstName, lastName } = customer || {}
-    //   return firstName && lastName ? `${firstName} ${lastName} : ${orderNumber}` : orderNumber
-    // })
+    const result = order.map((ord) => {
+      if (ord) {
+        const { orderNumber, customer } = ord
+        console.log('customer = ', customer)
+        const { firstName, lastName } = customer || {}
+        return firstName && lastName ? `${firstName} ${lastName} : ${orderNumber}` : orderNumber
+      }
+      return ''
+    })
 
     // console.log(result.join('\n'))
-    console.log(order)
+    console.log(result)
     // if (orderResult) {
     printYellowLine('FINAL')
     // console.log(address.magento.toJSON())
