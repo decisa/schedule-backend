@@ -8,33 +8,60 @@ import { getDate, getOrderStatus } from '../../../utils/utils'
 
 // import { printYellowLine } from '../../../utils/utils'
 
-type CommentShape = {
-  id?: number
+// type CommentShape = {
+//   id?: number
+//   comment: string
+//   createdAt?: Date | string
+//   externalId: number
+//   externalParentId: number
+//   status: OrderStatus
+//   type: CommentType
+//   customerNotified?: boolean | null
+//   orderId?: number
+//   visibleOnFront?: boolean | null
+// }
+
+type CommentRequired = {
   comment: string
-  createdAt?: Date | string
-  externalId: number
-  externalParentId: number
-  status: OrderStatus
   type: CommentType
-  customerNotified?: boolean | null
-  orderId?: number
-  visibleOnFront?: boolean | null
+  status: OrderStatus
 }
 
-export type CommentJSON = {
+type CommentCreational = {
   id?: number
-  comment: string
   createdAt: Date
+}
+
+type CommentOptional = {
   externalId?: number
   externalParentId?: number
   customerNotified?: boolean | null
   visibleOnFront?: boolean | null
-  type: CommentType
-  status: OrderStatus
   // order?: NonAttribute<Order>
   // orderId: ForeignKey<Order['id']>
   // ASSOCIATIONS:
 }
+
+export type CommentShape = CommentRequired & CommentCreational & CommentOptional
+
+export type CommentJSON = CommentRequired & Required<CommentCreational> & CommentOptional
+
+export type CommentUpdate = Partial<CommentShape>
+
+// export type CommentJSON = {
+//   id?: number
+//   comment: string
+//   createdAt: Date
+//   externalId?: number
+//   externalParentId?: number
+//   customerNotified?: boolean | null
+//   visibleOnFront?: boolean | null
+//   type: CommentType
+//   status: OrderStatus
+//   // order?: NonAttribute<Order>
+//   // orderId: ForeignKey<Order['id']>
+//   // ASSOCIATIONS:
+// }
 
 export default class OrderCommentController {
 /**

@@ -1,9 +1,6 @@
-import { parseISO } from 'date-fns'
 import { CreationAttributes, Op, Sequelize } from 'sequelize'
-import { Address } from '../Address/address'
-import { MagentoAddress } from '../MagentoAddress/magentoAddress'
 import { Order } from './order'
-import { MagentoOrder, OrderStatus } from '../MagentoOrder/magentoOrder'
+import { MagentoOrder } from '../MagentoOrder/magentoOrder'
 import { Brand } from '../../Brand/brand'
 import { Product } from '../Product/product'
 import { ProductConfiguration } from '../ProductConfiguration/productConfiguration'
@@ -13,17 +10,18 @@ import { MagentoCustomer } from '../MagentoCustomer/magentoCustomer'
 import { MagentoOrderAddress } from '../MagentoOrderAddress/magentoOrderAddress'
 import { OrderAddress } from '../OrderAddress/orderAddress'
 import {
-  getDate, getOrderStatus, isEmptyObject, isNotEmptyObject, parseBrandObject, parseMagentoBrand, printYellowLine,
+  getDate, getOrderStatus, isEmptyObject, isNotEmptyObject, parseMagentoBrand, printYellowLine,
 } from '../../../utils/utils'
 import OrderAddressController from '../OrderAddress/orderAddressContoller'
 import { OrderComment } from '../OrderComment/orderComment'
 import OrderCommentController from '../OrderComment/orderCommentController'
+import type { CommentShape } from '../OrderComment/orderCommentController'
 import { BrandShape } from '../../models'
 import ProductOptionController from '../ProductOption/productOptionController'
 
-type CustomerAddressShape = CreationAttributes<Address> & {
-  magento?: CreationAttributes<MagentoAddress>
-}
+// type CustomerAddressShape = CreationAttributes<Address> & {
+//   magento?: CreationAttributes<MagentoAddress>
+// }
 
 type CustomerShape = CreationAttributes<Customer> & {
   magento?: CreationAttributes<MagentoCustomer>
@@ -43,7 +41,7 @@ type ProductConfigurationShape = CreationAttributes<ProductConfiguration>
 
 type ProductOptionShape = CreationAttributes<ProductOption>
 
-type OrderCommentShape = CreationAttributes<OrderComment>
+// type OrderCommentShape = CreationAttributes<OrderComment>
 
 type AppProduct = ProductShape & {
   brand?: BrandShape
@@ -59,7 +57,7 @@ type OrderData = OrderShape & {
   customer: CustomerShape
   billingAddress: OrderAddessShape
   shippingAddress: OrderAddessShape
-  comments?: OrderCommentShape[]
+  comments?: CommentShape[]
   products?: AppProduct[]
 }
 
