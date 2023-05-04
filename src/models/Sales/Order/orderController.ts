@@ -10,7 +10,7 @@ import { MagentoCustomer } from '../MagentoCustomer/magentoCustomer'
 import { MagentoOrderAddress } from '../MagentoOrderAddress/magentoOrderAddress'
 import { OrderAddress } from '../OrderAddress/orderAddress'
 import {
-  getDate, getOrderStatus, isEmptyObject, isNotEmptyObject, parseMagentoBrand, printYellowLine,
+  getDateCanThrow, getOrderStatus, isEmptyObject, isNotEmptyObject, parseMagentoBrand, printYellowLine,
 } from '../../../utils/utils'
 import OrderAddressController from '../OrderAddress/orderAddressContoller'
 import { OrderComment } from '../OrderComment/orderComment'
@@ -100,7 +100,7 @@ export default class OrderController {
 
       // section: ORDER
       const orderInfo: OrderShape = {
-        orderDate: getDate(data.orderDate),
+        orderDate: getDateCanThrow(data.orderDate),
         orderNumber: data.orderNumber,
         paymentMethod: data.paymentMethod,
         shippingCost: data.shippingCost,
@@ -132,8 +132,7 @@ export default class OrderController {
 
       // COMMENTS
 
-      if (data.comments && data?.comments?.length > 0) {
-      // printYellowLine('comments')
+      if (data.comments && data.comments?.length > 0) {
         for (let i = 0; i < data.comments.length; i += 1) {
           await OrderCommentController.upsertMagentoComment(data.comments[i], orderRecord)
         }

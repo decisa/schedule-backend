@@ -1,5 +1,5 @@
 import {
-  InferAttributes, Model, QueryTypes, Sequelize, col, fn,
+  InferAttributes, Model, QueryTypes, Sequelize,
 } from 'sequelize'
 // import app from './app'
 import db from './models'
@@ -8,14 +8,11 @@ import { Customer } from './models/Sales/Customer/customer'
 import { MagentoCustomer } from './models/Sales/MagentoCustomer/magentoCustomer'
 import { Order } from './models/Sales/Order/order'
 import { OrderAddress } from './models/Sales/OrderAddress/orderAddress'
-import importOrder from './Data/importOrder'
 import { printYellowLine } from './utils/utils'
 import { TripRoute } from './models/Delivery/TripRoute/tripRoute'
 import { Driver } from './models/Delivery/Driver/driver'
-import OrderAddressController from './models/Sales/OrderAddress/orderAddressContoller'
-import orders from './Data/data'
-import { OrderAddessShape } from './models/models'
 import OrderController from './models/Sales/Order/orderController'
+import app from './app'
 // import Customer from './models/Customer/customer'
 // import MagentoOrder from './models/MagentoOrder/magentoOrder'
 // import Order from './models/Order/order'
@@ -37,6 +34,8 @@ import OrderController from './models/Sales/Order/orderController'
 //   AND table_name = '${tableName}'
 //   AND constraint_name = '${constraintName}';
 // `
+
+const PORT = process.env.PORT || 8080
 
 type AddConstraintArgs<Table extends Model, RefTable extends Model> = {
   dbInstance: Sequelize,
@@ -451,6 +450,11 @@ db
     // console.log(address.magento.toJSON())
     // console.log(orderResult.toJSON())
     // }
+  })
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`server is listening on port ${PORT}`)
+    })
   })
   .catch((error) => {
     console.log('there was an error trying to connect to the database:', error)

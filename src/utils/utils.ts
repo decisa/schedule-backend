@@ -33,26 +33,73 @@ export function printYellowLine(str = '') {
 }
 
 /**
- * Helper function that takes date string in ISO format or Date object and returns DateObject.
- * Will throw an exception if string is not in ISO format.
+ * Typeguard that ensures a valid date. Will try to convert a ISO format string to Date.
  * Will automatically add Z to the end if it's missing.
- * @param {string | Date} stringOrDate - date in string format or date object
+ * Will throw an exception if fails
+ * @param {unknown} possiblyDate - unknown type to be converted to Date
+ * @param [errMsgStart = ''] - optional string to start error message with
  * @returns {Date} Date object
  */
-export function getDate(stringOrDate: string | Date): Date {
-  if (stringOrDate instanceof Date) {
-    return stringOrDate
+export function getDateCanThrow(possiblyDate: unknown, errMsgStart = ''): Date {
+  if (possiblyDate instanceof Date) {
+    return possiblyDate
   }
-  let stringDate = stringOrDate
+  if (typeof possiblyDate !== 'string') {
+    throw new Error(`${errMsgStart}not a date`)
+  }
+  let stringDate = possiblyDate
   if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?(\+00:00|Z)?$/.test(stringDate)) {
     console.log('trying to convert:', stringDate, typeof stringDate)
-    throw new Error('Invalid ISO date format')
+    throw new Error(`${errMsgStart}Invalid ISO date format`)
   }
   // Check if the string ends with "Z", and add it if it's missing
   if (!stringDate.endsWith('Z')) {
     stringDate += 'Z'
   }
   return parseISO(stringDate)
+}
+
+/**
+ * Typeguard that ensures a valid finite number. Will try to convert a string to number.
+ * Will throw an exception if not a finite number.
+ * @param {unknown} value - value to ensure to be a number
+ * @param [errMsgStart = ''] - optional string to start error message with
+ * @returns {number} if successful - returns a number
+ */
+export function getFiniteNumberCanThrow(value: unknown, errMsgStart = ''): number {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value
+  }
+  if (typeof value === 'string') {
+    // try to convert string to number:
+    const converted = Number(value)
+    if (Number.isFinite(converted)) {
+      return converted
+    }
+  }
+  throw new Error(`${errMsgStart}is not a number`)
+}
+
+/**
+ * Typeguard that ensures a boolean value. Will try to convert a number 0 or 1.
+ * Will throw an exception otherwise
+ * @param {unknown} value - value to ensure to be a boolean
+ * @param [errMsgStart = ''] - optional string to start error message with
+ * @returns {boolean} if successful - returns a boolean
+ */
+export function getBooleanCanThrow(value: unknown, errMsgStart = ''): boolean {
+  if (typeof value === 'boolean') {
+    return value
+  }
+  if (typeof value === 'number') {
+    if (value === 0) {
+      return false
+    }
+    if (value === 1) {
+      return true
+    }
+  }
+  throw new Error(`${errMsgStart}is not a boolean`)
 }
 
 /**

@@ -8,7 +8,18 @@ import {
 import { Order } from '../Order/order'
 import type { OrderStatus } from '../MagentoOrder/magentoOrder'
 
-export type CommentType = 'order' | 'shipping' | 'invoice' // TODO: credit memo?
+export type CommentType = 'order' | 'shipping' | 'invoice' | 'unknown' // TODO: credit memo?
+
+export function getCommentType(commentType: string):CommentType {
+  if (
+    commentType === 'order'
+    || commentType === 'shipping'
+    || commentType === 'invoice'
+  ) {
+    return commentType
+  }
+  return 'unknown'
+}
 
 export class OrderComment extends Model<InferAttributes<OrderComment>, InferCreationAttributes<OrderComment>> {
   declare id: CreationOptional<number>
@@ -19,11 +30,11 @@ export class OrderComment extends Model<InferAttributes<OrderComment>, InferCrea
 
   declare externalId: number
 
-  declare externalParentId: number
+  declare externalParentId?: number
 
-  declare customerNotified: boolean | null
+  declare customerNotified?: boolean | null
 
-  declare visibleOnFront: boolean | null
+  declare visibleOnFront?: boolean | null
 
   declare type: CommentType
 
