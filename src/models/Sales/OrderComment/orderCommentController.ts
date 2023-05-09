@@ -1,4 +1,5 @@
-import { Transaction, or } from 'sequelize'
+import * as yup from 'yup'
+import { Transaction } from 'sequelize'
 import db from '../..'
 import { OrderComment, getCommentType } from './orderComment'
 import type { CommentType } from './orderComment'
@@ -35,9 +36,9 @@ type CommentCreational = {
 }
 
 type CommentOptional = {
-  status?: OrderStatus
-  externalId?: number
-  externalParentId?: number
+  status?: OrderStatus | null
+  externalId?: number | null
+  externalParentId?: number | null
   customerNotified?: boolean | null
   visibleOnFront?: boolean | null
   // order?: NonAttribute<Order>
@@ -65,6 +66,47 @@ export type CommentUpdate = Partial<CommentShape>
 //   // orderId: ForeignKey<Order['id']>
 //   // ASSOCIATIONS:
 // }
+
+// type CommentType = "order" | "shipping" | "invoice" | "unknown"
+
+type Shape = {
+  comment: string
+  type: CommentType
+  id?: number
+  orderId?: number
+  createdAt?: Date
+  customerNotified?: boolean | null
+  visibleOnFront?: boolean | null
+}
+
+const commentSchema: yup.ObjectSchema<CommentShape> = yup.object({
+  comment: yup.string()
+    .label('Malformed data: comment field')
+    .defined(),
+  type: yup
+    .string<CommentType>()
+    .oneOf(['order', 'shipping', 'invoice'])
+    .label('Malformed data: type field')
+    .required(),
+  id: yup.number().integer(),
+  orderId: yup.number().integer().label('Malformed data: orderId field'),
+  createdAt: yup.date().label('Malformed data: createdAt field'),
+  status: yup
+    .string<OrderStatus>()
+    .oneOf(['pending', 'processing', 'in_production', 'in_transit', 'preparing_shipment', 'complete', 'closed'])
+    .label('Malformed data: status field'),
+  externalId: yup.number().integer().nullable().label('Malformed data: externalId field'),
+  externalParentId: yup.number().integer().nullable().label('Malformed data: externalParentId field'),
+  customerNotified: yup.boolean().nullable().label('Malformed data: customerNotified field'),
+  visibleOnFront: yup.boolean().nullable().label('Malformed data: visibleOnFront field'),
+})
+
+export function validateComment(object: unknown): CommentShape {
+  const comment = commentSchema.validateSync(object, {
+    stripUnknown: true,
+  }) satisfies CommentShape
+  return comment
+}
 
 export function parseCommentShape(object: unknown): CommentShape {
   if (typeof object !== 'object' || !object) {

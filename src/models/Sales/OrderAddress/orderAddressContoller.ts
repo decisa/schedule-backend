@@ -1,27 +1,109 @@
+import * as yup from 'yup'
 import { Transaction } from 'sequelize'
 import db from '../..'
-import type { OrderAddessShape } from '../../models'
-import { MagentoOrderAddress } from '../MagentoOrderAddress/magentoOrderAddress'
+// import type { OrderAddessShape } from '../../models'
+import { MagentoAddressType, MagentoOrderAddress } from '../MagentoOrderAddress/magentoOrderAddress'
 import { OrderAddress } from './orderAddress'
 import { Order } from '../Order/order'
 // import { printYellowLine } from '../../../utils/utils'
 
-type MagentoOrderAddressJSON = {
+type MagentoOrderAddressRequired = {
   externalId: number
-  externalCustomerAddressId?: number
   externalOrderId: number
-  addressType: string
-  // ASSOCIATIONS:
-  // orderAddressId: ForeignKey<OrderAddress['id']>
-  // orderAddress?: NonAttribute<OrderAddress>
+  addressType: MagentoAddressType
 }
 
-export type OrderAddressJSON = {
+type MagentoOrderAddressOptional = {
+  externalCustomerAddressId?: number | null
+}
+
+type MagentoOrderAddressShape = MagentoOrderAddressRequired & MagentoOrderAddressOptional
+
+type OrderAddressCreate = {
+  id?: number
+}
+
+type OrderAddressRequired = {
+  firstName: string
+  lastName: string
+  city: string
+  state: string
+  zipCode: string
+  country: string
+  phone: string
+}
+
+type OrderAddressOptional = {
+  altPhone?: string | null
+  notes?: string | null
+  company?: string | null
+  coordinates?: [number, number] | null
+  street?: string[]
+  street1?: string
+  street2?: string | null
+  longitude?: number | null
+  latitude?: number | null
+  // foreign key to order
+  orderId?: number
+  // foreign key to keep record which address it was copied from.
+  customerAddressId?: number | null
+  magento?: MagentoOrderAddressShape
+}
+
+export type OrderAddressShape = OrderAddressCreate & OrderAddressRequired & OrderAddressOptional
+
+const magentoOrderAddressSchema: yup.ObjectSchema<MagentoOrderAddressShape> = yup.object({
+  // required
+  externalId: yup.number().integer().required(),
+  externalOrderId: yup.number().integer().required(),
+  addressType: yup
+    .string<MagentoAddressType>()
+    .oneOf(['shipping', 'billing'])
+    .label('Malformed data: type addressType')
+    .required(),
+  // optionals
+  externalCustomerAddressId: yup.number().integer().nullable(),
+})
+
+const orderAddressSchema: yup.ObjectSchema<OrderAddressShape> = yup.object({
+  // required
+  firstName: yup.string().required(),
+  lastName: yup.string().defined(),
+  city: yup.string().required(),
+  state: yup.string().required(),
+  zipCode: yup.string().required(),
+  country: yup.string().required(),
+  phone: yup.string().required(),
+  // optionals
+  altPhone: yup.string().nullable(),
+  notes: yup.string().nullable(),
+  company: yup.string().nullable(),
+  street: yup.array().min(1).max(2).of(yup.string().required()),
+  street1: yup.string(),
+  street2: yup.string().nullable(),
+  longitude: yup.number().nullable(),
+  latitude: yup.number().nullable(),
+  coordinates: yup.tuple([yup.number().required(), yup.number().required()]).nullable(),
+  orderId: yup.number().integer(),
+  customerAddressId: yup.number().integer(),
+  id: yup.number().integer().nonNullable(),
+  magento: magentoOrderAddressSchema,
+})
+
+export function validateOrderAddress(maybeAddress: unknown): OrderAddressShape {
+  const address = orderAddressSchema.validateSync(maybeAddress, {
+    stripUnknown: true,
+  }) satisfies OrderAddressShape
+  return address
+}
+
+type OrderAddressJSON =
+{
   id?: number
   firstName: string
   lastName: string
   company?: string | null
-  street: string[]
+  street?: string[]
   city: string
   state: string
   zipCode: string
@@ -29,8 +111,8 @@ export type OrderAddressJSON = {
   phone: string
   altPhone?: string | null
   notes?: string | null
-  coordinates: [number, number] | null
-  magento?: MagentoOrderAddressJSON
+  coordinates?: [number, number] | null
+  magento?: MagentoOrderAddressShape
   // ASSOCIATIONS:
   // orderId?:
   // order?: NonAttribute<Order>
@@ -39,10 +121,12 @@ export type OrderAddressJSON = {
   // routeStops?: NonAttribute<RouteStop[]>
 }
 
-function cleanUpAddress(address: OrderAddessShape): OrderAddressJSON {
-  let result = address
+function cleanUpAddress(address: OrderAddressShape | OrderAddress): OrderAddressJSON {
+  let result: OrderAddressShape
   if (address instanceof OrderAddress) {
-    result = address.toJSON()
+    result = address.toJSON() satisfies OrderAddressShape
+  } else {
+    result = address
   }
   delete result.longitude
   delete result.latitude
@@ -52,7 +136,7 @@ function cleanUpAddress(address: OrderAddessShape): OrderAddressJSON {
   // delete result.customerAddressId
   const streetAddress = result.street || []
   const coordinates = result.coordinates || null
-  let magento: MagentoOrderAddressJSON | undefined
+  let magento: MagentoOrderAddressShape | undefined
   if (result.magento && result.magento?.externalId) {
     // if externalId exists - it's a valid magento object
     const temp = { ...result.magento }
@@ -79,7 +163,7 @@ export default class OrderAddressController {
  * @param t - transaction. If transaction is not provided, method will create its own transaction for this operation
  * @returns Order Address Instance with Magento record or null if there was a rollback and no transaction provided.
  */
-  static async upsertMagentoAddress(magentoAddress: OrderAddessShape, orderInstanceOrId?: Order | number, t?: Transaction): Promise<OrderAddress & { magento: MagentoOrderAddress } | null> {
+  static async upsertMagentoAddress(magentoAddress: OrderAddressShape, orderInstanceOrId?: Order | number, t?: Transaction): Promise<OrderAddress & { magento: MagentoOrderAddress } | null> {
     let transaction: Transaction
     if (t) {
       transaction = t
@@ -101,7 +185,7 @@ export default class OrderAddressController {
         throw new Error('magento record was not provided')
       }
 
-      const address: OrderAddessShape = {
+      const address: OrderAddressShape = {
         ...magentoAddress,
         magento: {
           ...magentoAddress.magento,

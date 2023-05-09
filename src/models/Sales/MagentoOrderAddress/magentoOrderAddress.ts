@@ -7,14 +7,16 @@ import {
 } from 'sequelize'
 import type { OrderAddress } from '../OrderAddress/orderAddress'
 
+export type MagentoAddressType = 'billing' | 'shipping'
+
 export class MagentoOrderAddress extends Model<InferAttributes<MagentoOrderAddress>, InferCreationAttributes<MagentoOrderAddress>> {
   declare externalId: number
 
-  declare externalCustomerAddressId?: number
+  declare externalCustomerAddressId?: number | null
 
   declare externalOrderId: number
 
-  declare addressType: string
+  declare addressType: MagentoAddressType
 
   // ASSOCIATIONS:
   declare orderAddressId: ForeignKey<OrderAddress['id']>

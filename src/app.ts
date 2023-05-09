@@ -1,5 +1,5 @@
 import express from 'express'
-import { parseCommentShape } from './models/Sales/OrderComment/orderCommentController'
+import { parseCommentShape, validateComment } from './models/Sales/OrderComment/orderCommentController'
 
 console.log('running app')
 const app = express()
@@ -11,7 +11,9 @@ app.get('/', (req, res) => {
 
 app.post('/order/import', (req, res) => {
   try {
-    const comment = parseCommentShape(req.body)
+    // const comment = parseCommentShape(req.body)
+    const comment = validateComment(req.body)
+    console.log('parsed comment:', comment)
     res.status(201).json(comment)
   } catch (error) {
     if (error instanceof Error) {

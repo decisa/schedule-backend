@@ -63,7 +63,9 @@ export class OrderAddress extends Model<InferAttributes<OrderAddress>, InferCrea
   declare orderId?: ForeignKey<Order['id']>
 
   // foreign key to keep record which address it was copied from.
-  declare customerAddressId?: ForeignKey<Address['id']>
+  // declare customerAddressId?: ForeignKey<Address['id']> | null
+
+  declare customerAddressId?: number | null
 
   declare order?: NonAttribute<Order>
 

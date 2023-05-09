@@ -28,17 +28,17 @@ export class OrderComment extends Model<InferAttributes<OrderComment>, InferCrea
 
   declare createdAt: CreationOptional<Date>
 
-  declare externalId: number
+  declare type: CommentType
 
-  declare externalParentId?: number
+  declare externalId?: number | null
+
+  declare externalParentId?: number | null
 
   declare customerNotified?: boolean | null
 
   declare visibleOnFront?: boolean | null
 
-  declare type: CommentType
-
-  declare status: OrderStatus // TODO: OrderStatus
+  declare status?: OrderStatus | null
 
   // ASSOCIATIONS:
 
