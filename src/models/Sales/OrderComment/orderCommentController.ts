@@ -1,26 +1,29 @@
 import * as yup from 'yup'
-import { InferAttributes, Transaction } from 'sequelize'
-import db from '../..'
+import {
+  Op, Transaction,
+} from 'sequelize'
 import { OrderComment, CommentType, commentTypes } from './orderComment'
-
 import { OrderStatus, orderStatuses } from '../MagentoOrder/magentoOrder'
-import { printYellowLine } from '../../../utils/utils'
+import {
+  isId,
+  isString,
+  printYellowLine,
+  useTransaction,
+} from '../../../utils/utils'
 import { Order } from '../Order/order'
 
-// import { printYellowLine } from '../../../utils/utils'
-
-export type CommentShape = {
-  id?: number
-  comment: string
-  createdAt?: Date | string
-  externalId: number
-  externalParentId: number
-  status: OrderStatus
-  type: CommentType
-  customerNotified?: boolean | null
-  orderId?: number
-  visibleOnFront?: boolean | null
-}
+// export type CommentShape = {
+//   id?: number
+//   comment: string
+//   createdAt?: Date | string
+//   externalId: number
+//   externalParentId: number
+//   status: OrderStatus
+//   type: CommentType
+//   customerNotified?: boolean | null
+//   orderId?: number
+//   visibleOnFront?: boolean | null
+// }
 
 type OrderCommentCreational = {
   id: number
@@ -63,21 +66,6 @@ type OrderCommentTimeStamps = {
 }
 
 // Note: DATA TYPES
-type RequiredExceptFor<T, K extends keyof T> = Omit<T, K> & {
-  [P in K]+?: T[P]
-}
-
-type Z = {
-  id?: number
-} & {
-  id: number
-  name: string
-}
-
-function z(x: Z) {
-  const p = x.id
-  return p + 1
-}
 export type OrderCommentCreate =
   Partial<OrderCommentCreational>
   & Required<OrderCommentRequired>
@@ -85,7 +73,7 @@ export type OrderCommentCreate =
   & Required<OrderCommentFK>
   & Partial<OrderCommentTimeStamps>
 
-// for upsert only externalId is required
+// for upsert, only externalId is required
 export type OrderCommentMagentoUpsert = Pick<OrderCommentCreate, 'externalId'> & Partial<Omit<OrderCommentCreate, 'externalId'>>
 
 export type OrderCommentMagentoCreate =
@@ -169,9 +157,6 @@ const hasExternalId = yup.object({
   externalId: yup.number().integer().required().label('Malformed data: externalId field'),
 })
 
-const isId = yup.number().integer().required()
-const isString = yup.string().required()
-
 export function validateCommentCreate(object: unknown): OrderCommentCreate {
   const comment = commentSchemaCreate.validateSync(object, {
     stripUnknown: true,
@@ -186,6 +171,12 @@ export function validateCommentMagentoUpsert(object: unknown): OrderCommentMagen
   return comment
 }
 
+/**
+ * Validates unknown object for creation of new comment with Magento related fields.
+ * Returns the stripped off commentObject for insertion to DB
+ * @param {unknown} object - possibly a comment to be inserted to DB
+ * @returns {OrderCommentMagentoCreate} OrderCommentMagentoCreate
+ */
 export function validateCommentMagentoCreate(object: unknown): OrderCommentMagentoCreate {
   const comment = commentSchemaMagentoCreate.validateSync(object, {
     stripUnknown: true,
@@ -193,35 +184,6 @@ export function validateCommentMagentoCreate(object: unknown): OrderCommentMagen
   return comment
 }
 
-/**
- * helper function to take care of transaction commit and rollback handling
- * @param t - transaction. If transaction is not provided, method will create its own transaction for this operation
- * @returns [transaction, handleCommit, handleRollbackAndRethrow] returns a tuple with existing or new transaction, as well as methods to commit and rollback the transaction
- */
-const useTransaction = async (t?: Transaction): Promise<[transaction: Transaction, handleCommit: () => Promise<void>, handleRollback: () => Promise<void>]> => {
-  let transaction: Transaction
-  if (t) {
-    // use existing transaction
-    transaction = t
-  } else {
-    // create new transaction
-    transaction = await db.transaction()
-  }
-  const handleRollbackAndRethrow = async () => {
-    if (!t) {
-      // if transaction was not initiated locally, process rollback right away
-      // console.log('error occured: ', error, 'rolling back transaction')
-      await transaction.rollback()
-    }
-  }
-  const handleCommit = async () => {
-    if (!t) {
-      // if no transaction was provided, commit the local transaction:
-      await transaction.commit()
-    }
-  }
-  return [transaction, handleCommit, handleRollbackAndRethrow]
-}
 export default class OrderCommentController {
   /**
    * convert OrderCommentInstance to a regular JSON object
@@ -402,7 +364,9 @@ export default class OrderCommentController {
           model: Order,
           as: 'order',
           where: {
-            orderNumber: orderNum,
+            orderNumber: {
+              [Op.like]: `%${orderNum}`,
+            },
           },
           attributes: ['orderNumber'],
         },
@@ -411,13 +375,3 @@ export default class OrderCommentController {
     return result
   }
 }
-
-// Order {
-//   id: number
-//   orderNumber: string
-// }
-
-// Comment {
-//   text: string
-//   orderId: number // FK Order
-// }

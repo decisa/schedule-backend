@@ -1,6 +1,9 @@
+import * as yup from 'yup'
 import { parseISO } from 'date-fns'
+import { Transaction } from 'sequelize'
 import { OrderStatus } from '../models/Sales/MagentoOrder/magentoOrder'
 import { BrandShape } from '../models/models'
+import db from '../models'
 
 type EmptyObject = null | undefined | 0 | '' | never[] | Record<string, never>
 type NotEmptyObject = Record<string, unknown> | string | number | Date
@@ -171,3 +174,36 @@ export function parseMagentoBrand(obj: Record<string, string | number | undefine
   }
   return null
 }
+
+/**
+ * helper function to take care of transaction commit and rollback handling
+ * @param t - transaction. If transaction is not provided, method will create its own transaction for this operation
+ * @returns [transaction, handleCommit, handleRollbackAndRethrow] returns a tuple with existing or new transaction, as well as methods to commit and rollback the transaction
+ */
+export async function useTransaction(t?: Transaction): Promise<[transaction: Transaction, handleCommit: () => Promise<void>, handleRollback: () => Promise<void>]> {
+  let transaction: Transaction
+  if (t) {
+    // use existing transaction
+    transaction = t
+  } else {
+    // create new transaction
+    transaction = await db.transaction()
+  }
+  const handleRollbackAndRethrow = async () => {
+    if (!t) {
+      // if transaction was not initiated locally, process rollback right away
+      // console.log('error occured: ', error, 'rolling back transaction')
+      await transaction.rollback()
+    }
+  }
+  const handleCommit = async () => {
+    if (!t) {
+      // if no transaction was provided, commit the local transaction:
+      await transaction.commit()
+    }
+  }
+  return [transaction, handleCommit, handleRollbackAndRethrow]
+}
+
+export const isId = yup.number().integer().required()
+export const isString = yup.string().required()

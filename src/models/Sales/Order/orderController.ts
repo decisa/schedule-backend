@@ -14,8 +14,9 @@ import {
 } from '../../../utils/utils'
 import OrderAddressController from '../OrderAddress/orderAddressContoller'
 import { OrderComment } from '../OrderComment/orderComment'
+import type { OrderCommentCreate } from '../OrderComment/orderComment'
 import OrderCommentController from '../OrderComment/orderCommentController'
-import type { CommentShape } from '../OrderComment/orderCommentController'
+// import type { CommentShape } from '../OrderComment/orderCommentController'
 import { BrandShape } from '../../models'
 import ProductOptionController from '../ProductOption/productOptionController'
 
@@ -57,7 +58,8 @@ type OrderData = OrderShape & {
   customer: CustomerShape
   billingAddress: OrderAddessShape
   shippingAddress: OrderAddessShape
-  comments?: CommentShape[]
+  // comments?: CommentShape[]
+  comments?: OrderCommentCreate[]
   products?: AppProduct[]
 }
 
