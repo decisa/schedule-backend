@@ -9,11 +9,13 @@ import { Order } from '../Order/order'
 import type { OrderStatus } from '../MagentoOrder/magentoOrder'
 import { Shipment } from '../../Receiving/Shipment/shipment'
 
-export enum CommentType {
-  order = 'order',
-  shipping = 'shipping',
-  invoice = 'invoice',
-}// memo?
+export const commentTypes = [
+  'order',
+  'shipping',
+  'invoice',
+] as const // memo?
+
+export type CommentType = typeof commentTypes[number]
 
 type Base = {
   id: number
@@ -35,12 +37,12 @@ type OrderCommentRequired = {
 }
 // optional
 type OrderCommentOptional = {
-  externalId?: number | null
-  externalParentId?: number | null
-  customerNotified?: boolean | null
-  visibleOnFront?: boolean | null
-  type?: CommentType // has default value
-  status?: OrderStatus | null
+  externalId: number | null
+  externalParentId: number | null
+  customerNotified: boolean | null
+  visibleOnFront: boolean | null
+  type: CommentType // has default value
+  status: OrderStatus | null
 }
 // Associations
 // type OrderCommentAssociatios = {
@@ -52,21 +54,20 @@ type OrderCommentFK = {
   orderId: number
 }
 // Timestamps
-type OrderCommentStamps = {
+type OrderCommentTimeStamps = {
   createdAt: Date
   updatedAt: Date
 }
 
 // Note: DATA TYPES
-type OptionalExceptFor<T, K extends keyof T> = Partial<T> & Required<Pick<T, K>>
-export type OrderCommentX = OptionalExceptFor<Base, 'id'>
 
 export type OrderCommentCreate =
   Partial<OrderCommentCreational>
   & Required<OrderCommentRequired>
   & Partial<OrderCommentOptional>
   & Partial<OrderCommentFK> // or should it be required?
-  & Partial<OrderCommentStamps>
+  & Partial<OrderCommentTimeStamps>
+
 export class OrderComment extends Model<InferAttributes<OrderComment>, InferCreationAttributes<OrderComment>> {
   declare id: CreationOptional<number>
 
@@ -74,17 +75,19 @@ export class OrderComment extends Model<InferAttributes<OrderComment>, InferCrea
 
   declare createdAt: CreationOptional<Date>
 
-  declare externalId?: number | null
+  declare updatedAt: CreationOptional<Date>
 
-  declare externalParentId?: number | null
+  declare externalId: number | null
 
-  declare customerNotified?: boolean | null
+  declare externalParentId: number | null
 
-  declare visibleOnFront?: boolean | null
+  declare customerNotified: boolean | null
 
-  declare type?: CommentType // has default value
+  declare visibleOnFront: boolean | null
 
-  declare status?: OrderStatus | null
+  declare type: CommentType // has default value
+
+  declare status: OrderStatus | null
 
   // ASSOCIATIONS:
 
@@ -118,7 +121,10 @@ export function initOrderComment(db: Sequelize) {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
     },
-
+    updatedAt: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW,
+    },
     externalId: {
       type: DataTypes.INTEGER,
       allowNull: true,
@@ -138,7 +144,7 @@ export function initOrderComment(db: Sequelize) {
     type: {
       type: DataTypes.STRING(12),
       allowNull: false,
-      defaultValue: CommentType.order,
+      defaultValue: 'order' satisfies CommentType,
     },
     status: DataTypes.STRING(64),
   }, {

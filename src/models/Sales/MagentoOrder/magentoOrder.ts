@@ -16,17 +16,18 @@ import type { Order } from '../Order/order'
 
 console.log('running magentoOrder model module')
 
-export enum OrderStatus {
-  pending = 'pending',
-  processing = 'processing',
-  inProduction = 'in_production',
-  inTransit = 'in_transit',
-  prepShipment = 'preparing_shipment',
-  complete = 'complete',
-  closed = 'closed',
-  unknown = 'unknown',
-}
+export const orderStatuses = [
+  'pending',
+  'processing',
+  'in_production',
+  'in_transit',
+  'preparing_shipment',
+  'complete',
+  'closed',
+  'unknown',
+] as const
 
+export type OrderStatus = typeof orderStatuses[number]
 export class MagentoOrder extends Model<InferAttributes<MagentoOrder>, InferCreationAttributes<MagentoOrder>> {
   declare externalId: number
 

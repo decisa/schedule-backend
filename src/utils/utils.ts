@@ -108,6 +108,12 @@ export function getBooleanCanThrow(value: unknown, errMsgStart = ''): boolean {
  * @returns {string} valid order status or 'unknown'
  */
 export function getOrderStatus(status: string): OrderStatus {
+  // const orderStatusValues = Object.values(OrderStatus) // Get all enum values
+  // if (orderStatusValues.includes(status as OrderStatus)) {
+  //   return status as OrderStatus // Use 'as' to assert that status is of type OrderStatus
+  // }
+
+  // throw new Error('not an order status')
   if (
     status === 'pending'
     || status === 'processing'

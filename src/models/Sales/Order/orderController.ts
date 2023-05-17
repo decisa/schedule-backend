@@ -132,11 +132,12 @@ export default class OrderController {
 
       // COMMENTS
 
-      if (data.comments && data.comments?.length > 0) {
-        for (let i = 0; i < data.comments.length; i += 1) {
-          await OrderCommentController.upsertMagentoComment(data.comments[i], orderRecord)
-        }
-      }
+      // FIXME: UNCOMMENT THIS LINES
+      // if (data.comments && data.comments?.length > 0) {
+      //   for (let i = 0; i < data.comments.length; i += 1) {
+      //     await OrderCommentController.upsertMagentoComment(data.comments[i], orderRecord)
+      //   }
+      // }
 
       // PRODUCTS
 

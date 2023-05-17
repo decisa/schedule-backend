@@ -13,6 +13,7 @@ import { TripRoute } from './models/Delivery/TripRoute/tripRoute'
 import { Driver } from './models/Delivery/Driver/driver'
 import OrderController from './models/Sales/Order/orderController'
 import app from './app'
+import { OrderComment } from './models/Sales/OrderComment/orderComment'
 // import Customer from './models/Customer/customer'
 // import MagentoOrder from './models/MagentoOrder/magentoOrder'
 // import Order from './models/Order/order'
@@ -226,35 +227,35 @@ async function addDrivers() {
   })
 }
 
-function addOrder() {
-  Customer.findByPk(2)
-    .then((customer) => {
-      if (customer) {
-        return customer.createOrder(
-          {
-            orderDate: new Date(),
-            orderNumber: '100042321',
-            paymentMethod: 'credit card',
-            shippingCost: 134.45,
-            taxRate: 6.625,
-          },
-        ).then((order) => order && order.createMagento({
-          externalId: 2144,
-          externalQuoteId: 2344,
-          state: 'complete',
-          status: 'complete',
-          updatedAt: new Date(),
-        }))
-          .then((record) => {
-            console.log('new record:', record && record.toJSON())
-          })
-      }
-      return null
-    })
-    .catch((err) => {
-      console.log('error occured adding order:', err)
-    })
-}
+// function addOrder() {
+//   Customer.findByPk(2)
+//     .then((customer) => {
+//       if (customer) {
+//         return customer.createOrder(
+//           {
+//             orderDate: new Date(),
+//             orderNumber: '100042321',
+//             paymentMethod: 'credit card',
+//             shippingCost: 134.45,
+//             taxRate: 6.625,
+//           },
+//         ).then((order) => order && order.createMagento({
+//           externalId: 2144,
+//           externalQuoteId: 2344,
+//           state: 'complete',
+//           status: 'complete',
+//           updatedAt: new Date(),
+//         }))
+//           .then((record) => {
+//             console.log('new record:', record && record.toJSON())
+//           })
+//       }
+//       return null
+//     })
+//     .catch((err) => {
+//       console.log('error occured adding order:', err)
+//     })
+// }
 
 // createAssociations()
 
@@ -447,7 +448,11 @@ db
     console.log(result)
     // if (orderResult) {
     printYellowLine('FINAL')
-    // console.log(address.magento.toJSON())
+
+    const comment = await OrderComment.findByPk(83)
+    if (comment) {
+      console.log(comment.toJSON())
+    }
     // console.log(orderResult.toJSON())
     // }
   })
