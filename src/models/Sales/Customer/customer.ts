@@ -37,19 +37,23 @@ export class Customer extends Model<InferAttributes<Customer>,
 InferCreationAttributes<Customer>> {
   declare id: CreationOptional<number>
 
+  declare createdAt: CreationOptional<Date>
+
+  declare updatedAt: CreationOptional<Date>
+
   declare firstName: string
 
   declare lastName: string
 
-  declare company?: string
+  declare company: string | null
 
   declare phone: string
 
-  declare altPhone: string | undefined
+  declare altPhone: string | null
 
   declare email: string | null
 
-  declare defaultShippingId?: number
+  declare defaultShippingId: number | null
 
   // ASSOCIATIONS:
 
@@ -150,6 +154,14 @@ export function initCustomer(db: Sequelize) {
     defaultShippingId: {
       type: DataTypes.INTEGER,
       allowNull: true,
+    },
+    createdAt: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW,
+    },
+    updatedAt: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW,
     },
   }, {
     sequelize: db,

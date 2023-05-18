@@ -27,7 +27,7 @@ InferCreationAttributes<MagentoCustomer>> {
 
   declare isGuest: boolean
 
-  declare email: ForeignKey<Customer['email']>
+  declare email: string
 
   declare externalCustomerId: number | null
 
