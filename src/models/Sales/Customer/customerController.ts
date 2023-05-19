@@ -261,6 +261,23 @@ export default class CustomerController {
   }
 
   /**
+   * get customer record by email from DB. Will include magento record if available
+   * @param {unknown} params - object with email field
+   * @returns {Customer} Customer object or null
+   */
+  static async getByEmail(params: string | unknown, t?: Transaction): Promise<Customer | null> {
+    const { email } = isObjectWithEmail.validateSync(params)
+    const customerRecord = await Customer.findOne({
+      where: {
+        email,
+      },
+      include: 'magento',
+      transaction: t,
+    })
+    return customerRecord
+  }
+
+  /**
    * insert customer record to DB. Will include magento record if provided.
    * @param {unknown} customer - customer record to insert to DB
    * @returns {Customer} Customer object or throws error
@@ -351,14 +368,8 @@ export default class CustomerController {
   static async upsert(customerData: unknown, t?: Transaction): Promise<Customer> {
     const [transaction, commit, rollback] = await useTransaction(t)
     try {
-      const { email } = isObjectWithEmail.validateSync(customerData)
-      const customerRecord = await Customer.findOne({
-        where: {
-          email,
-        },
-        include: 'magento',
-        transaction,
-      })
+      const customerRecord = await this.getByEmail(customerData, transaction)
+
       let result: Customer
       if (!customerRecord) {
         result = await this.create(customerData, transaction)

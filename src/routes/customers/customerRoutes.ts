@@ -5,6 +5,25 @@ import CustomerController from '../../models/Sales/Customer/customerController'
 const customerRouter = express.Router()
 
 // create customer record including magento, if provided
+customerRouter.get('/', (req, res) => {
+  try {
+    // const id = 1
+    // console.log('params', req.params)
+    // const { query } = req// as unknown
+    // console.log('query:', query, Object.keys(req))
+    // handleResponse(res, query)
+    CustomerController.getByEmail(req.query)
+      .then((result) => {
+        const customerResult = CustomerController.toJSON(result)
+        handleResponse(res, customerResult)
+      })
+      .catch((err) => handleError(res, err))
+  } catch (error) {
+    handleError(res, error)
+  }
+})
+
+// create customer record including magento, if provided
 customerRouter.post('/', (req, res) => {
   try {
     // const id = 1
