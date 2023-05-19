@@ -2,7 +2,9 @@ import * as yup from 'yup'
 import { InferAttributes, Transaction } from 'sequelize'
 import { MagentoCustomer } from '../MagentoCustomer/magentoCustomer'
 import { Customer } from './customer'
-import { isId, printYellowLine, useTransaction } from '../../../utils/utils'
+import {
+  isEmail, isId, isObjectWithEmail, printYellowLine, useTransaction,
+} from '../../../utils/utils'
 
 type CustomerCreational = {
   id: number
@@ -53,12 +55,12 @@ const customerMagentoSchema: yup.ObjectSchema<CustomerMagentoRecord> = yup.objec
     .integer()
     .nullable()
     .required()
-    .label('Malformed data: magento > externalGroupId field'),
-  isGuest: yup.boolean().required().label('Malformed data: magento > isGuest field'),
+    .label('Malformed data: magento > externalGroupId'),
+  isGuest: yup.boolean().required().label('Malformed data: magento > isGuest'),
   email: yup.string()
     .email()
     .required()
-    .label('Malformed data: magento > email field'),
+    .label('Malformed data: magento > email '),
   externalCustomerId: yup
     .number()
     .nullable()
@@ -75,12 +77,12 @@ const customerMagentoSchema: yup.ObjectSchema<CustomerMagentoRecord> = yup.objec
 })
 
 const customerMagentoUpdateSchema: yup.ObjectSchema<Partial<CustomerMagentoRecord>> = yup.object({
-  externalGroupId: yup.number().integer().nullable().label('Malformed data: magento > externalGroupId field'),
-  isGuest: yup.boolean().nonNullable().label('Malformed data: magento > isGuest field'),
+  externalGroupId: yup.number().integer().nullable().label('Malformed data: magento > externalGroupId'),
+  isGuest: yup.boolean().nonNullable().label('Malformed data: magento > isGuest'),
   email: yup.string()
     .email()
     .nonNullable()
-    .label('Malformed data: magento > email field'),
+    .label('Malformed data: magento > email '),
   externalCustomerId: yup
     .number()
     .nullable()
@@ -101,14 +103,14 @@ const customerSchemaCreate: yup.ObjectSchema<CustomerCreate> = yup.object({
   // lastName: string
   // phone: string
   firstName: yup.string()
-    .label('Malformed data: first name field')
+    .label('Malformed data: firstName')
     .required(),
   lastName: yup.string()
-    .label('Malformed data: last name field')
+    .label('Malformed data: lastName')
     .defined(),
   phone: yup.string()
     .min(10)
-    .label('Malformed data: phone field')
+    .label('Malformed data: phone')
     .required(),
   // company: string | null
   // altPhone: string | null
@@ -116,22 +118,22 @@ const customerSchemaCreate: yup.ObjectSchema<CustomerCreate> = yup.object({
   // defaultShippingId: number | null
   company: yup.string()
     .nullable()
-    .label('Malformed data: company field'),
+    .label('Malformed data: company'),
   altPhone: yup.string()
     .min(10)
     .nullable()
-    .label('Malformed data: altPhone field'),
+    .label('Malformed data: altPhone'),
   email: yup.string()
     .email()
     .nullable()
-    .label('Malformed data: email field'),
-  defaultShippingId: yup.number().integer().nullable().label('Malformed data: defaultShippingId field'),
+    .label('Malformed data: email'),
+  defaultShippingId: yup.number().integer().nullable().label('Malformed data: defaultShippingId'),
   // id: number
   id: yup.number().integer(),
   // createdAt: Date
   // updatedAt: Date
-  createdAt: yup.date().label('Malformed data: createdAt field'),
-  updatedAt: yup.date().label('Malformed data: updatedAt field'),
+  createdAt: yup.date().label('Malformed data: createdAt'),
+  updatedAt: yup.date().label('Malformed data: updatedAt'),
 })
 
 const customerSchemaUpdate: yup.ObjectSchema<Partial<CustomerCreate>> = yup.object({
@@ -172,9 +174,9 @@ const customerSchemaUpdate: yup.ObjectSchema<Partial<CustomerCreate>> = yup.obje
   updatedAt: yup.date().label('Malformed data: updatedAt field').nonNullable(),
 })
 
-type RequiredExceptFor<T, K extends keyof T> = Omit<T, K> & {
-  [P in K]+?: T[P]
-};
+// type RequiredExceptFor<T, K extends keyof T> = Omit<T, K> & {
+//   [P in K]+?: T[P]
+// };
 
 export type CustomerRead = Required<CustomerCreate>
 
@@ -283,7 +285,7 @@ export default class CustomerController {
       if (result) {
         await commit()
         // return result
-        const final = await Customer.findByPk(result.id, { include: 'magento' })
+        const final = await this.get(result.id, transaction) // Customer.findByPk(result.id, { include: 'magento', transaction })
         if (final) {
           return final
         }
@@ -297,7 +299,7 @@ export default class CustomerController {
   }
 
   /**
-   * update customer record in DB. Will update magento record if provided.
+   * update customer record in DB. Will update magento record if provided.If magento record does not exist in DB, it will be created
    * @param {number | unknown} customerId - id of the customer record to update in DB
    * @param {unknown} customer - update data for customer record
    * @returns {Customer} Updated Customer object or throws error
@@ -324,6 +326,12 @@ export default class CustomerController {
       if (magento) {
         if (customerRecord.magento) {
           await customerRecord.magento.update(magento, { transaction })
+        } else {
+          // if magento record did not exist prior to update - create one
+          if (customerRecord.email !== magento.email) {
+            throw new Error('Magento email record should match the customer')
+          }
+          customerRecord.magento = await this.createMagento(magento, transaction)
         }
       }
       await commit()
@@ -336,11 +344,42 @@ export default class CustomerController {
   }
 
   /**
+   * upsert(insert or create) customer record in DB. Will update/create magento record if provided. email is required
+   * @param {unknown} customerData - update data for customer record
+   * @returns {Customer} Updated Or Created Customer object with Magento Record if available
+   */
+  static async upsert(customerData: unknown, t?: Transaction): Promise<Customer> {
+    const [transaction, commit, rollback] = await useTransaction(t)
+    try {
+      const { email } = isObjectWithEmail.validateSync(customerData)
+      const customerRecord = await Customer.findOne({
+        where: {
+          email,
+        },
+        include: 'magento',
+        transaction,
+      })
+      let result: Customer
+      if (!customerRecord) {
+        result = await this.create(customerData, transaction)
+      } else {
+        result = await this.update(customerRecord.id, customerData, transaction)
+      }
+      await commit()
+      return result
+    } catch (error) {
+      await rollback()
+      // rethrow the error for further handling
+      throw error
+    }
+  }
+
+  /**
    * delete customer record with a given id from DB.
    * @param {unknown} id - customerId
    * @returns {number} number of objects deleted.
    */
-  static async delete(id: number | unknown, t?: Transaction): Promise<number> {
+  static async delete(id: number | unknown, t?: Transaction): Promise<boolean> {
     const [transaction, commit, rollback] = await useTransaction(t)
     try {
       const customerId = isId.validateSync(id)
@@ -351,9 +390,56 @@ export default class CustomerController {
         transaction,
       })
       console.log('deletion result: ', final)
-      // await commit()
+      await commit()
+      return final === 1
+    } catch (error) {
       await rollback()
-      return final
+      // rethrow the error for further handling
+      throw error
+    }
+  }
+
+  /**
+   * delete customer Magento record with a given email from DB.
+   * @param {unknown} email - customer's email
+   * @returns {CustomerMagentoRecord | null} CustomerMagentoRecord that was deleted or null if record did not exist.
+   */
+  static async deleteMagento(customerEmail: string | unknown, t?: Transaction): Promise<CustomerMagentoRecord | null> {
+    const [transaction, commit, rollback] = await useTransaction(t)
+    try {
+      const { email } = isObjectWithEmail.validateSync(customerEmail)
+      const record = await MagentoCustomer.findByPk(email, { transaction })
+      let final = 0
+
+      if (record) {
+        final = await MagentoCustomer.destroy({
+          where: {
+            email,
+          },
+          transaction,
+        })
+      }
+      await commit()
+      return final === 1 ? record : null
+    } catch (error) {
+      await rollback()
+      // rethrow the error for further handling
+      throw error
+    }
+  }
+
+  /**
+   * create customer Magento record with a given email.
+   * @param {unknown} magentoData magento record to add
+   * @returns {MagentoCustomer} MagentoCustomer instance that was created
+   */
+  static async createMagento(magentoData: CustomerMagentoRecord | unknown, t?: Transaction): Promise<MagentoCustomer> {
+    const [transaction, commit, rollback] = await useTransaction(t)
+    try {
+      const magento = validateCustomerMagento(magentoData)
+      const record = await MagentoCustomer.create(magento, { transaction })
+      await commit()
+      return record
     } catch (error) {
       await rollback()
       // rethrow the error for further handling
@@ -364,9 +450,10 @@ export default class CustomerController {
   // done: get customer
   // done: create customer
   // done: update customer
-  // delete customer
-  // delete magento record
-  // upsert customer (email required)
+  // done: delete customer
+  // done: delete magento record
+  // done: create magento record
+  // done: upsert customer (email required)
   // add address
   // get all addresses
 }

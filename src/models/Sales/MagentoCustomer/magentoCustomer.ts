@@ -81,11 +81,11 @@ export function initMagentoCustomer(db: Sequelize) {
     validate: {
       guestVerification() {
         if (this.isGuest && this.externalCustomerId) {
-          throw new Error('guest cannot have a customerId')
+          throw new Error('guest cannot have a externalCustomerId')
         }
         if (!this.isGuest && !this.externalCustomerId) {
           throw new Error(
-            'registered Magento user should have a customerId defined',
+            'registered Magento user should have a externalCustomerId defined',
           )
         }
       },

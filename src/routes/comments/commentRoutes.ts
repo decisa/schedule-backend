@@ -30,7 +30,7 @@ commentRouter.post('/', (req, res) => {
   }
 })
 
-commentRouter.post('/magento/upsert', (req, res) => {
+commentRouter.put('/magento/upsert', (req, res) => {
   try {
     const comment = req.body as unknown
     OrderCommentController.upsertOrderCommentMagento(comment)

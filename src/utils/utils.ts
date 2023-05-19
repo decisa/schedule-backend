@@ -207,3 +207,7 @@ export async function useTransaction(t?: Transaction): Promise<[transaction: Tra
 
 export const isId = yup.number().integer().required()
 export const isString = yup.string().required()
+export const isEmail = yup.string().email().required()
+export const isObjectWithEmail = yup.object({
+  email: yup.string().email().required(),
+})
