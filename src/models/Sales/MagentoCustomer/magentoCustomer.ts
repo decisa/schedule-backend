@@ -23,7 +23,7 @@ import type { Customer } from '../Customer/customer'
 
 export class MagentoCustomer extends Model<InferAttributes<MagentoCustomer>,
 InferCreationAttributes<MagentoCustomer>> {
-  declare externalGroupId: number
+  declare externalGroupId: number | null
 
   declare isGuest: boolean
 
@@ -46,7 +46,10 @@ InferCreationAttributes<MagentoCustomer>> {
 
 export function initMagentoCustomer(db: Sequelize) {
   MagentoCustomer.init({
-    externalGroupId: DataTypes.INTEGER,
+    externalGroupId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
     isGuest: {
       type: DataTypes.BOOLEAN,
       defaultValue: true,

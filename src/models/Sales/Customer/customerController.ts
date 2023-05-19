@@ -33,7 +33,7 @@ type CustomerAssociations = {
 }
 
 type CustomerMagentoRecord = {
-  externalGroupId: number
+  externalGroupId: number | null
   isGuest: boolean
   email: string
   externalCustomerId: number | null
@@ -48,7 +48,12 @@ export type CustomerCreate =
   // & Partial<CustomerAssociations>
 
 const customerMagentoSchema: yup.ObjectSchema<CustomerMagentoRecord> = yup.object({
-  externalGroupId: yup.number().integer().required().label('Malformed data: magento > externalGroupId field'),
+  externalGroupId: yup
+    .number()
+    .integer()
+    .nullable()
+    .required()
+    .label('Malformed data: magento > externalGroupId field'),
   isGuest: yup.boolean().required().label('Malformed data: magento > isGuest field'),
   email: yup.string()
     .email()
@@ -70,7 +75,7 @@ const customerMagentoSchema: yup.ObjectSchema<CustomerMagentoRecord> = yup.objec
 })
 
 const customerMagentoUpdateSchema: yup.ObjectSchema<Partial<CustomerMagentoRecord>> = yup.object({
-  externalGroupId: yup.number().integer().nonNullable().label('Malformed data: magento > externalGroupId field'),
+  externalGroupId: yup.number().integer().nullable().label('Malformed data: magento > externalGroupId field'),
   isGuest: yup.boolean().nonNullable().label('Malformed data: magento > isGuest field'),
   email: yup.string()
     .email()
@@ -79,11 +84,11 @@ const customerMagentoUpdateSchema: yup.ObjectSchema<Partial<CustomerMagentoRecor
   externalCustomerId: yup
     .number()
     .nullable()
-    .when('isGuest', {
-      is: true,
-      then: (schema) => schema.default(null).oneOf([null]).label('Malformed data: magento > externalCustomerId for guests must be null'),
-      otherwise: (schema) => schema.integer().required().label('Malformed data: magento > externalCustomerId for non guests'),
-    })
+    // .when('isGuest', {
+    //   is: true,
+    //   then: (schema) => schema.default(null).oneOf([null]).label('Malformed data: magento > externalCustomerId for guests must be null'),
+    //   otherwise: (schema) => schema.integer().required().label('Malformed data: magento > externalCustomerId for non guests'),
+    // })
     // .defined()
     // .integer()
     // .nullable()
@@ -243,9 +248,9 @@ export default class CustomerController {
   }
 
   /**
-   * insert customer record to DB. Will include magento record if provided.
-   * @param {unknown} customer - customer record to insert to DB
-   * @returns {Customer} Customer object or throws error
+   * get customer record by id from DB. Will include magento record if available
+   * @param {unknown} id - customerId
+   * @returns {Customer} Customer object or null
    */
   static async get(id: number | unknown, t?: Transaction): Promise<Customer | null> {
     const customerId = isId.validateSync(id)
@@ -291,11 +296,10 @@ export default class CustomerController {
     }
   }
 
-  // FIXME: WIP
   /**
    * update customer record in DB. Will update magento record if provided.
    * @param {number | unknown} customerId - id of the customer record to update in DB
-   * @param {unknown} customer - customer record to update in DB
+   * @param {unknown} customer - update data for customer record
    * @returns {Customer} Updated Customer object or throws error
    */
   static async update(customerId: number | unknown, customer: unknown, t?: Transaction): Promise<Customer> {
@@ -304,41 +308,52 @@ export default class CustomerController {
       let magento: Partial<CustomerMagentoRecord> | undefined
       if (customer && typeof customer === 'object' && 'magento' in customer) {
         magento = validateCustomerMagentoUpdate(customer.magento)
-        console.log('magento record to update: ', magento)
+        // console.log('magento record to update: ', magento)
       }
       const parsedCustomer = validateCustomerUpdate(customer)
 
       // console.log('parsed customer', parsedCustomer)
       const id = isId.validateSync(customerId)
-      const customerRecord = await Customer.findByPk(id, { transaction })
+      const customerRecord = await Customer.findByPk(id, { include: 'magento', transaction })
       if (!customerRecord) {
         throw new Error('customer does not exist')
       }
-      if (customerRecord) {
-        const x = await customerRecord.update(parsedCustomer, { transaction })
-        await commit()
-        return x
-      }
-      // const result: Customer | null = await Customer.update(parsedCustomer, {
-      //   where: {
-      //     id,
-      //   },
-      //   transaction,
-      // })
 
-      // if (result && magento) {
-      //   const x = await result.createMagento(magento, { transaction })
-      //   result.magento = x
-      // }
-      // if (result) {
-      //   await commit()
-      //   // return result
-      //   const final = await Customer.findByPk(result.id, { include: 'magento' })
-      //   if (final) {
-      //     return final
-      //   }
-      // }
-      throw new Error('Internal Error: customer was not created')
+      await customerRecord.update(parsedCustomer, { transaction })
+
+      if (magento) {
+        if (customerRecord.magento) {
+          await customerRecord.magento.update(magento, { transaction })
+        }
+      }
+      await commit()
+      return customerRecord
+    } catch (error) {
+      await rollback()
+      // rethrow the error for further handling
+      throw error
+    }
+  }
+
+  /**
+   * delete customer record with a given id from DB.
+   * @param {unknown} id - customerId
+   * @returns {number} number of objects deleted.
+   */
+  static async delete(id: number | unknown, t?: Transaction): Promise<number> {
+    const [transaction, commit, rollback] = await useTransaction(t)
+    try {
+      const customerId = isId.validateSync(id)
+      const final = await Customer.destroy({
+        where: {
+          id: customerId,
+        },
+        transaction,
+      })
+      console.log('deletion result: ', final)
+      // await commit()
+      await rollback()
+      return final
     } catch (error) {
       await rollback()
       // rethrow the error for further handling
@@ -348,7 +363,7 @@ export default class CustomerController {
 
   // done: get customer
   // done: create customer
-  // update customer
+  // done: update customer
   // delete customer
   // delete magento record
   // upsert customer (email required)

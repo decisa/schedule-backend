@@ -33,6 +33,18 @@ customerRouter.get('/:id', (req, res) => {
   }
 })
 
+customerRouter.delete('/:id', (req, res) => {
+  try {
+    CustomerController.delete(req.params.id)
+      .then((numberOfItemsDeleted) => {
+        handleResponse(res, numberOfItemsDeleted)
+      })
+      .catch((err) => handleError(res, err))
+  } catch (error) {
+    handleError(res, error)
+  }
+})
+
 customerRouter.put('/:id', (req, res) => {
   try {
     const customer = req.body as unknown
