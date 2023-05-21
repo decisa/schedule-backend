@@ -1,6 +1,7 @@
 import express from 'express'
 import { handleError, handleResponse } from '../routeUtils'
 import CustomerController from '../../models/Sales/Customer/customerController'
+import AddressController from '../../models/Sales/Address/addressController'
 
 const customerRouter = express.Router()
 
@@ -63,6 +64,20 @@ customerRouter.get('/:id', (req, res) => {
       .then((result) => {
         const customerResult = CustomerController.toJSON(result)
         handleResponse(res, customerResult)
+      })
+      .catch((err) => handleError(res, err))
+  } catch (error) {
+    handleError(res, error)
+  }
+})
+
+// get all addresses associated with a given customer ID
+customerRouter.get('/:id/addresses', (req, res) => {
+  try {
+    AddressController.getByCustomerId(req.params.id)
+      .then((result) => {
+        const addresses = AddressController.toJSON(result)
+        handleResponse(res, addresses)
       })
       .catch((err) => handleError(res, err))
   } catch (error) {

@@ -64,7 +64,7 @@ export type AddressCreate =
 export type AddressRead = Required<AddressCreate> & AddressFK
 
 export type AddressMagentoRead = Omit<AddressRead, 'latitude' | 'longitude' | 'street1' | 'street2'> & {
-  magento?: AddressMagentoRecord
+  magento?: Omit<AddressMagentoRecord, 'addressId'>
 }
 
 const addressMagentoSchema: yup.ObjectSchema<AddressMagentoRecord> = yup.object({
@@ -431,6 +431,7 @@ function addressToJson(address: Address): AddressMagentoRead {
   let magento: AddressMagentoRecord | undefined
   if (address.magento && address.magento instanceof MagentoAddress) {
     magento = address.magento.toJSON()
+    delete magento.addressId
   }
   const addressData = address.toJSON()
   const result: AddressMagentoRead & {
@@ -498,6 +499,23 @@ export default class AddressController {
   static async get(id: number | unknown, t?: Transaction): Promise<Address | null> {
     const addressId = isId.validateSync(id)
     const final = await Address.findByPk(addressId, { include: 'magento', transaction: t })
+    return final
+  }
+
+  /**
+   * get all addresses associated with a given customerId. Will include magento record if available
+   * @param {unknown} id - customerId
+   * @returns {Address | Address[] | null} Address object or null
+   */
+  static async getByCustomerId(id: number | unknown, t?: Transaction): Promise<Address | Address[] | null> {
+    const customerId = isId.validateSync(id)
+    const final = await Address.findAll({
+      where: {
+        customerId,
+      },
+      include: 'magento',
+      transaction: t,
+    })
     return final
   }
 
