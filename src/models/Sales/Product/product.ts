@@ -21,6 +21,10 @@ import type { ProductConfiguration } from '../ProductConfiguration/productConfig
 export class Product extends Model<InferAttributes<Product>, InferCreationAttributes<Product>> {
   declare id: CreationOptional<number>
 
+  declare createdAt: CreationOptional<Date>
+
+  declare updatedAt: CreationOptional<Date>
+
   declare type: string
 
   declare name: string
@@ -122,6 +126,14 @@ export function initProducts(db: Sequelize) {
       externalId: {
         type: DataTypes.INTEGER,
         allowNull: true,
+      },
+      createdAt: {
+        type: DataTypes.DATE,
+        defaultValue: DataTypes.NOW,
+      },
+      updatedAt: {
+        type: DataTypes.DATE,
+        defaultValue: DataTypes.NOW,
       },
     },
     {
