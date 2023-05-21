@@ -6,13 +6,14 @@ import {
   DataTypes, ForeignKey, InferAttributes, InferCreationAttributes, Model, NonAttribute, Sequelize,
 } from 'sequelize'
 import type { Address } from '../Address/address'
+import { MagentoAddressType } from '../MagentoOrderAddress/magentoOrderAddress'
 
 export class MagentoAddress extends Model<InferAttributes<MagentoAddress>, InferCreationAttributes<MagentoAddress>> {
   declare externalId: number
 
   // declare externalCustomerAddressId: number
 
-  declare addressType: string
+  declare addressType: MagentoAddressType
 
   // ASSOCIATIONS:
   declare addressId: ForeignKey<Address['id']>

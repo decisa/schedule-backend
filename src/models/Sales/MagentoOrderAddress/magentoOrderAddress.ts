@@ -7,7 +7,9 @@ import {
 } from 'sequelize'
 import type { OrderAddress } from '../OrderAddress/orderAddress'
 
-export type MagentoAddressType = 'billing' | 'shipping'
+export const magentoAddressTypes = ['billing', 'shipping'] as const
+
+export type MagentoAddressType = typeof magentoAddressTypes[number]
 
 export class MagentoOrderAddress extends Model<InferAttributes<MagentoOrderAddress>, InferCreationAttributes<MagentoOrderAddress>> {
   declare externalId: number

@@ -300,10 +300,10 @@ export default class CustomerController {
         result.magento = x
       }
       if (result) {
-        await commit()
         // return result
         const final = await this.get(result.id, transaction) // Customer.findByPk(result.id, { include: 'magento', transaction })
         if (final) {
+          await commit()
           return final
         }
       }
