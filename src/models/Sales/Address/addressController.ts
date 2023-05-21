@@ -1,9 +1,8 @@
 import * as yup from 'yup'
 import { Transaction } from 'sequelize'
 import {
-  isEmail, isId, isObjectWithEmail, printYellowLine, useTransaction,
+  isId, printYellowLine, useTransaction,
 } from '../../../utils/utils'
-import { Customer } from '../Customer/customer'
 import { MagentoAddressType, magentoAddressTypes } from '../MagentoOrderAddress/magentoOrderAddress'
 import { Address } from './address'
 import { MagentoAddress } from '../MagentoAddress/magentoAddress'
@@ -61,7 +60,7 @@ export type AddressCreate =
   & Required<AddressRequired>
   & Partial<AddressOptional>
   & Partial<AddressTimeStamps>
-  // & Partial<CustomerAssociations>
+  // & Partial<AddressAssociations>
 export type AddressRead = Required<AddressCreate> & AddressFK
 
 export type AddressMagentoRead = Omit<AddressRead, 'latitude' | 'longitude' | 'street1' | 'street2'> & {
@@ -429,7 +428,7 @@ export function validateAddressMagentoUpdate(object: unknown): Partial<Omit<Addr
 }
 
 function addressToJson(address: Address): AddressMagentoRead {
-  let magento: AddressMagentoRecord | undefined // InferAttributes<MagentoCustomer, { omit: never }> | undefined
+  let magento: AddressMagentoRecord | undefined
   if (address.magento && address.magento instanceof MagentoAddress) {
     magento = address.magento.toJSON()
   }
@@ -501,23 +500,6 @@ export default class AddressController {
     const final = await Address.findByPk(addressId, { include: 'magento', transaction: t })
     return final
   }
-
-  // /**
-  //  * get customer record by email from DB. Will include magento record if available
-  //  * @param {unknown} params - object with email field
-  //  * @returns {Customer} Customer object or null
-  //  */
-  // static async getByEmail(params: string | unknown, t?: Transaction): Promise<Customer | null> {
-  //   const { email } = isObjectWithEmail.validateSync(params)
-  //   const customerRecord = await Customer.findOne({
-  //     where: {
-  //       email,
-  //     },
-  //     include: 'magento',
-  //     transaction: t,
-  //   })
-  //   return customerRecord
-  // }
 
   /**
    * insert address record to DB. Will include magento record if provided.
@@ -609,30 +591,46 @@ export default class AddressController {
     }
   }
 
-  // /**
-  //  * upsert(insert or create) customer record in DB. Will update/create magento record if provided. email is required
-  //  * @param {unknown} customerData - update data for customer record
-  //  * @returns {Customer} Updated Or Created Customer object with Magento Record if available
-  //  */
-  // static async upsert(customerData: unknown, t?: Transaction): Promise<Customer> {
-  //   const [transaction, commit, rollback] = await useTransaction(t)
-  //   try {
-  //     const customerRecord = await this.getByEmail(customerData, transaction)
+  /**
+   * upsert(insert or create) address record in DB. Will update/create magento record if provided. magento address externalId is required
+   * @param {unknown} addressData - update data for address record
+   * @returns {Address} updated or created Address object with Magento Record if available
+   */
+  static async upsert(addressData: unknown, t?: Transaction): Promise<Address> {
+    const [transaction, commit, rollback] = await useTransaction(t)
+    try {
+      let magento: AddressMagentoRecord | undefined
+      if (addressData && typeof addressData === 'object' && 'magento' in addressData) {
+        magento = validateAddressMagento(addressData.magento)
+      }
+      if (!magento) {
+        throw new Error('Magento record is required for upsert')
+      }
+      const addressRecord = await Address.findOne({
+        include: [{
+          association: 'magento',
+          where: {
+            externalId: magento.externalId,
+          },
+        }],
+        transaction,
+      })
 
-  //     let result: Customer
-  //     if (!customerRecord) {
-  //       result = await this.create(customerData, transaction)
-  //     } else {
-  //       result = await this.update(customerRecord.id, customerData, transaction)
-  //     }
-  //     await commit()
-  //     return result
-  //   } catch (error) {
-  //     await rollback()
-  //     // rethrow the error for further handling
-  //     throw error
-  //   }
-  // }
+      let result: Address
+      if (!addressRecord) {
+        result = await this.create(addressData, transaction)
+      } else {
+        result = await this.update(addressRecord.id, addressData, transaction)
+      }
+
+      await commit()
+      return result
+    } catch (error) {
+      await rollback()
+      // rethrow the error for further handling
+      throw error
+    }
+  }
 
   /**
    * delete address record with a given id from DB.
@@ -660,8 +658,8 @@ export default class AddressController {
   }
 
   /**
-   * delete corresponding address Magento record with a given email from DB.
-   * @param {unknown} addressId - customer's email
+   * delete corresponding address Magento record with a given addressID from DB.
+   * @param {unknown} addressId - addressId to delete
    * @returns {AddressMagentoRecord | null} AddressMagentoRecord that was deleted or null if record did not exist.
    */
   static async deleteMagento(addressId: number | unknown, t?: Transaction): Promise<AddressMagentoRecord | null> {
@@ -712,6 +710,6 @@ export default class AddressController {
 // done: delete address
 
 // done: delete magento record
-// todo: create magento record
+// done: create magento record
 
-// upsert address (magento record with externalID is required)
+// done: upsert address (magento record with externalID is required)

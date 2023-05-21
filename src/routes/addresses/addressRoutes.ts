@@ -7,8 +7,6 @@ const addressRouter = express.Router()
 // create address record including magento, if provided
 addressRouter.post('/', (req, res) => {
   try {
-    // const id = 1
-    // console.log('params', req.params)
     const address = req.body as unknown
     AddressController.create(address)
       .then((result) => {
@@ -21,22 +19,20 @@ addressRouter.post('/', (req, res) => {
   }
 })
 
-// // upsert customer record including magento, if provided. email required
-// addressRouter.put('/', (req, res) => {
-//   try {
-//     // const id = 1
-//     // console.log('params', req.params)
-//     const customer = req.body as unknown
-//     CustomerController.upsert(customer)
-//       .then((result) => {
-//         const customerResult = CustomerController.toJSON(result)
-//         handleResponse(res, customerResult)
-//       })
-//       .catch((err) => handleError(res, err))
-//   } catch (error) {
-//     handleError(res, error)
-//   }
-// })
+// upsert address record including magento. magento externalId is required
+addressRouter.put('/', (req, res) => {
+  try {
+    const address = req.body as unknown
+    AddressController.upsert(address)
+      .then((result) => {
+        const addressResult = AddressController.toJSON(result)
+        handleResponse(res, addressResult)
+      })
+      .catch((err) => handleError(res, err))
+  } catch (error) {
+    handleError(res, error)
+  }
+})
 
 // get address by id, will include Magento record if exists
 addressRouter.get('/:id', (req, res) => {
