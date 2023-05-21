@@ -12,8 +12,8 @@ addressRouter.post('/', (req, res) => {
     const address = req.body as unknown
     AddressController.create(address)
       .then((result) => {
-        // const addressResult = AddressController.toJSON(result)
-        handleResponse(res, result)
+        const addressResult = AddressController.toJSON(result)
+        handleResponse(res, addressResult)
       })
       .catch((err) => handleError(res, err))
   } catch (error) {
@@ -52,43 +52,44 @@ addressRouter.get('/:id', (req, res) => {
   }
 })
 
-// addressRouter.delete('/magento', (req, res) => {
-//   try {
-//     const email = req.body as unknown
-//     CustomerController.deleteMagento(email)
-//       .then((deletedRecord) => {
-//         handleResponse(res, deletedRecord)
-//       })
-//       .catch((err) => handleError(res, err))
-//   } catch (error) {
-//     handleError(res, error)
-//   }
-// })
+addressRouter.delete('/:addressId/magento', (req, res) => {
+  try {
+    const id = req.params.addressId
+    AddressController.deleteMagento(id)
+      .then((deletedRecord) => {
+        handleResponse(res, deletedRecord)
+      })
+      .catch((err) => handleError(res, err))
+  } catch (error) {
+    handleError(res, error)
+  }
+})
 
-// addressRouter.post('/magento', (req, res) => {
-//   try {
-//     const magentoData = req.body as unknown
-//     CustomerController.createMagento(magentoData)
-//       .then((magentoRecord) => {
-//         handleResponse(res, magentoRecord)
-//       })
-//       .catch((err) => handleError(res, err))
-//   } catch (error) {
-//     handleError(res, error)
-//   }
-// })
+addressRouter.post('/:addressId/magento', (req, res) => {
+  try {
+    const id = req.params.addressId
+    const magentoData = req.body as unknown
+    AddressController.createMagento(id, magentoData)
+      .then((magentoRecord) => {
+        handleResponse(res, magentoRecord)
+      })
+      .catch((err) => handleError(res, err))
+  } catch (error) {
+    handleError(res, error)
+  }
+})
 
-// addressRouter.delete('/:id', (req, res) => {
-//   try {
-//     CustomerController.delete(req.params.id)
-//       .then((numberOfItemsDeleted) => {
-//         handleResponse(res, numberOfItemsDeleted)
-//       })
-//       .catch((err) => handleError(res, err))
-//   } catch (error) {
-//     handleError(res, error)
-//   }
-// })
+addressRouter.delete('/:id', (req, res) => {
+  try {
+    AddressController.delete(req.params.id)
+      .then((numberOfItemsDeleted) => {
+        handleResponse(res, numberOfItemsDeleted)
+      })
+      .catch((err) => handleError(res, err))
+  } catch (error) {
+    handleError(res, error)
+  }
+})
 
 // update magento record
 addressRouter.patch('/:id', (req, res) => {

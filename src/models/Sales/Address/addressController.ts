@@ -581,7 +581,7 @@ export default class AddressController {
         throw new Error('address does not exist')
       }
 
-      if (!parsedAddressUpdate.latitude && addressRecord.latitude) {
+      if (parsedAddressUpdate.latitude === undefined && addressRecord.latitude) {
         // if new coordinates are not provided and current address has defined coordinates:
         // check if update requires new coordinates:
         if (shouldCoordinatesUpdate(addressRecord, parsedAddressUpdate)) {
@@ -597,14 +597,7 @@ export default class AddressController {
         if (addressRecord.magento) {
           await addressRecord.magento.update(magento, { transaction })
         } else {
-          // FIXME: replace with this.createMagento(magento, transaction) once implemented
-          const magentoParsed = validateAddressMagento({
-            ...magento,
-            addressId: addressRecord.id,
-          })
-          addressRecord.magento = await MagentoAddress.create({
-            ...magentoParsed,
-          }, { transaction })
+          addressRecord.magento = await this.createMagento(addressRecord.id, magento, transaction)
         }
       }
       await commit()
@@ -641,85 +634,84 @@ export default class AddressController {
   //   }
   // }
 
-  // /**
-  //  * delete customer record with a given id from DB.
-  //  * @param {unknown} id - customerId
-  //  * @returns {number} number of objects deleted.
-  //  */
-  // static async delete(id: number | unknown, t?: Transaction): Promise<boolean> {
-  //   const [transaction, commit, rollback] = await useTransaction(t)
-  //   try {
-  //     const customerId = isId.validateSync(id)
-  //     const final = await Customer.destroy({
-  //       where: {
-  //         id: customerId,
-  //       },
-  //       transaction,
-  //     })
-  //     console.log('deletion result: ', final)
-  //     await commit()
-  //     return final === 1
-  //   } catch (error) {
-  //     await rollback()
-  //     // rethrow the error for further handling
-  //     throw error
-  //   }
-  // }
+  /**
+   * delete address record with a given id from DB.
+   * @param {unknown} id - addressId
+   * @returns {number} number of objects deleted.
+   */
+  static async delete(id: number | unknown, t?: Transaction): Promise<boolean> {
+    const [transaction, commit, rollback] = await useTransaction(t)
+    try {
+      const addressId = isId.validateSync(id)
+      const final = await Address.destroy({
+        where: {
+          id: addressId,
+        },
+        transaction,
+      })
+      console.log('deletion result: ', final)
+      await commit()
+      return final === 1
+    } catch (error) {
+      await rollback()
+      // rethrow the error for further handling
+      throw error
+    }
+  }
 
-  // /**
-  //  * delete customer Magento record with a given email from DB.
-  //  * @param {unknown} email - customer's email
-  //  * @returns {CustomerMagentoRecord | null} CustomerMagentoRecord that was deleted or null if record did not exist.
-  //  */
-  // static async deleteMagento(customerEmail: string | unknown, t?: Transaction): Promise<CustomerMagentoRecord | null> {
-  //   const [transaction, commit, rollback] = await useTransaction(t)
-  //   try {
-  //     const { email } = isObjectWithEmail.validateSync(customerEmail)
-  //     const record = await MagentoCustomer.findByPk(email, { transaction })
-  //     let final = 0
+  /**
+   * delete corresponding address Magento record with a given email from DB.
+   * @param {unknown} addressId - customer's email
+   * @returns {AddressMagentoRecord | null} AddressMagentoRecord that was deleted or null if record did not exist.
+   */
+  static async deleteMagento(addressId: number | unknown, t?: Transaction): Promise<AddressMagentoRecord | null> {
+    const [transaction, commit, rollback] = await useTransaction(t)
+    try {
+      const id = isId.validateSync(addressId)
+      const record = await this.get(id, transaction)
+      let magento: AddressMagentoRecord | null = null
 
-  //     if (record) {
-  //       final = await MagentoCustomer.destroy({
-  //         where: {
-  //           email,
-  //         },
-  //         transaction,
-  //       })
-  //     }
-  //     await commit()
-  //     return final === 1 ? record : null
-  //   } catch (error) {
-  //     await rollback()
-  //     // rethrow the error for further handling
-  //     throw error
-  //   }
-  // }
+      if (record && record.magento) {
+        magento = record.magento.toJSON()
+        await record.magento.destroy({ transaction })
+      }
+      await commit()
+      return magento
+    } catch (error) {
+      await rollback()
+      // rethrow the error for further handling
+      throw error
+    }
+  }
 
-  // /**
-  //  * create customer Magento record with a given email.
-  //  * @param {unknown} magentoData magento record to add
-  //  * @returns {MagentoCustomer} MagentoCustomer instance that was created
-  //  */
-  // static async createMagento(magentoData: CustomerMagentoRecord | unknown, t?: Transaction): Promise<MagentoCustomer> {
-  //   const [transaction, commit, rollback] = await useTransaction(t)
-  //   try {
-  //     const magento = validateCustomerMagento(magentoData)
-  //     const record = await MagentoCustomer.create(magento, { transaction })
-  //     await commit()
-  //     return record
-  //   } catch (error) {
-  //     await rollback()
-  //     // rethrow the error for further handling
-  //     throw error
-  //   }
-  // }
+  /**
+   * create address Magento record for the given ID.
+   * @param {number | unknown} addressId id of the address that needs magento data inserted
+   * @param {AddressMagentoRecord | unknown} magentoData magento record to add
+   * @returns {MagentoAddress} MagentoAddress instance that was created
+   */
+  static async createMagento(addressId: number | unknown, addressMagentoData: AddressMagentoRecord | unknown, t?: Transaction): Promise<MagentoAddress> {
+    const [transaction, commit, rollback] = await useTransaction(t)
+    try {
+      const magento = validateAddressMagento(addressMagentoData)
+      const id = isId.validateSync(addressId)
+      magento.addressId = id
+      const record = await MagentoAddress.create(magento, { transaction })
+      await commit()
+      return record
+    } catch (error) {
+      await rollback()
+      // rethrow the error for further handling
+      throw error
+    }
+  }
 }
 // done: get address (by id)
 // done: create address
-// update address
-// delete address
+// done: update address
+// done: delete address
 
-// delete magento record
-// create magento record
+// done: delete magento record
+// todo: create magento record
 
 // upsert address (magento record with externalID is required)
