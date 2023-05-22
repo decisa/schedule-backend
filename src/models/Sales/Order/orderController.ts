@@ -172,21 +172,22 @@ export default class OrderController {
           if (isNotEmptyObject(parsedProduct)) {
             // parse brand fields, find or create brand record in db
             // assign brand id to the product
-            if (brand) {
-              const parsedBrand = parseMagentoBrand(brand)
-              if (parsedBrand) {
-                // eslint-disable-next-line no-await-in-loop
-                const [brandRecord] = await Brand.findOrCreate({
-                  where: {
-                    externalId: parsedBrand.externalId,
-                  },
-                  defaults: parsedBrand,
-                })
-                if (brandRecord) {
-                  parsedProduct.brandId = brandRecord.id
-                }
-              }
-            }
+            // FIXME: uncomment this and fix
+            // if (brand) {
+            //   const parsedBrand = parseMagentoBrand(brand)
+            //   if (parsedBrand) {
+            //     // eslint-disable-next-line no-await-in-loop
+            //     const [brandRecord] = await Brand.findOrCreate({
+            //       where: {
+            //         externalId: parsedBrand.externalId,
+            //       },
+            //       defaults: parsedBrand,
+            //     })
+            //     if (brandRecord) {
+            //       parsedProduct.brandId = brandRecord.id
+            //     }
+            //   }
+            // }
 
             if (!parsedProduct.externalId) {
               throw new Error('Product external Id is missing')
