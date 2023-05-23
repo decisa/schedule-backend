@@ -4,48 +4,57 @@ import BrandController from '../../models/Brand/brandController'
 
 const brandRouter = express.Router()
 
-// // create address record including magento, if provided
-// brandRouter.post('/', (req, res) => {
-//   try {
-//     const address = req.body as unknown
-//     AddressController.create(address)
-//       .then((result) => {
-//         const addressResult = AddressController.toJSON(result)
-//         handleResponse(res, addressResult)
-//       })
-//       .catch((err) => handleError(res, err))
-//   } catch (error) {
-//     handleError(res, error)
-//   }
-// })
+// create Brand record
+brandRouter.post('/', (req, res) => {
+  try {
+    const brand = req.body as unknown
+    BrandController.create(brand)
+      .then((result) => {
+        const brandResult = BrandController.toJSON(result)
+        handleResponse(res, brandResult)
+      })
+      .catch((err) => handleError(res, err))
+  } catch (error) {
+    handleError(res, error)
+  }
+})
 
-// // upsert address record including magento. magento externalId is required
-// brandRouter.put('/', (req, res) => {
-//   try {
-//     const address = req.body as unknown
-//     AddressController.upsert(address)
-//       .then((result) => {
-//         const addressResult = AddressController.toJSON(result)
-//         handleResponse(res, addressResult)
-//       })
-//       .catch((err) => handleError(res, err))
-//   } catch (error) {
-//     handleError(res, error)
-//   }
-// })
+// upsert address record including magento. magento externalId is required
+brandRouter.put('/', (req, res) => {
+  try {
+    const brand = req.body as unknown
+    BrandController.upsert(brand)
+      .then((result) => {
+        const brandResult = BrandController.toJSON(result)
+        handleResponse(res, brandResult)
+      })
+      .catch((err) => handleError(res, err))
+  } catch (error) {
+    handleError(res, error)
+  }
+})
 
 // get brand by externalId
 brandRouter.get('/magento/:externalId', (req, res) => {
   try {
     BrandController.getByExternalId(req.params.externalId)
       .then((result) => {
-        // const addressResult = AddressController.toJSON(result)
-        // FIXME: replace with to JSON controller
-        if (result) {
-          handleResponse(res, result.toJSON())
-          return
-        }
-        handleResponse(res, 'brand not found')
+        const brandResult = BrandController.toJSON(result)
+        handleResponse(res, brandResult)
+      })
+      .catch((err) => handleError(res, err))
+  } catch (error) {
+    handleError(res, error)
+  }
+})
+
+// get all brands
+brandRouter.get('/all', (req, res) => {
+  try {
+    BrandController.getAll()
+      .then((result) => {
+        const brandResult = BrandController.toJSON(result)
+        handleResponse(res, brandResult)
       })
       .catch((err) => handleError(res, err))
   } catch (error) {
@@ -58,13 +67,8 @@ brandRouter.get('/:id', (req, res) => {
   try {
     BrandController.get(req.params.id)
       .then((result) => {
-        // const addressResult = AddressController.toJSON(result)
-        // FIXME: replace with to JSON controller
-        if (result) {
-          handleResponse(res, result.toJSON())
-          return
-        }
-        handleResponse(res, 'brand not found')
+        const brandResult = BrandController.toJSON(result)
+        handleResponse(res, brandResult)
       })
       .catch((err) => handleError(res, err))
   } catch (error) {
@@ -99,31 +103,31 @@ brandRouter.get('/:id', (req, res) => {
 //   }
 // })
 
-// brandRouter.delete('/:id', (req, res) => {
-//   try {
-//     AddressController.delete(req.params.id)
-//       .then((numberOfItemsDeleted) => {
-//         handleResponse(res, numberOfItemsDeleted)
-//       })
-//       .catch((err) => handleError(res, err))
-//   } catch (error) {
-//     handleError(res, error)
-//   }
-// })
+brandRouter.delete('/:id', (req, res) => {
+  try {
+    BrandController.delete(req.params.id)
+      .then((brandIsDeleted) => {
+        handleResponse(res, brandIsDeleted)
+      })
+      .catch((err) => handleError(res, err))
+  } catch (error) {
+    handleError(res, error)
+  }
+})
 
-// // update magento record
-// brandRouter.patch('/:id', (req, res) => {
-//   try {
-//     const addressUpdate = req.body as unknown
-//     AddressController.update(req.params.id, addressUpdate)
-//       .then((result) => {
-//         const addressResult = AddressController.toJSON(result)
-//         handleResponse(res, addressResult)
-//       })
-//       .catch((err) => handleError(res, err))
-//   } catch (error) {
-//     handleError(res, error)
-//   }
-// })
+// update brand
+brandRouter.patch('/:id', (req, res) => {
+  try {
+    const brandUpdate = req.body as unknown
+    BrandController.update(req.params.id, brandUpdate)
+      .then((result) => {
+        const brandResult = BrandController.toJSON(result)
+        handleResponse(res, brandResult)
+      })
+      .catch((err) => handleError(res, err))
+  } catch (error) {
+    handleError(res, error)
+  }
+})
 
 export default brandRouter
