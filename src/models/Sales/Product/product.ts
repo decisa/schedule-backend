@@ -18,6 +18,10 @@ import {
 import type { Brand } from '../../Brand/brand'
 import type { ProductConfiguration } from '../ProductConfiguration/productConfiguration'
 
+export const productTypes = ['simple', 'configurable', 'custom'] as const
+
+export type ProductType = typeof productTypes[number]
+
 export class Product extends Model<InferAttributes<Product>, InferCreationAttributes<Product>> {
   declare id: CreationOptional<number>
 
@@ -25,25 +29,25 @@ export class Product extends Model<InferAttributes<Product>, InferCreationAttrib
 
   declare updatedAt: CreationOptional<Date>
 
-  declare type: string
+  declare type: ProductType
 
   declare name: string
 
-  declare url?: string
+  declare url: string | null
 
-  declare image?: string
+  declare image: string | null
 
   // declare brandId:
 
-  declare productSpecs?: string
+  declare productSpecs: string | null
 
-  declare assemblyInstructions?: string
+  declare assemblyInstructions: string | null
 
-  declare volume?: number
+  declare volume: number | null
 
-  declare sku?: string
+  declare sku: string | null
 
-  declare externalId?: number
+  declare externalId: number | null
 
   // associations
 
@@ -97,7 +101,11 @@ export function initProducts(db: Sequelize) {
         autoIncrement: true,
         primaryKey: true,
       },
-      type: DataTypes.STRING,
+      type: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        defaultValue: 'custom' satisfies ProductType,
+      },
       name: DataTypes.STRING,
       url: {
         type: DataTypes.STRING,
