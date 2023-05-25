@@ -62,19 +62,19 @@ productRouter.post('/', (req, res) => {
 //   }
 // })
 
-// // get brand by id
-// productRouter.get('/:id', (req, res) => {
-//   try {
-//     ProductController.get(req.params.id)
-//       .then((result) => {
-//         const brandResult = ProductController.toJSON(result)
-//         handleResponse(res, brandResult)
-//       })
-//       .catch((err) => handleError(res, err))
-//   } catch (error) {
-//     handleError(res, error)
-//   }
-// })
+// get product by id
+productRouter.get('/:id', (req, res) => {
+  try {
+    ProductController.get(req.params.id)
+      .then((result) => {
+        const productResult = ProductController.toJSON(result)
+        handleResponse(res, productResult)
+      })
+      .catch((err) => handleError(res, err))
+  } catch (error) {
+    handleError(res, error)
+  }
+})
 
 // // brandRouter.delete('/:addressId/magento', (req, res) => {
 // //   try {
@@ -103,17 +103,17 @@ productRouter.post('/', (req, res) => {
 // //   }
 // // })
 
-// productRouter.delete('/:id', (req, res) => {
-//   try {
-//     ProductController.delete(req.params.id)
-//       .then((brandIsDeleted) => {
-//         handleResponse(res, brandIsDeleted)
-//       })
-//       .catch((err) => handleError(res, err))
-//   } catch (error) {
-//     handleError(res, error)
-//   }
-// })
+productRouter.delete('/:id', (req, res) => {
+  try {
+    ProductController.delete(req.params.id)
+      .then((productIsDeleted) => {
+        handleResponse(res, productIsDeleted)
+      })
+      .catch((err) => handleError(res, err))
+  } catch (error) {
+    handleError(res, error)
+  }
+})
 
 // update product
 productRouter.patch('/:id', (req, res) => {

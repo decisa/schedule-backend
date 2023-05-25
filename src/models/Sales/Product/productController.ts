@@ -363,77 +363,29 @@ export default class ProductController {
   //   }
   // }
 
-  // /**
-  //  * delete address record with a given id from DB.
-  //  * @param {unknown} id - addressId
-  //  * @returns {number} number of objects deleted.
-  //  */
-  // static async delete(id: number | unknown, t?: Transaction): Promise<boolean> {
-  //   const [transaction, commit, rollback] = await useTransaction(t)
-  //   try {
-  //     const addressId = isId.validateSync(id)
-  //     const final = await Address.destroy({
-  //       where: {
-  //         id: addressId,
-  //       },
-  //       transaction,
-  //     })
-  //     console.log('deletion result: ', final)
-  //     await commit()
-  //     return final === 1
-  //   } catch (error) {
-  //     await rollback()
-  //     // rethrow the error for further handling
-  //     throw error
-  //   }
-  // }
-
-  // /**
-  //  * delete corresponding address Magento record with a given addressID from DB.
-  //  * @param {unknown} addressId - addressId to delete
-  //  * @returns {AddressMagentoRecord | null} AddressMagentoRecord that was deleted or null if record did not exist.
-  //  */
-  // static async deleteMagento(addressId: number | unknown, t?: Transaction): Promise<AddressMagentoRecord | null> {
-  //   const [transaction, commit, rollback] = await useTransaction(t)
-  //   try {
-  //     const id = isId.validateSync(addressId)
-  //     const record = await this.get(id, transaction)
-  //     let magento: AddressMagentoRecord | null = null
-
-  //     if (record && record.magento) {
-  //       magento = record.magento.toJSON()
-  //       await record.magento.destroy({ transaction })
-  //     }
-  //     await commit()
-  //     return magento
-  //   } catch (error) {
-  //     await rollback()
-  //     // rethrow the error for further handling
-  //     throw error
-  //   }
-  // }
-
-  // /**
-  //  * create address Magento record for the given ID.
-  //  * @param {number | unknown} addressId id of the address that needs magento data inserted
-  //  * @param {AddressMagentoRecord | unknown} magentoData magento record to add
-  //  * @returns {MagentoAddress} MagentoAddress instance that was created
-  //  */
-  // static async createMagento(addressId: number | unknown, addressMagentoData: AddressMagentoRecord | unknown, t?: Transaction): Promise<MagentoAddress> {
-  //   const [transaction, commit, rollback] = await useTransaction(t)
-  //   try {
-  //     const magento = validateAddressMagento(addressMagentoData)
-  //     const id = isId.validateSync(addressId)
-  //     magento.addressId = id
-  //     const record = await MagentoAddress.create(magento, { transaction })
-  //     await commit()
-  //     return record
-  //   } catch (error) {
-  //     await rollback()
-  //     // rethrow the error for further handling
-  //     throw error
-  //   }
-  // }
+  /**
+   * delete Product record with a given id from DB.
+   * @param {unknown} id - productId
+   * @returns {number} number of objects deleted.
+   */
+  static async delete(id: number | unknown, t?: Transaction): Promise<boolean> {
+    const [transaction, commit, rollback] = await useTransaction(t)
+    try {
+      const productId = isId.validateSync(id)
+      const final = await Product.destroy({
+        where: {
+          id: productId,
+        },
+        transaction,
+      })
+      await commit()
+      return final === 1
+    } catch (error) {
+      await rollback()
+      // rethrow the error for further handling
+      throw error
+    }
+  }
 }
 // done: toJSON
 // done: get product (by id)
