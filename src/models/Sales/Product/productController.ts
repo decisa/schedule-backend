@@ -1,11 +1,8 @@
 import * as yup from 'yup'
 import { Transaction } from 'sequelize'
-import {
-  isId, printYellowLine, useTransaction,
-} from '../../../utils/utils'
-import { Brand } from '../../Brand/brand'
-import { ProductConfiguration } from '../ProductConfiguration/productConfiguration'
-import { BrandRead } from '../../Brand/brandController'
+import { isId, useTransaction, isObjectWithExternalId } from '../../../utils/utils'
+// import { ProductConfiguration } from '../ProductConfiguration/productConfiguration'
+// import { BrandRead } from '../../Brand/brandController'
 import { Product, ProductType, productTypes } from './product'
 
 type ProductCreational = {
@@ -32,16 +29,16 @@ type ProductTimeStamps = {
   updatedAt: Date
 }
 
-type ProductFK = {
-  brandId: number
-}
+// type ProductFK = {
+//   brandId: number
+// }
 
-type ProductAssociations = {
-  brand?: BrandRead
-  // or should it be just
-  // brand: string
-  configurations?: ProductConfiguration[] | null
-}
+// type ProductAssociations = {
+//   brand?: BrandRead
+//   // or should it be just
+//   // brand: string
+//   configurations?: ProductConfiguration[] | null
+// }
 
 // Note: DATA TYPES
 export type ProductCreate =
@@ -322,46 +319,42 @@ export default class ProductController {
     }
   }
 
-  // /**
-  //  * upsert(insert or create) address record in DB. Will update/create magento record if provided. magento address externalId is required
-  //  * @param {unknown} addressData - update data for address record
-  //  * @returns {Address} updated or created Address object with Magento Record if available
-  //  */
-  // static async upsert(addressData: unknown, t?: Transaction): Promise<Address> {
-  //   const [transaction, commit, rollback] = await useTransaction(t)
-  //   try {
-  //     let magento: AddressMagentoRecord | undefined
-  //     if (addressData && typeof addressData === 'object' && 'magento' in addressData) {
-  //       magento = validateAddressMagento(addressData.magento)
-  //     }
-  //     if (!magento) {
-  //       throw new Error('Magento record is required for upsert')
-  //     }
-  //     const addressRecord = await Address.findOne({
-  //       include: [{
-  //         association: 'magento',
-  //         where: {
-  //           externalId: magento.externalId,
-  //         },
-  //       }],
-  //       transaction,
-  //     })
+  /**
+   * upsert(insert or create) product record in DB. magento product externalId is required
+   * @param {unknown} productData - update/create data for product record
+   * @returns {product} updated or created product object with Brand Record if available
+   */
+  static async upsert(productData: unknown, t?: Transaction): Promise<Product> {
+    const [transaction, commit, rollback] = await useTransaction(t)
+    try {
+      const { externalId } = isObjectWithExternalId.validateSync(productData)
+      const productRecord = await Product.findOne({
+        where: {
+          externalId,
+        },
+        transaction,
+      })
 
-  //     let result: Address
-  //     if (!addressRecord) {
-  //       result = await this.create(addressData, transaction)
-  //     } else {
-  //       result = await this.update(addressRecord.id, addressData, transaction)
-  //     }
+      let result: Product | null
+      if (!productRecord) {
+        result = await this.create(productData, transaction)
+      } else {
+        result = await this.update(productRecord.id, productData, transaction)
+      }
 
-  //     await commit()
-  //     return result
-  //   } catch (error) {
-  //     await rollback()
-  //     // rethrow the error for further handling
-  //     throw error
-  //   }
-  // }
+      result = await this.get(result.id, transaction)
+
+      if (!result) {
+        throw new Error('Unknown error upserting Product')
+      }
+      await commit()
+      return result
+    } catch (error) {
+      await rollback()
+      // rethrow the error for further handling
+      throw error
+    }
+  }
 
   /**
    * delete Product record with a given id from DB.
@@ -391,9 +384,5 @@ export default class ProductController {
 // done: get product (by id)
 // done: create product
 // done: update product
-// delete product
-
-// delete magento record
-// create magento record
-
-// upsert product (externalId is required)
+// done: delete product
+// done: upsert product (externalId is required)

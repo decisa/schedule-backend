@@ -19,20 +19,20 @@ productRouter.post('/', (req, res) => {
   }
 })
 
-// // upsert address record including magento. magento externalId is required
-// productRouter.put('/', (req, res) => {
-//   try {
-//     const brand = req.body as unknown
-//     ProductController.upsert(brand)
-//       .then((result) => {
-//         const brandResult = ProductController.toJSON(result)
-//         handleResponse(res, brandResult)
-//       })
-//       .catch((err) => handleError(res, err))
-//   } catch (error) {
-//     handleError(res, error)
-//   }
-// })
+// upsert product record. magento externalId is required
+productRouter.put('/', (req, res) => {
+  try {
+    const product = req.body as unknown
+    ProductController.upsert(product)
+      .then((result) => {
+        const productResult = ProductController.toJSON(result)
+        handleResponse(res, productResult)
+      })
+      .catch((err) => handleError(res, err))
+  } catch (error) {
+    handleError(res, error)
+  }
+})
 
 // // get brand by externalId
 // productRouter.get('/magento/:externalId', (req, res) => {
