@@ -1,6 +1,6 @@
 import express from 'express'
 import { handleError, handleResponse } from '../routeUtils'
-import ProductController from '../../models/Sales/Product/productController'
+import ProductController, { ProductRead } from '../../models/Sales/Product/productController'
 
 const productRouter = express.Router()
 

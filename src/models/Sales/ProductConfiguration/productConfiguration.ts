@@ -36,27 +36,27 @@ import { PurchaseOrderItem } from '../../Receiving/PurchaseOrderItem/purchaseOrd
 export class ProductConfiguration extends Model<InferAttributes<ProductConfiguration>, InferCreationAttributes<ProductConfiguration>> {
   declare id: CreationOptional<number>
 
-  declare sku?: string
+  declare createdAt: CreationOptional<Date>
 
-  declare externalId?: number
+  declare updatedAt: CreationOptional<Date>
 
-  declare volume?: number
+  declare sku: string | null
 
-  declare price?: number
+  declare externalId: number | null
 
-  declare totalTax?: number
+  declare volume: number | null
 
-  declare totalDiscount?: number
+  declare price: number | null
+
+  declare totalTax: number | null
+
+  declare totalDiscount: number | null
 
   declare qtyOrdered: number
 
-  declare qtyCanceled?: number
+  declare qtyRefunded: number
 
-  declare qtyRefunded?: number
-
-  declare qtyShipped?: number
-
-  declare qtyInvoiced?: number
+  declare qtyShipped: number
 
   // associations
 
@@ -180,11 +180,24 @@ export function initProductConfigurations(db: Sequelize) {
         type: DataTypes.INTEGER,
         allowNull: false,
       },
-      qtyCanceled: DataTypes.INTEGER,
-      qtyRefunded: DataTypes.INTEGER,
-      qtyShipped: DataTypes.INTEGER,
-      qtyInvoiced: DataTypes.INTEGER,
-
+      qtyRefunded: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+      },
+      qtyShipped: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+      },
+      createdAt: {
+        type: DataTypes.DATE,
+        defaultValue: DataTypes.NOW,
+      },
+      updatedAt: {
+        type: DataTypes.DATE,
+        defaultValue: DataTypes.NOW,
+      },
     },
     {
       sequelize: db,

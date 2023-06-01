@@ -222,6 +222,11 @@ export default class ProductController {
    * @param data - Addresss, array of Addresses or null
    * @returns {AddressMagentoRead | AddressMagentoRead[] | null} JSON format nullable.
    */
+  static toJSON(data: Product): ProductRead
+  static toJSON(data: Product | null): ProductRead | null
+  static toJSON(data: Product[]): ProductRead[]
+  static toJSON(data: Product[] | null): ProductRead[] | null
+  static toJSON(data: null): null
   static toJSON(data: Product | Product[] | null): ProductRead | ProductRead[] | null {
     try {
       if (data instanceof Product) {
