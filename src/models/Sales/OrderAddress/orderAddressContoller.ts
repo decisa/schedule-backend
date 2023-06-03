@@ -767,12 +767,12 @@ export default class OrderAddressController {
 // done: get address (by id)
 // done: create address
 // done: update address
-// delete address
+// done: delete address
 
 // done: delete magento record
 // done: create magento record
 
-// upsert address (magento record with externalID is required)
+// done: upsert address (magento record with externalID is required)
 
 // import * as yup from 'yup'
 // import { Transaction } from 'sequelize'

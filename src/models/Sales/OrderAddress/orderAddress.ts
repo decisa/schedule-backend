@@ -18,11 +18,8 @@ import {
 
 } from 'sequelize'
 import type { Order } from '../Order/order'
-import type { Address } from '../Address/address'
 import type { MagentoOrderAddress } from '../MagentoOrderAddress/magentoOrderAddress'
 import type { RouteStop } from '../../Delivery/RouteStop/routeStop'
-// import type { Customer } from '../Customer/customer'
-// import type { MagentoAddress } from '../MagentoAddress/magentoAddress'
 
 export class OrderAddress extends Model<InferAttributes<OrderAddress>, InferCreationAttributes<OrderAddress>> {
   declare id: CreationOptional<number>
