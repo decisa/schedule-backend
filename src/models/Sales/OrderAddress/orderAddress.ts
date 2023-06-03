@@ -27,15 +27,19 @@ import type { RouteStop } from '../../Delivery/RouteStop/routeStop'
 export class OrderAddress extends Model<InferAttributes<OrderAddress>, InferCreationAttributes<OrderAddress>> {
   declare id: CreationOptional<number>
 
+  declare createdAt: CreationOptional<Date>
+
+  declare updatedAt: CreationOptional<Date>
+
   declare firstName: string
 
   declare lastName: string
 
-  declare company?: string | null
+  declare company: string | null
 
-  declare street1?: string
+  declare street1: string
 
-  declare street2?: string | null
+  declare street2: string | null
 
   declare city: string
 
@@ -47,25 +51,25 @@ export class OrderAddress extends Model<InferAttributes<OrderAddress>, InferCrea
 
   declare phone: string
 
-  declare altPhone?: string | null
+  declare altPhone: string | null
 
-  declare notes?: string | null
+  declare notes: string | null
 
-  declare longitude?: number | null
+  declare longitude: number | null
 
-  declare latitude?: number | null
+  declare latitude: number | null
 
-  declare coordinates?: [number, number] | null
+  declare coordinates: CreationOptional<[number, number] | null>
 
-  declare street?: string[]
+  declare street: CreationOptional<string[]>
 
   // ASSOCIATIONS:
-  declare orderId?: ForeignKey<Order['id']>
+  declare orderId: ForeignKey<Order['id']>
 
   // foreign key to keep record which address it was copied from.
   // declare customerAddressId?: ForeignKey<Address['id']> | null
 
-  declare customerAddressId?: number | null
+  declare customerAddressId: number | null
 
   declare order?: NonAttribute<Order>
 
@@ -260,6 +264,14 @@ export function initOrderAddress(db: Sequelize) {
             this.setDataValue('street2', street2)
           }
         },
+      },
+      createdAt: {
+        type: DataTypes.DATE,
+        defaultValue: DataTypes.NOW,
+      },
+      updatedAt: {
+        type: DataTypes.DATE,
+        defaultValue: DataTypes.NOW,
       },
     },
     {

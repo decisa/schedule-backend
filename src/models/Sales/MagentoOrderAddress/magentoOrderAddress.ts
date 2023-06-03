@@ -14,11 +14,11 @@ export type MagentoAddressType = typeof magentoAddressTypes[number]
 export class MagentoOrderAddress extends Model<InferAttributes<MagentoOrderAddress>, InferCreationAttributes<MagentoOrderAddress>> {
   declare externalId: number
 
-  declare externalCustomerAddressId?: number | null
-
   declare externalOrderId: number
 
   declare addressType: MagentoAddressType
+
+  declare externalCustomerAddressId: number | null
 
   // ASSOCIATIONS:
   declare orderAddressId: ForeignKey<OrderAddress['id']>
@@ -42,15 +42,20 @@ export function initMagentoOrderAddress(db: Sequelize) {
         type: DataTypes.INTEGER,
         // unique: true, // defined in indexes
         primaryKey: true,
+        allowNull: false,
       },
       externalCustomerAddressId: {
         type: DataTypes.INTEGER,
         allowNull: true,
       },
-      externalOrderId: DataTypes.INTEGER,
+      externalOrderId: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+      },
 
       addressType: {
         type: DataTypes.STRING,
+        allowNull: false,
       },
 
     },
