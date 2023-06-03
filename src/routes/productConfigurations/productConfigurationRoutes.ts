@@ -76,6 +76,20 @@ productConfigurationRouter.get('/:id', (req, res) => {
   }
 })
 
+// get productConfiguration by id with Options
+productConfigurationRouter.get('/:id/options', (req, res) => {
+  try {
+    ProductConfigurationController.getWithOptions(req.params.id)
+      .then((result) => {
+        const productResult = ProductConfigurationController.toJSON(result)
+        handleResponse(res, productResult)
+      })
+      .catch((err) => handleError(res, err))
+  } catch (error) {
+    handleError(res, error)
+  }
+})
+
 // // // brandRouter.delete('/:addressId/magento', (req, res) => {
 // // //   try {
 // // //     const id = req.params.addressId

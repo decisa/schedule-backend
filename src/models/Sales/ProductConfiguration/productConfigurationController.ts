@@ -3,6 +3,9 @@ import { Transaction } from 'sequelize'
 import { isId, useTransaction, isObjectWithExternalId } from '../../../utils/utils'
 import { ProductConfiguration } from './productConfiguration'
 import ProductController, { ProductRead } from '../Product/productController'
+import ProductOptionController from '../ProductOption/productOptionController'
+import type { ProductOptionRead } from '../ProductOption/productOptionController'
+import { ProductOption } from '../ProductOption/productOption'
 
 type ProductConfigurationCreational = {
   id: number
@@ -52,6 +55,7 @@ export type ProductConfigurationCreate =
 
 export type ProductConfigurationRead = Omit<Required<ProductConfigurationCreate>, 'productId'> & {
   product?: ProductRead,
+  options?: ProductOptionRead[] | null,
 }
 
 export type ConfigurationAsProductRead = Omit<ProductRead, 'id'> & {
@@ -185,22 +189,6 @@ export function validateProductConfigurationUpdate(object: unknown): Omit<Partia
   return productConfiguration
 }
 
-// export function validateAddressMagento(object: unknown): AddressMagentoRecord {
-//   const magento = addressMagentoSchema.validateSync(object, {
-//     stripUnknown: true,
-//     abortEarly: false,
-//   }) satisfies AddressMagentoRecord
-//   return magento
-// }
-
-// export function validateAddressMagentoUpdate(object: unknown): Partial<Omit<AddressMagentoRecord, 'addressId'>> {
-//   const magento = addressMagentoUpdateSchema.validateSync(object, {
-//     stripUnknown: true,
-//     abortEarly: false,
-//   }) satisfies Partial<Omit<AddressMagentoRecord, 'addressId'>>
-//   return magento
-// }
-
 /**
    * convert ProductConfigurationInstance to a regular JSON object. Keeps product data as inner field if provided
    * @param {ProductConfiguration }data - ProductConfiguration instance
@@ -213,12 +201,17 @@ function configurationToJson(configuration: ProductConfiguration): ProductConfig
   if (configuration.product) {
     productJson = ProductController.toJSON(configuration.product) // configuration.product.toJSON()
   }
+  let optionsJson: ProductOptionRead[] | undefined
+  if (configuration.options) {
+    optionsJson = ProductOptionController.toJSON(configuration.options) // configuration.product.toJSON()
+  }
   // remove brandId and add brand name as a string
   const result: ProductConfigurationRead & {
     productId?: number
   } = {
     ...productConfigurationJson,
     product: productJson,
+    options: optionsJson,
   }
   delete result.productId
 
@@ -264,6 +257,11 @@ export default class ProductConfigurationController {
    * @param data - configuration, array of configurations or null
    * @returns {AddressMagentoRead | AddressMagentoRead[] | null} JSON format nullable.
    */
+  static toJSON(data: ProductConfiguration): ProductConfigurationRead
+  static toJSON(data: ProductConfiguration | null): ProductConfigurationRead | null
+  static toJSON(data: ProductConfiguration[]): ProductConfigurationRead[]
+  static toJSON(data: ProductConfiguration[] | null): ProductConfigurationRead[] | null
+  static toJSON(data: null): null
   static toJSON(data: ProductConfiguration | ProductConfiguration[] | null): ProductConfigurationRead | ProductConfigurationRead[] | null {
     try {
       if (data instanceof ProductConfiguration) {
@@ -318,7 +316,34 @@ export default class ProductConfigurationController {
   }
 
   /**
-   * get all product configurations associated with a given orderId. Will include brand record if available
+   * get ProductConfiguration record by id from DB. Will include Product info
+   * @param {unknown} id - productConfigurationId
+   * @returns {Product} ProductConfiguration object or null
+   */
+  static async getWithOptions(id: number | unknown, t?: Transaction): Promise<ProductConfiguration | null> {
+    const productConfigurationId = isId.validateSync(id)
+    const final = await ProductConfiguration.findByPk(productConfigurationId, {
+      include: [{
+        association: 'product',
+        include: [{
+          association: 'brand',
+        }],
+      }, {
+        association: 'options',
+      }],
+      order: [
+        [
+          { model: ProductOption, as: 'options' },
+          'sortOrder', 'ASC',
+        ],
+      ],
+      transaction: t,
+    })
+    return final
+  }
+
+  /**
+   * get all product configurations associated with a given orderId. Will include brand record if available and sorted options
    * @param {number | unknown} id - orderId
    * @returns {ProductConfiguration | ProductConfiguration[] | null} ProductConfiguration object, array of objects or null
    */
@@ -333,7 +358,15 @@ export default class ProductConfigurationController {
         include: [{
           association: 'brand',
         }],
+      }, {
+        association: 'options',
       }],
+      order: [
+        [
+          { model: ProductOption, as: 'options' },
+          'sortOrder', 'ASC',
+        ],
+      ],
       transaction: t,
     })
     return final
@@ -439,10 +472,12 @@ export default class ProductConfigurationController {
    * @returns {boolean} true if configuration was deleted
    */
   static async delete(id: number | unknown, t?: Transaction): Promise<boolean> {
-    // FIXME: add delete options if they exist
     const [transaction, commit, rollback] = await useTransaction(t)
     try {
       const productConfigurationId = isId.validateSync(id)
+      // delete all configuration options first:
+      await ProductOptionController.deleteConfigurationOptions(id, transaction)
+      // then delete the configuration itself
       const final = await ProductConfiguration.destroy({
         where: {
           id: productConfigurationId,

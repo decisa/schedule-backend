@@ -10,21 +10,25 @@ import type { ProductConfiguration } from '../ProductConfiguration/productConfig
 export class ProductOption extends Model<InferAttributes<ProductOption>, InferCreationAttributes<ProductOption>> {
   declare id: CreationOptional<number>
 
-  declare label: CreationOptional<string>
+  declare createdAt: CreationOptional<Date>
 
-  declare value: CreationOptional<string>
+  declare updatedAt: CreationOptional<Date>
+
+  declare label: string
+
+  declare value: string
 
   declare sortOrder: number
 
-  declare externalId?: number
+  declare externalId: number | null
 
-  declare externalValue?: string
+  declare externalValue: string | null
 
   // associations
   // declare configId:
   declare configId?: ForeignKey<ProductConfiguration['id']>
 
-  declare configuration: NonAttribute<ProductConfiguration>
+  declare configuration?: NonAttribute<ProductConfiguration>
 
   declare public static associations: {
     configuration: Association<ProductOption, ProductConfiguration>,
@@ -51,9 +55,16 @@ export function initProductOptions(db: Sequelize) {
       configId: {
         type: DataTypes.INTEGER, // foreign Key,
         unique: 'configid_extid_constraint',
+        // configId - externalId constraint (only one option value of the same type is permitted per configuration)
       },
-      label: DataTypes.STRING,
-      value: DataTypes.STRING,
+      label: {
+        type: DataTypes.STRING,
+        allowNull: false,
+      },
+      value: {
+        type: DataTypes.STRING,
+        allowNull: false,
+      },
       sortOrder: {
         type: DataTypes.INTEGER,
         defaultValue: 0,
@@ -64,6 +75,14 @@ export function initProductOptions(db: Sequelize) {
         unique: 'configid_extid_constraint',
       },
       externalValue: DataTypes.STRING,
+      createdAt: {
+        type: DataTypes.DATE,
+        defaultValue: DataTypes.NOW,
+      },
+      updatedAt: {
+        type: DataTypes.DATE,
+        defaultValue: DataTypes.NOW,
+      },
     },
     {
       sequelize: db,

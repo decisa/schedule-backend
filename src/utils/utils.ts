@@ -215,3 +215,8 @@ export const isObjectWithEmail = yup.object({
 export const isObjectWithExternalId = yup.object({
   externalId: yup.number().positive().integer().required(),
 })
+
+export const isObjectWithExternalIdandConfigId = yup.object({
+  externalId: yup.number().positive().integer().required(),
+  configId: yup.number().positive().integer().required(),
+})

@@ -5,6 +5,7 @@ import addressRouter from './addresses/addressRoutes'
 import brandRouter from './brands/brandRoutes'
 import productRouter from './products/productRoutes'
 import productConfigurationRouter from './productConfigurations/productConfigurationRoutes'
+import productOptionRouter from './options/optionRoutes'
 
 const rootRouter = express.Router()
 
@@ -18,5 +19,6 @@ rootRouter.use('/address', addressRouter)
 rootRouter.use('/brand', brandRouter)
 rootRouter.use('/product', productRouter)
 rootRouter.use('/configuration', productConfigurationRouter)
+rootRouter.use('/option', productOptionRouter)
 
 export default rootRouter
