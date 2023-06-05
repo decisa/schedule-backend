@@ -98,7 +98,7 @@ const customerMagentoUpdateSchema: yup.ObjectSchema<Partial<CustomerMagentoRecor
   ,
 })
 
-const customerSchemaCreate: yup.ObjectSchema<CustomerCreate> = yup.object({
+export const customerSchemaCreate: yup.ObjectSchema<CustomerCreate> = yup.object({
   // firstName: string
   // lastName: string
   // phone: string

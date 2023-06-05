@@ -133,7 +133,7 @@ const orderAddressMagentoUpdateSchema: yup.ObjectSchema<Partial<Omit<OrderAddres
 
 // when data is sent to DB, all virtual fields like street[] and coordinates, should be converted
 // to their respective street1 & street2 and latitude & longitude
-const orderAddressSchemaCreate: yup.ObjectSchema<OrderAddressCreate> = yup.object({
+export const orderAddressSchemaCreate: yup.ObjectSchema<OrderAddressCreate> = yup.object({
   // AddressFK
   // orderId: number
   // customerAddressId: number | null

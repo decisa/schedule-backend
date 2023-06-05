@@ -85,7 +85,7 @@ export type OrderCommentMagentoCreate =
 
 export type OrderCommentRead = Required<OrderCommentCreate>
 
-const commentSchemaCreate: yup.ObjectSchema<OrderCommentCreate> = yup.object({
+export const commentSchemaCreate: yup.ObjectSchema<OrderCommentCreate> = yup.object({
   comment: yup.string()
     .label('Malformed data: comment field')
     .defined(),

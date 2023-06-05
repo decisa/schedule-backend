@@ -4,13 +4,16 @@ import { OrderStatus, orderStatuses, MagentoOrder } from '../MagentoOrder/magent
 import { Order } from './order'
 import { isId, useTransaction, isString } from '../../../utils/utils'
 import { OrderAddress } from '../OrderAddress/orderAddress'
-import { OrderComment } from '../OrderComment/orderComment'
+import { OrderComment, OrderCommentCreate } from '../OrderComment/orderComment'
 import { Customer } from '../Customer/customer'
 import { MagentoCustomer } from '../MagentoCustomer/magentoCustomer'
 import { ProductConfiguration } from '../ProductConfiguration/productConfiguration'
 import { Product } from '../Product/product'
 import { ProductOption } from '../ProductOption/productOption'
-import ProductConfigurationController, { ConfigurationAsProductRead } from '../ProductConfiguration/productConfigurationController'
+import ProductConfigurationController, { ConfigurationAsProductRead, productConfigurationSchemaCreate } from '../ProductConfiguration/productConfigurationController'
+import { OrderCommentMagentoCreate, commentSchemaCreate } from '../OrderComment/orderCommentController'
+import { CustomerCreate, customerSchemaCreate } from '../Customer/customerController'
+import { OrderAddressCreate, orderAddressSchemaCreate } from '../OrderAddress/orderAddressContoller'
 
 type OrderCreational = {
   id: number
@@ -49,16 +52,16 @@ type OrderMagentoRecord = {
   orderId?: number
 }
 
-// type OrderAssociations = {
-//   magento?: Association<Order, MagentoOrder>,
-//   customer?: Association<Order, Customer>,
-//   addresses?: Association<Order, OrderAddress>,
-//   comments?: Association<Order, OrderComment>,
-//   billingAddress?: Association<Order, OrderAddress>,
-//   shippingAddress?: Association<Order, OrderAddress>,
-//   products?: Association<Order, ProductConfiguration>,
-//   orderAvailabilities?: Association<Order, OrderAvailability>,
-// }
+type OrderAssociations = {
+  magento: OrderMagentoRecord,
+  customer?: CustomerCreate,
+  addresses?: OrderAddressCreate[],
+  comments?: OrderCommentCreate[],
+  billingAddress?: OrderAddressCreate,
+  shippingAddress?: OrderAddressCreate,
+  products?: ConfigurationAsProductRead,
+  // orderAvailabilities?: Association<Order, OrderAvailability>,
+}
 
 // Note: DATA TYPES
 export type OrderCreate =
@@ -66,7 +69,8 @@ export type OrderCreate =
   & Required<OrderRequired>
   & Partial<OrderOptional>
   & Partial<OrderTimeStamps>
-  // & Partial<OrderAssociations>
+
+export type FullOrder = OrderCreate & Partial<OrderAssociations>
 
 export type OrderRead = Required<OrderCreate> & OrderFK
 
@@ -233,6 +237,17 @@ const orderSchemaUpdate = orderSchemaCreate.clone().shape({
   taxRate: yup.number()
     .min(0)
     .label('Malformed data: taxRate'),
+})
+
+const fullOrderSchemaCreate: yup.ObjectSchema<FullOrder> = orderSchemaCreate.clone().shape({
+  magento: orderMagentoSchema,
+  customer: customerSchemaCreate,
+  addresses: yup.array().of(orderAddressSchemaCreate),
+  comments: yup.array().of(commentSchemaCreate),
+  billingAddress: orderAddressSchemaCreate,
+  shippingAddress: orderAddressSchemaCreate,
+  products: yup.array().of(productConfigurationSchemaCreate),
+
 })
 
 export function validateOrderCreate(object: unknown): OrderCreate {
@@ -653,6 +668,47 @@ export default class OrderController {
       })
       await commit()
       return final === 1
+    } catch (error) {
+      await rollback()
+      // rethrow the error for further handling
+      throw error
+    }
+  }
+
+  /**
+   * upsert(insert or create) order record in DB. magento externalId is required
+   * @param {unknown} orderData - update/create data for productConfiguration record
+   * @returns {productConfiguration} updated or created productConfiguration object with Brand Record if available
+   */
+  static async importMagentoOrder(orderData: unknown, t?: Transaction): Promise<Order> {
+    const [transaction, commit, rollback] = await useTransaction(t)
+    try {
+      let magento: OrderMagentoRecord | undefined
+      if (orderData && typeof orderData === 'object' && 'magento' in orderData) {
+        magento = validateOrderMagento(orderData.magento)
+      }
+      if (!magento) {
+        throw new Error('Magento record is required for upsert')
+      }
+      const orderRecord = await Order.findOne({
+        include: [{
+          association: 'magento',
+          where: {
+            externalId: magento.externalId,
+          },
+        }],
+        transaction,
+      })
+
+      let result: Order
+      if (!orderRecord) {
+        result = await this.create(orderData, transaction)
+      } else {
+        result = await this.update(orderRecord.id, orderData, transaction)
+      }
+
+      await commit()
+      return result
     } catch (error) {
       await rollback()
       // rethrow the error for further handling

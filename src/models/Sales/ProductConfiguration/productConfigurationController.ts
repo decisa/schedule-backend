@@ -65,7 +65,7 @@ export type ConfigurationAsProductRead = Omit<ProductRead, 'id'> & {
   mainProductId: number
 }
 
-const productConfigurationSchemaCreate: yup.ObjectSchema<ProductConfigurationCreate> = yup.object({
+export const productConfigurationSchemaCreate: yup.ObjectSchema<ProductConfigurationCreate> = yup.object({
   // FK
   // productId: number
   // orderId: number
