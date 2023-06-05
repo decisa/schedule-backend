@@ -44,32 +44,31 @@ export class Order extends Model<InferAttributes<Order>, InferCreationAttributes
   // id can be undefined during creation when using `autoIncrement`
   declare id: CreationOptional<number>
 
-  declare orderNumber: string
-
-  declare shippingCost: number
-
-  declare paymentMethod: string
-
-  declare taxRate: number
-
-  declare orderDate: Date
-
   declare createdAt: CreationOptional<Date>
 
-  // updatedAt can be undefined during creation
   declare updatedAt: CreationOptional<Date>
+
+  declare orderNumber: string
+
+  declare orderDate: Date // default now
+
+  declare shippingCost: number // default 0
+
+  declare taxRate: number // default 0
+
+  declare paymentMethod: string | null
 
   // ASSOCIATIONS:
 
   declare customerId: ForeignKey<Customer['id']>
 
+  declare shippingAddressId: ForeignKey<OrderAddress['id']> | null
+
+  declare billingAddressId: ForeignKey<OrderAddress['id']> | null
+
   declare customer?: NonAttribute<Customer>
 
-  declare shippingAddressId?: ForeignKey<OrderAddress['id']>
-
   declare shippingAddress?: NonAttribute<OrderAddress>
-
-  declare billingAddressId?: ForeignKey<OrderAddress['id']>
 
   declare billingAddress?: NonAttribute<OrderAddress>
 
@@ -222,10 +221,12 @@ export function initOrder(db: Sequelize) {
       },
       orderDate: {
         type: DataTypes.DATE,
+        defaultValue: DataTypes.NOW,
         allowNull: false,
       },
       taxRate: {
         type: DataTypes.DECIMAL(5, 3), // max 99.999%
+        defaultValue: 0,
         get() {
           const rawValue = this.getDataValue('taxRate')
           return Number(rawValue)

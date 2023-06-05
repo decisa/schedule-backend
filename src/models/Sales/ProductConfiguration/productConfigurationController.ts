@@ -282,6 +282,11 @@ export default class ProductConfigurationController {
    * @param data - configuration, array of configurations or null
    * @returns {ConfigurationAsProductRead | ConfigurationAsProductRead[] | null} JSON format nullable.
    */
+  static toJsonAsProduct(data: ProductConfiguration): ConfigurationAsProductRead
+  static toJsonAsProduct(data: ProductConfiguration | null): ConfigurationAsProductRead | null
+  static toJsonAsProduct(data: ProductConfiguration[]): ConfigurationAsProductRead[]
+  static toJsonAsProduct(data: ProductConfiguration[] | null): ConfigurationAsProductRead[] | null
+  static toJsonAsProduct(data: null): null
   static toJsonAsProduct(data: ProductConfiguration | ProductConfiguration[] | null): ConfigurationAsProductRead | ConfigurationAsProductRead[] | null {
     try {
       if (data instanceof ProductConfiguration) {
@@ -476,7 +481,7 @@ export default class ProductConfigurationController {
     try {
       const productConfigurationId = isId.validateSync(id)
       // delete all configuration options first:
-      await ProductOptionController.deleteConfigurationOptions(id, transaction)
+      // await ProductOptionController.deleteConfigurationOptions(id, transaction)
       // then delete the configuration itself
       const final = await ProductConfiguration.destroy({
         where: {

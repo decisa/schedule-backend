@@ -1,228 +1,346 @@
-import { CreationAttributes, Op, Sequelize } from 'sequelize'
+import * as yup from 'yup'
+import { Transaction } from 'sequelize'
+import { OrderStatus, orderStatuses, MagentoOrder } from '../MagentoOrder/magentoOrder'
 import { Order } from './order'
-import { MagentoOrder } from '../MagentoOrder/magentoOrder'
-import { Brand } from '../../Brand/brand'
-import { Product } from '../Product/product'
-import { ProductConfiguration } from '../ProductConfiguration/productConfiguration'
-import { ProductOption } from '../ProductOption/productOption'
+import { isId, useTransaction, isString } from '../../../utils/utils'
+import { OrderAddress } from '../OrderAddress/orderAddress'
+import { OrderComment } from '../OrderComment/orderComment'
 import { Customer } from '../Customer/customer'
 import { MagentoCustomer } from '../MagentoCustomer/magentoCustomer'
-import { MagentoOrderAddress } from '../MagentoOrderAddress/magentoOrderAddress'
-import { OrderAddress } from '../OrderAddress/orderAddress'
-import {
-  getDateCanThrow, getOrderStatus, isEmptyObject, isNotEmptyObject, parseMagentoBrand, printYellowLine,
-} from '../../../utils/utils'
-import OrderAddressController from '../OrderAddress/orderAddressContoller'
-import { OrderComment } from '../OrderComment/orderComment'
-import type { OrderCommentCreate } from '../OrderComment/orderComment'
-import OrderCommentController from '../OrderComment/orderCommentController'
-// import type { CommentShape } from '../OrderComment/orderCommentController'
-import { BrandShape } from '../../models'
-import ProductOptionController from '../ProductOption/productOptionController'
+import { ProductConfiguration } from '../ProductConfiguration/productConfiguration'
+import { Product } from '../Product/product'
+import { ProductOption } from '../ProductOption/productOption'
+import ProductConfigurationController, { ConfigurationAsProductRead } from '../ProductConfiguration/productConfigurationController'
 
-// type CustomerAddressShape = CreationAttributes<Address> & {
-//   magento?: CreationAttributes<MagentoAddress>
+type OrderCreational = {
+  id: number
+}
+
+// street1 is required but will be Ordered later
+type OrderRequired = {
+  orderNumber: string
+  orderDate: Date // default now
+  shippingCost: number // default 0
+  taxRate: number // default 0
+}
+
+type OrderOptional = {
+  paymentMethod: string | null
+}
+
+type OrderTimeStamps = {
+  createdAt: Date
+  updatedAt: Date
+}
+
+type OrderFK = {
+  customerId: number
+  shippingAddressId: number | null
+  billingAddressId: number | null
+}
+
+// FIXME: add new type for OrderState
+type OrderMagentoRecord = {
+  externalId: number
+  externalQuoteId: number
+  state: string
+  status: OrderStatus
+  updatedAt: Date
+  orderId?: number
+}
+
+// type OrderAssociations = {
+//   magento?: Association<Order, MagentoOrder>,
+//   customer?: Association<Order, Customer>,
+//   addresses?: Association<Order, OrderAddress>,
+//   comments?: Association<Order, OrderComment>,
+//   billingAddress?: Association<Order, OrderAddress>,
+//   shippingAddress?: Association<Order, OrderAddress>,
+//   products?: Association<Order, ProductConfiguration>,
+//   orderAvailabilities?: Association<Order, OrderAvailability>,
 // }
 
-type CustomerShape = CreationAttributes<Customer> & {
-  magento?: CreationAttributes<MagentoCustomer>
+// Note: DATA TYPES
+export type OrderCreate =
+  Partial<OrderCreational>
+  & Required<OrderRequired>
+  & Partial<OrderOptional>
+  & Partial<OrderTimeStamps>
+  // & Partial<OrderAssociations>
+
+export type OrderRead = Required<OrderCreate> & OrderFK
+
+export type OrderMagentoRead = OrderRead & {
+  magento?: Omit<OrderMagentoRecord, 'orderId'>
 }
 
-type OrderAddessShape = CreationAttributes<OrderAddress> & {
-  magento: CreationAttributes<MagentoOrderAddress>
+const orderMagentoSchema: yup.ObjectSchema<OrderMagentoRecord> = yup.object({
+  // externalId: number
+  // externalQuoteId: number
+  // state: string
+  // status: OrderStatus
+  // updatedAt: Date
+  // orderId?: number
+  externalId: yup.number()
+    .integer()
+    .positive()
+    .nonNullable()
+    .required()
+    .label('Malformed data: magento > externalId'),
+  externalQuoteId: yup.number()
+    .integer()
+    .positive()
+    .nonNullable()
+    .required()
+    .label('Malformed data: magento > externalQuoteId'),
+  state: yup.string()
+    .label('Malformed data: magento > state')
+    .nonNullable()
+    .required(),
+  status: yup.mixed<OrderStatus>()
+    .oneOf(orderStatuses)
+    .label('Malformed data: magento > status')
+    .nonNullable()
+    .required(),
+  updatedAt: yup.date()
+    .nonNullable()
+    .required()
+    .label('Malformed data: magento > updatedAt'),
+  orderId: yup.number()
+    .integer()
+    .positive()
+    .nonNullable()
+    .label('Malformed data: magento > orderId'),
+})
+
+const orderMagentoUpdateSchema: yup.ObjectSchema<Partial<Omit<OrderMagentoRecord, 'orderId'>>> = yup.object({
+  // externalId: number
+  // externalQuoteId: number
+  // state: string
+  // status: OrderStatus
+  // updatedAt: Date
+  externalId: yup.number()
+    .integer()
+    .positive()
+    .nonNullable()
+    .label('Malformed data: magento > externalId'),
+  externalQuoteId: yup.number()
+    .integer()
+    .positive()
+    .nonNullable()
+    .label('Malformed data: magento > externalQuoteId'),
+  state: yup.string()
+    .label('Malformed data: magento > state')
+    .nonNullable(),
+  status: yup.mixed<OrderStatus>()
+    .oneOf(orderStatuses)
+    .label('Malformed data: magento > status')
+    .nonNullable(),
+  updatedAt: yup.date()
+    .nonNullable()
+    .label('Malformed data: magento > updatedAt'),
+})
+
+// when data is sent to DB, all virtual fields like street[] and coordinates, should be converted
+// to their respective street1 & street2 and latitude & longitude
+const orderSchemaCreate: yup.ObjectSchema<OrderCreate> = yup.object({
+  // OrderFK
+  // customerId: number
+  // shippingAddressId: number | null
+  // billingAddressId: number | null
+  customerId: yup.number()
+    .integer()
+    .positive()
+    .required()
+    .label('Malformed data: customerId'),
+  shippingAddressId: yup.number()
+    .integer()
+    .positive()
+    .default(null)
+    .nullable()
+    .label('Malformed data: shippingAddressId'),
+  billingAddressId: yup.number()
+    .integer()
+    .positive()
+    .default(null)
+    .nullable()
+    .label('Malformed data: billingAddressId'),
+  // Order required
+  // orderNumber: string
+  // orderDate: Date
+  orderNumber: yup.string()
+    .nonNullable()
+    .required()
+    .label('Malformed data: orderNumber'),
+  orderDate: yup.date()
+    .nonNullable()
+    .default(new Date())
+    .required()
+    .label('Malformed data: orderDate'),
+  // Order Optional
+  // shippingCost: number // default 0
+  // paymentMethod: string | null
+  // taxRate: number // default 0
+  paymentMethod: yup.string()
+    .nullable()
+    .label('Malformed data: paymentMethod'),
+  shippingCost: yup.number()
+    .default(0)
+    .min(0)
+    .label('Malformed data: shippingCost'),
+  taxRate: yup.number()
+    .default(0)
+    .min(0)
+    .label('Malformed data: taxRate'),
+  // id: number
+  id: yup
+    .number()
+    .integer()
+    .positive()
+    .nonNullable()
+    .label('Malformed data: id'),
+  // createdAt: Date
+  // updatedAt: Date
+  createdAt: yup.date().nonNullable().label('Malformed data: createdAt'),
+  updatedAt: yup.date().nonNullable().label('Malformed data: updatedAt'),
+})
+
+const orderSchemaUpdate = orderSchemaCreate.clone().shape({
+  customerId: yup.number()
+    .integer()
+    .positive()
+    .nonNullable()
+    .label('Malformed data: customerId'),
+  shippingAddressId: yup.number()
+    .integer()
+    .positive()
+    .nullable()
+    .label('Malformed data: shippingAddressId'),
+  billingAddressId: yup.number()
+    .integer()
+    .positive()
+    .nullable()
+    .label('Malformed data: billingAddressId'),
+  orderNumber: yup.string()
+    .nonNullable()
+    .label('Malformed data: orderNumber'),
+  orderDate: yup.date()
+    .nonNullable()
+    .label('Malformed data: orderDate'),
+  shippingCost: yup.number()
+    .min(0)
+    .label('Malformed data: shippingCost'),
+  taxRate: yup.number()
+    .min(0)
+    .label('Malformed data: taxRate'),
+})
+
+export function validateOrderCreate(object: unknown): OrderCreate {
+  const order = orderSchemaCreate.validateSync(object, {
+    stripUnknown: true,
+    abortEarly: false,
+  }) satisfies OrderCreate
+
+  return order
 }
 
-type OrderShape = CreationAttributes<Order> & {
-  magento: CreationAttributes<MagentoOrder>
+export function validateOrderUpdate(object: unknown): Partial<OrderCreate> {
+  // restrict update of id, and creation or modification dates
+  const order = orderSchemaUpdate.omit(['createdAt', 'updatedAt', 'id']).validateSync(object, {
+    stripUnknown: true,
+    abortEarly: false,
+  }) satisfies Partial<OrderCreate>
+
+  return order
 }
 
-type ProductShape = CreationAttributes<Product>
-
-type ProductConfigurationShape = CreationAttributes<ProductConfiguration>
-
-type ProductOptionShape = CreationAttributes<ProductOption>
-
-// type OrderCommentShape = CreationAttributes<OrderComment>
-
-type AppProduct = ProductShape & {
-  brand?: BrandShape
-  configuration?: Config
+export function validateOrderMagento(object: unknown): OrderMagentoRecord {
+  const magento = orderMagentoSchema.validateSync(object, {
+    stripUnknown: true,
+    abortEarly: false,
+  }) satisfies OrderMagentoRecord
+  return magento
 }
 
-type Config = ProductConfigurationShape & {
-  options?: ProductOptionShape[]
+export function validateOrderMagentoUpdate(object: unknown): Partial<Omit<OrderMagentoRecord, 'orderId'>> {
+  const magento = orderMagentoUpdateSchema.validateSync(object, {
+    stripUnknown: true,
+    abortEarly: false,
+  }) satisfies Partial<Omit<OrderMagentoRecord, 'orderId'>>
+  return magento
 }
 
-type OrderData = OrderShape & {
-  orderDate: Date | string
-  customer: CustomerShape
-  billingAddress: OrderAddessShape
-  shippingAddress: OrderAddessShape
-  // comments?: CommentShape[]
-  comments?: OrderCommentCreate[]
-  products?: AppProduct[]
+function orderToJson(order: Order): OrderMagentoRead {
+  let magento: OrderMagentoRecord | undefined
+  if (order.magento && order.magento instanceof MagentoOrder) {
+    magento = order.magento.toJSON()
+    delete magento.orderId
+  }
+  let products: ConfigurationAsProductRead[] | undefined
+  if (order.products) {
+    products = ProductConfigurationController.toJsonAsProduct(order.products)
+  }
+  const orderData = order.toJSON()
+  const result = {
+    ...orderData,
+    products,
+    magento,
+  }
+
+  return result
 }
 
 export default class OrderController {
-  static async importMagentoOrder(data: OrderData) {
+  /**
+   * convert Order Instance or array of instances to a regular JSON object.
+   * @param {Order | Order[] | null} data - configuration, array of configurations or null
+   * @returns {OrderMagentoRecord | OrderMagentoRecord[] | null} JSON format nullable.
+   */
+  static toJSON(data: Order): OrderMagentoRead
+  static toJSON(data: Order | null): OrderMagentoRead | null
+  static toJSON(data: Order[]): OrderMagentoRead[]
+  static toJSON(data: Order[] | null): OrderMagentoRead[] | null
+  static toJSON(data: null): null
+  static toJSON(data: Order | Order[] | null): OrderMagentoRead | OrderMagentoRead[] | null {
     try {
-      // section: CUSTOMER INFO
-      // info: customer record is find or create
-      const customerInfo = data.customer
-
-      let customerRecord: Customer | null
-      customerRecord = await Customer.findOne({
-        where: {
-          email: customerInfo.email,
-        },
-        include: {
-          model: MagentoCustomer,
-          as: 'magento',
-        },
-      })
-
-      if (!customerRecord) {
-        customerRecord = await Customer.create(customerInfo, {
-          include: 'magento',
-        })
+      if (data instanceof Order) {
+        return orderToJson(data)
       }
-
-      // if customer existed, but magento record was missing.
-      if (isEmptyObject(customerRecord.magento) && isNotEmptyObject(customerInfo.magento)) {
-        await customerRecord.createMagento(customerInfo.magento)
+      if (Array.isArray(data)) {
+        return data.map(orderToJson)
       }
-
-      // CUSTOMER ADDRESSES
-
-      const { billingAddress, shippingAddress } = data
-      // check if billing address is saved to customer record
-      // TODO: check if externalCustomerAddressId is provided. if provided - add it too
-      // await customerAddressCreateIfNotExists(customerRecord, billingAddress)
-      // await customerAddressCreateIfNotExists(customerRecord, shippingAddress)
-
-      // section: ORDER
-      const orderInfo: OrderShape = {
-        orderDate: getDateCanThrow(data.orderDate),
-        orderNumber: data.orderNumber,
-        paymentMethod: data.paymentMethod,
-        shippingCost: data.shippingCost,
-        taxRate: data.taxRate,
-        customerId: customerRecord.id,
-        magento: {
-          ...data.magento,
-          status: getOrderStatus(data.magento.status),
-        },
-      }
-      const [orderRecord] = await Order.upsert(orderInfo)
-      if (orderInfo.magento?.externalId) {
-        orderInfo.magento.orderId = orderRecord.id
-        printYellowLine('UPSERT MAGENTO')
-        const [test] = await MagentoOrder.upsert(orderInfo.magento)
-        console.log(test && test.toJSON())
-      }
-      // section: ORDER ADDRESSES
-      // done: test if orderId is properly assigned.
-      const billingRecord = await OrderAddressController.upsertMagentoAddress(billingAddress, orderRecord)
-      const shippingRecord = await OrderAddressController.upsertMagentoAddress(shippingAddress, orderRecord)
-
-      if (!billingRecord || !shippingRecord) {
-        throw new Error('error with billing and shipping addresses encountered')
-      }
-
-      await orderRecord.setBillingAddress(billingRecord)
-      await orderRecord.setShippingAddress(shippingRecord)
-
-      // COMMENTS
-
-      // FIXME: UNCOMMENT THIS LINES
-      // if (data.comments && data.comments?.length > 0) {
-      //   for (let i = 0; i < data.comments.length; i += 1) {
-      //     await OrderCommentController.upsertMagentoComment(data.comments[i], orderRecord)
-      //   }
-      // }
-
-      // PRODUCTS
-
-      if (data.products && data.products?.length > 0) {
-        printYellowLine('products')
-        for (let i = 0; i < data.products.length; i += 1) {
-          const {
-            configuration,
-            brand,
-            ...product
-          } = data.products[i]
-
-          const parsedProduct: ProductShape = {
-            ...product,
-          }
-
-          let productConfiguration: Config | null = null
-          let options: ProductOptionShape[] | null = null
-
-          if (configuration) {
-            productConfiguration = {
-              ...configuration,
-            }
-            if (productConfiguration.options) {
-              options = productConfiguration.options
-              delete productConfiguration.options
-            }
-          }
-
-          if (isNotEmptyObject(parsedProduct)) {
-            // parse brand fields, find or create brand record in db
-            // assign brand id to the product
-            // FIXME: uncomment this and fix
-            // if (brand) {
-            //   const parsedBrand = parseMagentoBrand(brand)
-            //   if (parsedBrand) {
-            //     // eslint-disable-next-line no-await-in-loop
-            //     const [brandRecord] = await Brand.findOrCreate({
-            //       where: {
-            //         externalId: parsedBrand.externalId,
-            //       },
-            //       defaults: parsedBrand,
-            //     })
-            //     if (brandRecord) {
-            //       parsedProduct.brandId = brandRecord.id
-            //     }
-            //   }
-            // }
-
-            if (!parsedProduct.externalId) {
-              throw new Error('Product external Id is missing')
-            }
-            const [productRecord] = await Product.upsert(parsedProduct)
-
-            if (productConfiguration) {
-              if (!productConfiguration.externalId) {
-                throw new Error('product configuration id is missing')
-              }
-
-              productConfiguration.productId = productRecord.id
-              productConfiguration.orderId = orderRecord.id
-
-              const [productConfigRecord] = await ProductConfiguration.upsert(productConfiguration)
-
-              if (options) {
-                await ProductOptionController.upsertMagentoProductOptions(options, productConfigRecord)
-              }
-            }
-          }
-        }
-      }
+      return null
     } catch (error) {
-      console.log('error encountered while importing order', error)
+      return null
     }
-
-    // CONFIGURATIONS)
-    return this.getFullOrderByNumber(data.orderNumber)
   }
 
-  static async getFullOrderByNumber(orderNumber: string) {
+  /**
+   * get Order record by id from DB. Will include ???
+   * @param {unknown} id - orderId
+   * @returns {Order} ProductConfiguration object or null
+   */
+  static async get(id: number | unknown, t?: Transaction): Promise<Order | null> {
+    const orderId = isId.validateSync(id)
+    const final = await Order.findByPk(orderId, {
+      include: [{
+        association: 'magento',
+      }],
+      transaction: t,
+    })
+    return final
+  }
+
+  /**
+   * get full Order data by id from DB. Will include ???
+   * @param {unknown} id - orderId
+   * @returns {Order} Order object with all relevant data, like billing, shipping addresses, products etc. or null
+   */
+  static async getFullOrderInfo(id: number | unknown, t?: Transaction): Promise<Order | null> {
+    const orderId = isId.validateSync(id)
     const order = await Order.findOne({
       where: {
-        orderNumber,
+        id: orderId,
       },
       include: [{
         model: OrderAddress,
@@ -321,87 +439,234 @@ export default class OrderController {
           { model: ProductOption, as: 'options' },
           'sortOrder', 'ASC',
         ],
-      ],
-    })
-    return this.toJSON(order)
-  }
-
-  static async searchOrders(term: string) {
-    const wildCardTerm = `%${term}%`
-    const orders = await Order.findAll({
-      include: [
-        {
-          association: 'customer',
-        },
-      ],
-      where: {
-        [Op.or]: [
-          {
-            '$customer.firstName$': {
-              [Op.like]: wildCardTerm,
-            },
-          },
-          {
-            '$customer.lastName$': {
-              [Op.like]: wildCardTerm,
-            },
-          },
-          Sequelize.where(
-            Sequelize.fn('concat', Sequelize.col('customer.firstName'), ' ', Sequelize.col('customer.lastName')),
-            {
-              [Op.like]: wildCardTerm,
-            },
-          ),
-          {
-            orderNumber: {
-              [Op.like]: wildCardTerm,
-            },
-          },
+        [
+          { model: OrderComment, as: 'comments' },
+          'createdAt', 'DESC',
         ],
-      },
+      ],
     })
-    return orders.map((order) => this.toJSON(order)).filter((x) => x)
+    return order
   }
 
-  static toJSON(order: Order | null) {
-    if (order) {
-      const billingAddress = OrderAddressController.toJSON(order.billingAddress)
-      const shippingAddress = OrderAddressController.toJSON(order.shippingAddress)
-
-      const orderFinal = {
-        ...order.toJSON(),
-      } as OrderShape & {
-        products: ProductConfiguration[],
-
-      }
-
-      let customer: CustomerShape | undefined
-      if (order.customer) {
-        customer = {
-          ...order.customer.toJSON(),
-        }
-        if (order.customer.magento) {
-          customer.magento = order.customer.magento.toJSON()
-        }
-      }
-
-      const result = {
-        ...orderFinal,
-        billingAddress,
-        shippingAddress,
-        customer,
-        products: orderFinal.products?.map((configuration: ProductConfiguration) => {
-          const { product, ...config } = configuration
-          return {
-            ...product,
-            configuration: {
-              ...config,
-            },
-          }
-        }),
-      }
-      return result
+  /**
+   * get order by order number.
+   * @param {string | unknown} orderNumber - order number
+   * @returns {ProductConfiguration | ProductConfiguration[] | null} ProductConfiguration object, array of objects or null
+   */
+  static async getByOrderNumber(orderNum: string | unknown, t?: Transaction): Promise<Order | null> {
+    const orderNumber = isString.validateSync(orderNum)
+    const orderRecord = await Order.findOne({
+      where: {
+        orderNumber,
+      },
+      include: [{
+        association: 'magento',
+      }],
+      transaction: t,
+    })
+    if (!orderRecord) {
+      return null
     }
-    return null
+    return this.getFullOrderInfo(orderRecord.id, t)
+  }
+
+  /**
+   * insert Order record to DB. productId and orderId are required. Will include magento record if provided.
+   * FK addressId will be ignored on magento record and generated automatically.
+   * @param {OrderCreate | unknown} orderData - customer Order record to insert to DB
+   * @returns {Order} Order object or throws error
+   */
+  static async create(orderData: OrderCreate | unknown, t?: Transaction): Promise<Order> {
+    const [transaction, commit, rollback] = await useTransaction(t)
+    try {
+      let magento: OrderMagentoRecord | undefined
+      if (orderData && typeof orderData === 'object' && 'magento' in orderData) {
+        magento = validateOrderMagento(orderData.magento)
+      }
+      const parsedOrder = validateOrderCreate(orderData)
+
+      const result = await Order.create(parsedOrder, {
+        transaction,
+      })
+
+      if (magento) {
+        result.magento = await result.createMagento(magento, { transaction })
+      }
+
+      const final = await this.get(result.id, transaction)
+      if (!final) {
+        throw new Error('Internal Error: Order was not created')
+      }
+      await commit()
+      return final
+    } catch (error) {
+      await rollback()
+      // rethrow the error for further handling
+      throw error
+    }
+  }
+
+  /**
+     * update order record in DB. Will update magento record if provided.If magento record does not exist in DB, it will be created
+     * @param {number | unknown} orderId - id of the order record to update in DB
+     * @param {unknown} orderData - update data for address record
+     * @returns {address} complete Updated address object or throws error
+     */
+  static async update(orderId: number | unknown, orderData: unknown, t?: Transaction): Promise<Order> {
+    const [transaction, commit, rollback] = await useTransaction(t)
+    try {
+      let magento: Partial<OrderMagentoRecord> | undefined
+      if (orderData && typeof orderData === 'object' && 'magento' in orderData) {
+        magento = validateOrderMagentoUpdate(orderData.magento)
+      }
+      const parsedOrderUpdate = validateOrderUpdate(orderData)
+
+      const id = isId.validateSync(orderId)
+      const orderRecord = await Order.findByPk(id, { include: 'magento', transaction })
+      if (!orderRecord) {
+        throw new Error('order does not exist')
+      }
+
+      await orderRecord.update(parsedOrderUpdate, { transaction })
+
+      if (magento) {
+        if (orderRecord.magento) {
+          await orderRecord.magento.update(magento, { transaction })
+        } else {
+          orderRecord.magento = await this.createMagento(orderRecord.id, magento, transaction)
+        }
+      }
+      await commit()
+      return orderRecord
+    } catch (error) {
+      await rollback()
+      // rethrow the error for further handling
+      throw error
+    }
+  }
+
+  /**
+   * create Magento order record for the given ID.
+   * @param {number | unknown} orderId id of the address that needs magento data inserted
+   * @param {OrderMagentoRecord | unknown} orderMagentoData magento record to add
+   * @returns {MagentoOrder} MagentoOrder instance that was created
+   */
+  static async createMagento(orderId: number | unknown, orderMagentoData: OrderMagentoRecord | unknown, t?: Transaction): Promise<MagentoOrder> {
+    const [transaction, commit, rollback] = await useTransaction(t)
+    try {
+      const magento = validateOrderMagento(orderMagentoData)
+      const id = isId.validateSync(orderId)
+      magento.orderId = id
+      const record = await MagentoOrder.create(magento, { transaction })
+      await commit()
+      return record
+    } catch (error) {
+      await rollback()
+      // rethrow the error for further handling
+      throw error
+    }
+  }
+
+  /**
+   * delete corresponding order Magento record with a given orderId from DB.
+   * @param {number | unknown} orderId - orderAddressId to delete
+   * @returns {OrderMagentoRecord | null} AddressMagentoRecord that was deleted or null if record did not exist.
+   */
+  static async deleteMagento(orderId: number | unknown, t?: Transaction): Promise<OrderMagentoRecord | null> {
+    const [transaction, commit, rollback] = await useTransaction(t)
+    try {
+      const id = isId.validateSync(orderId)
+      const record = await this.get(id, transaction)
+      let magento: OrderMagentoRecord | null = null
+
+      if (record && record.magento) {
+        magento = record.magento.toJSON()
+        await record.magento.destroy({ transaction })
+      }
+      await commit()
+      return magento
+    } catch (error) {
+      await rollback()
+      // rethrow the error for further handling
+      throw error
+    }
+  }
+
+  /**
+   * upsert(insert or create) order record in DB. magento externalId is required
+   * @param {unknown} orderData - update/create data for productConfiguration record
+   * @returns {productConfiguration} updated or created productConfiguration object with Brand Record if available
+   */
+  static async upsert(orderData: unknown, t?: Transaction): Promise<Order> {
+    const [transaction, commit, rollback] = await useTransaction(t)
+    try {
+      let magento: OrderMagentoRecord | undefined
+      if (orderData && typeof orderData === 'object' && 'magento' in orderData) {
+        magento = validateOrderMagento(orderData.magento)
+      }
+      if (!magento) {
+        throw new Error('Magento record is required for upsert')
+      }
+      const orderRecord = await Order.findOne({
+        include: [{
+          association: 'magento',
+          where: {
+            externalId: magento.externalId,
+          },
+        }],
+        transaction,
+      })
+
+      let result: Order
+      if (!orderRecord) {
+        result = await this.create(orderData, transaction)
+      } else {
+        result = await this.update(orderRecord.id, orderData, transaction)
+      }
+
+      await commit()
+      return result
+    } catch (error) {
+      await rollback()
+      // rethrow the error for further handling
+      throw error
+    }
+  }
+
+  /**
+   * delete Order record with a given id from DB.
+   * @param {unknown} id - orderId
+   * @returns {boolean} true if configuration was deleted
+   */
+  static async delete(id: number | unknown, t?: Transaction): Promise<boolean> {
+    const [transaction, commit, rollback] = await useTransaction(t)
+    try {
+      const orderId = isId.validateSync(id)
+      // delete all configuration options first:
+      // await OrderController.deleteConfigurationOptions(id, transaction)
+      // then delete the configuration itself
+      const final = await Order.destroy({
+        where: {
+          id: orderId,
+        },
+        transaction,
+      })
+      await commit()
+      return final === 1
+    } catch (error) {
+      await rollback()
+      // rethrow the error for further handling
+      throw error
+    }
   }
 }
+
+// todo: review toJSON to incljude all associations
+// done: toJSON
+// done: get order (by id)
+// done: create order
+// done: update order
+// done: delete order
+// done: upsert order (magento record is required)
+// done: create magento
+// done: delete magento

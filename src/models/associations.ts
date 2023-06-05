@@ -201,7 +201,7 @@ function createAssociations() {
   ProductConfiguration.hasMany(ProductOption, {
     as: 'options',
     foreignKey: 'configId',
-    onDelete: 'NO ACTION',
+    onDelete: 'CASCADE',
     onUpdate: 'CASCADE',
   })
   ProductOption.belongsTo(ProductConfiguration, {

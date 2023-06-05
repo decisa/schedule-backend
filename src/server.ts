@@ -11,7 +11,7 @@ import { OrderAddress } from './models/Sales/OrderAddress/orderAddress'
 import { printYellowLine } from './utils/utils'
 import { TripRoute } from './models/Delivery/TripRoute/tripRoute'
 import { Driver } from './models/Delivery/Driver/driver'
-import OrderController from './models/Sales/Order/orderController'
+import OrderController from './models/Sales/Order/orderControllerOld'
 import app from './app'
 import { OrderComment } from './models/Sales/OrderComment/orderComment'
 // import Customer from './models/Customer/customer'
@@ -432,20 +432,20 @@ db
 
     // const order = await OrderController.getFullOrderByNumber('100006572')
 
-    const order = await OrderController.searchOrders('a')
+    // const order = await OrderController.searchOrders('a')
 
-    const result = order.map((ord) => {
-      if (ord) {
-        const { orderNumber, customer } = ord
-        console.log('customer = ', customer)
-        const { firstName, lastName } = customer || {}
-        return firstName && lastName ? `${firstName} ${lastName} : ${orderNumber}` : orderNumber
-      }
-      return ''
-    })
+    // const result = order.map((ord) => {
+    //   if (ord) {
+    //     const { orderNumber, customer } = ord
+    //     console.log('customer = ', customer)
+    //     const { firstName, lastName } = customer || {}
+    //     return firstName && lastName ? `${firstName} ${lastName} : ${orderNumber}` : orderNumber
+    //   }
+    //   return ''
+    // })
 
-    // console.log(result.join('\n'))
-    console.log(result)
+    // // console.log(result.join('\n'))
+    // console.log(result)
     // if (orderResult) {
     printYellowLine('FINAL')
 
