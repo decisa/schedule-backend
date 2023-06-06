@@ -2,8 +2,9 @@ import * as yup from 'yup'
 import { Transaction } from 'sequelize'
 import { isId, useTransaction, isObjectWithExternalId } from '../../../utils/utils'
 // import { ProductConfiguration } from '../ProductConfiguration/productConfiguration'
-// import { BrandRead } from '../../Brand/brandController'
+// import { BrandRead, BrandCreate } from '../../Brand/brandController';
 import { Product, ProductType, productTypes } from './product'
+import BrandController, { validateBrandCreate } from '../../Brand/brandController'
 
 type ProductCreational = {
   id: number
@@ -29,9 +30,9 @@ type ProductTimeStamps = {
   updatedAt: Date
 }
 
-// type ProductFK = {
-//   brandId: number
-// }
+type ProductFK = {
+  brandId: number | null
+}
 
 // type ProductAssociations = {
 //   brand?: BrandRead
@@ -46,6 +47,7 @@ export type ProductCreate =
   & Required<ProductRequired>
   & Partial<ProductOptional>
   & Partial<ProductTimeStamps>
+  & Partial<ProductFK>
   // & Partial<ProductAssociations>
 
 export type ProductRead = Omit<Required<ProductCreate>, 'brandId'> & {
@@ -182,7 +184,7 @@ function productToJson(product: Product): ProductRead {
 
   // remove brandId and add brand name as a string
   const result: ProductRead & {
-    brandId?: number
+    brandId?: number | null
   } = {
     ...productData,
     brand: null,
@@ -270,7 +272,7 @@ export default class ProductController {
   // }
 
   /**
-   * insert Product record to DB. Will include magento record if provided.
+   * insert Product record to DB. Will include magento record if provided. Will create brand if brand object is provided
    * FK ProductId will be ignored on magento record and generated automatically.
    * @param {unknown | ProductCreate} product - customer Product record to insert to DB
    * @returns {Product} Product object or throws error
@@ -278,7 +280,42 @@ export default class ProductController {
   static async create(product: unknown | ProductCreate, t?: Transaction): Promise<Product> {
     const [transaction, commit, rollback] = await useTransaction(t)
     try {
+      if (!product || typeof product !== 'object') {
+        throw new Error('product data object is missing')
+      }
+      // if ('brand' in product) {
+
+      // }
+      // let brand: BrandCreate | undefined
+      // if (orderData && typeof orderData === 'object' && 'magento' in orderData) {
+      //   magento = validateOrderMagento(orderData.magento)
+      // }
+      // if (!magento) {
+      //   throw new Error('Magento record is required for upsert')
+      // }
       const parsedProduct = validateProductCreate(product)
+      if (!parsedProduct.brandId && parsedProduct.brandId !== null) {
+        // check if brand object was supplied:
+        if ('brand' in product) {
+          if (product.brand === null) {
+            parsedProduct.brandId = null
+          } else {
+            const parsedBrand = validateBrandCreate(product.brand)
+            if (parsedBrand.id) {
+            // if id is provided - use it
+              parsedProduct.brandId = parsedBrand.id
+            } else if (parsedBrand.externalId) {
+            // if external id is provided - safe to use upsert
+              const brandObject = await BrandController.upsert(parsedBrand, transaction)
+              parsedProduct.brandId = brandObject.id
+            } else {
+            // otherwise try to create new brand
+              const brandObject = await BrandController.create(parsedBrand, transaction)
+              parsedProduct.brandId = brandObject.id
+            }
+          }
+        }
+      }
       const { id } = await Product.create(parsedProduct, { transaction })
       const result = await this.get(id, transaction)
       if (!result) {
@@ -294,7 +331,7 @@ export default class ProductController {
   }
 
   /**
-   * update Product record in DB. Will update magento record if provided.If magento record does not exist in DB, it will be created
+   * update Product record in DB. Will update magento record if provided.If magento record does not exist in DB, it will be created. Will create / update Brand if brand object is provided
    * @param {number | unknown} productId - id of the Product record to update in DB
    * @param {unknown | Partial<ProductCreate>} productData - update data for Product record
    * @returns {Product} complete Updated Product object or throws error
@@ -302,12 +339,38 @@ export default class ProductController {
   static async update(productId: number | unknown, productData: Partial<ProductCreate> | unknown, t?: Transaction): Promise<Product> {
     const [transaction, commit, rollback] = await useTransaction(t)
     try {
+      if (!productData || typeof productData !== 'object') {
+        throw new Error('productData object is missing')
+      }
       const parsedProductUpdate = validateProductUpdate(productData)
 
       const id = isId.validateSync(productId)
       const productRecord = await this.get(id, transaction)
       if (!productRecord) {
         throw new Error('Product does not exist')
+      }
+
+      if (!parsedProductUpdate.brandId && parsedProductUpdate.brandId !== null) {
+        // check if brand object was supplied:
+        if ('brand' in productData) {
+          if (productData.brand === null) {
+            parsedProductUpdate.brandId = null
+          } else {
+            const parsedBrand = validateBrandCreate(productData.brand)
+            if (parsedBrand.id) {
+              // if id is provided - use it
+              parsedProductUpdate.brandId = parsedBrand.id
+            } else if (parsedBrand.externalId) {
+              // if external id is provided - safe to use upsert
+              const brandObject = await BrandController.upsert(parsedBrand, transaction)
+              parsedProductUpdate.brandId = brandObject.id
+            } else {
+              // otherwise try to create new brand
+              const brandObject = await BrandController.create(parsedBrand, transaction)
+              parsedProductUpdate.brandId = brandObject.id
+            }
+          }
+        }
       }
 
       await productRecord.update(parsedProductUpdate, { transaction })
