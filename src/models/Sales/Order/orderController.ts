@@ -12,7 +12,7 @@ import { Product } from '../Product/product'
 import { ProductOption } from '../ProductOption/productOption'
 import ProductConfigurationController, { ConfigurationAsProductRead, productConfigurationSchemaCreate } from '../ProductConfiguration/productConfigurationController'
 import { OrderCommentMagentoCreate, commentSchemaCreate } from '../OrderComment/orderCommentController'
-import { CustomerCreate, customerSchemaCreate } from '../Customer/customerController'
+import CustomerController, { CustomerCreate, customerSchemaCreate } from '../Customer/customerController'
 import { OrderAddressCreate, orderAddressSchemaCreate } from '../OrderAddress/orderAddressContoller'
 
 type OrderCreational = {
@@ -69,6 +69,7 @@ export type OrderCreate =
   & Required<OrderRequired>
   & Partial<OrderOptional>
   & Partial<OrderTimeStamps>
+  & Partial<OrderFK>
 
 export type FullOrder = OrderCreate & Partial<OrderAssociations>
 
@@ -155,7 +156,7 @@ const orderSchemaCreate: yup.ObjectSchema<OrderCreate> = yup.object({
   customerId: yup.number()
     .integer()
     .positive()
-    .required()
+    // .required()
     .label('Malformed data: customerId'),
   shippingAddressId: yup.number()
     .integer()
@@ -239,16 +240,16 @@ const orderSchemaUpdate = orderSchemaCreate.clone().shape({
     .label('Malformed data: taxRate'),
 })
 
-const fullOrderSchemaCreate: yup.ObjectSchema<FullOrder> = orderSchemaCreate.clone().shape({
-  magento: orderMagentoSchema,
-  customer: customerSchemaCreate,
-  addresses: yup.array().of(orderAddressSchemaCreate),
-  comments: yup.array().of(commentSchemaCreate),
-  billingAddress: orderAddressSchemaCreate,
-  shippingAddress: orderAddressSchemaCreate,
-  products: yup.array().of(productConfigurationSchemaCreate),
+// const fullOrderSchemaCreate: yup.ObjectSchema<FullOrder> = orderSchemaCreate.clone().shape({
+//   magento: orderMagentoSchema,
+//   customer: customerSchemaCreate,
+//   addresses: yup.array().of(orderAddressSchemaCreate),
+//   comments: yup.array().of(commentSchemaCreate),
+//   billingAddress: orderAddressSchemaCreate,
+//   shippingAddress: orderAddressSchemaCreate,
+//   products: yup.array().of(productConfigurationSchemaCreate),
 
-})
+// })
 
 export function validateOrderCreate(object: unknown): OrderCreate {
   const order = orderSchemaCreate.validateSync(object, {
@@ -459,6 +460,7 @@ export default class OrderController {
           'createdAt', 'DESC',
         ],
       ],
+      transaction: t,
     })
     return order
   }
@@ -499,6 +501,10 @@ export default class OrderController {
         magento = validateOrderMagento(orderData.magento)
       }
       const parsedOrder = validateOrderCreate(orderData)
+
+      if (!parsedOrder.customerId) {
+        throw new Error('customer Id is required to create the order')
+      }
 
       const result = await Order.create(parsedOrder, {
         transaction,
@@ -676,29 +682,44 @@ export default class OrderController {
   }
 
   /**
-   * upsert(insert or create) order record in DB. magento externalId is required
-   * @param {unknown} orderData - update/create data for productConfiguration record
-   * @returns {productConfiguration} updated or created productConfiguration object with Brand Record if available
+   * upsert(insert or create) order record in DB. magento externalIds are required
+   * since this is an import of MagentoOrder, all records will have external IDs and all methods used will be - upsert
+   * @param {unknown} orderData - update/create full order data
+   * @returns {Order} updated or created full order object
    */
   static async importMagentoOrder(orderData: unknown, t?: Transaction): Promise<Order> {
     const [transaction, commit, rollback] = await useTransaction(t)
     try {
-      let magento: OrderMagentoRecord | undefined
-      if (orderData && typeof orderData === 'object' && 'magento' in orderData) {
-        magento = validateOrderMagento(orderData.magento)
+      // let magento: OrderMagentoRecord | undefined
+      if (!orderData || typeof orderData !== 'object') {
+        throw new Error('orderData object is missing')
       }
-      if (!magento) {
-        throw new Error('Magento record is required for upsert')
+
+      const parsedOrder = validateOrderCreate(orderData)
+
+      // section: CUSTOMER INFO
+      if (!('customer' in orderData)) {
+        throw new Error('Customer record is required')
       }
-      const orderRecord = await Order.findOne({
-        include: [{
-          association: 'magento',
-          where: {
-            externalId: magento.externalId,
-          },
-        }],
-        transaction,
-      })
+      const customerRecord = await CustomerController.upsert(orderData.customer, transaction)
+      parsedOrder.customerId = customerRecord.id
+      // section: CUSTOMER ADDRESSES
+
+      // section: ORDER
+
+      // section: ORDER ADDRESSES
+
+      // section: COMMENTS
+
+      // section: A. PRODUCTS
+
+      // section: A. PRODUCT CONFIGURATIONS & OPTIONS
+
+      if (!('magento' in orderData)) {
+        throw new Error('Magento record is required')
+      }
+
+      const orderRecord = await this.upsert(orderData, transaction)
 
       let result: Order
       if (!orderRecord) {

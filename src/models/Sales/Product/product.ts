@@ -51,9 +51,9 @@ export class Product extends Model<InferAttributes<Product>, InferCreationAttrib
 
   // associations
 
-  declare brandId: ForeignKey<Brand['id']>
+  declare brandId: ForeignKey<Brand['id']> | null
 
-  declare brand: NonAttribute<Brand>
+  declare brand?: NonAttribute<Brand> | null
 
   declare configurations?: NonAttribute<ProductConfiguration[]>
 
