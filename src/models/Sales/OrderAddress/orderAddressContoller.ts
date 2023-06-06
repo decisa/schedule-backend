@@ -43,7 +43,7 @@ type OrderAddressFK = {
   customerAddressId: number | null
 }
 
-type OrderAddressMagentoRecord = {
+export type OrderAddressMagentoRecord = {
   externalId: number
   externalOrderId: number
   addressType: MagentoAddressType
@@ -63,9 +63,10 @@ export type OrderAddressCreate =
   & Required<OrderAddressRequired>
   & Partial<OrderAddressOptional>
   & Partial<OrderAddressTimeStamps>
+  & Partial<OrderAddressFK>
   // & Partial<OrderAddressAssociations>
 
-export type OrderAddressRead = Required<OrderAddressCreate> & OrderAddressFK
+export type OrderAddressRead = Required<OrderAddressCreate>
 
 export type OrderAddressMagentoRead = Omit<OrderAddressRead, 'latitude' | 'longitude' | 'street1' | 'street2'> & {
   magento?: Omit<OrderAddressMagentoRecord, 'orderAddressId'>
@@ -552,7 +553,7 @@ export default class OrderAddressController {
    * @returns {OrderAddress | OrderAddress[] | null} OrderAddress object or null
    */
   // TODO: add this method to orders API
-  static async getByOrderId(id: number | unknown, t?: Transaction): Promise<OrderAddress | OrderAddress[] | null> {
+  static async getByOrderId(id: number | unknown, t?: Transaction): Promise<OrderAddress[] | null> {
     const orderId = isId.validateSync(id)
     const final = await OrderAddress.findAll({
       where: {
@@ -677,7 +678,7 @@ export default class OrderAddressController {
         transaction,
       })
 
-      let result: OrderAddress
+      let result: OrderAddress & { magento?: MagentoOrderAddress }
       if (!addressRecord) {
         result = await this.create(orderAddressData, transaction)
       } else {
@@ -765,6 +766,7 @@ export default class OrderAddressController {
   }
 }
 // done: get address (by id)
+// get all address by orderId
 // done: create address
 // done: update address
 // done: delete address

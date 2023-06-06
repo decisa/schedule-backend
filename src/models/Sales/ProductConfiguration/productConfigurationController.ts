@@ -1,6 +1,8 @@
 import * as yup from 'yup'
 import { Transaction } from 'sequelize'
-import { isId, useTransaction, isObjectWithExternalId } from '../../../utils/utils'
+import {
+  isId, useTransaction, isObjectWithExternalId, printYellowLine,
+} from '../../../utils/utils'
 import { ProductConfiguration } from './productConfiguration'
 import ProductController, { ProductRead } from '../Product/productController'
 import ProductOptionController from '../ProductOption/productOptionController'
@@ -352,7 +354,7 @@ export default class ProductConfigurationController {
    * @param {number | unknown} id - orderId
    * @returns {ProductConfiguration | ProductConfiguration[] | null} ProductConfiguration object, array of objects or null
    */
-  static async getAllByOrderId(id: number | unknown, t?: Transaction): Promise<ProductConfiguration | ProductConfiguration[] | null> {
+  static async getAllByOrderId(id: number | unknown, t?: Transaction): Promise<ProductConfiguration[] | null> {
     const orderId = isId.validateSync(id)
     const final = await ProductConfiguration.findAll({
       where: {
@@ -491,6 +493,62 @@ export default class ProductConfigurationController {
       })
       await commit()
       return final === 1
+    } catch (error) {
+      await rollback()
+      // rethrow the error for further handling
+      throw error
+    }
+  }
+
+  /**
+   * upsert(insert or create) productConfiguration record in DB. magento productConfiguration externalId is required
+   * @param {unknown} productConfigurationData - update/create data for productConfiguration record
+   * @returns {productConfiguration} updated or created productConfiguration object with Brand Record if available
+   */
+  static async bulkUpsertMagentoProducts(orderId:number, products: unknown, t?: Transaction): Promise<ProductConfiguration[]> {
+    // product
+    // brand
+    // configuration
+    // > options
+    const [transaction, commit, rollback] = await useTransaction(t)
+    try {
+      if (!Array.isArray(products)) {
+        throw new Error('Products array was not provided')
+      }
+
+      const result: ProductConfiguration[] = []
+      for (let i = 0; i < products.length; i += 1) {
+        printYellowLine(i.toString())
+        // const { externalId } = hasExternalId.validateSync(comments[i])
+        const product: unknown = products[i]
+        if (!product || typeof product !== 'object') {
+          throw new Error('Non object received for product')
+        }
+        if (!('configuration' in product)) {
+          throw new Error('Configuration is missing for product')
+        }
+        if (typeof product.configuration !== 'object') {
+          throw new Error('Configuration is not an object')
+        }
+
+        const {
+          configuration,
+          ...rawProduct
+        } = product
+
+        const productRecord = await ProductController.upsert(rawProduct, transaction)
+
+        const configurationRecord = await ProductConfigurationController.upsert({
+          ...configuration,
+          orderId,
+          productId: productRecord.id,
+        }, transaction)
+
+        result.push(configurationRecord)
+      }
+
+      await commit()
+      return result
     } catch (error) {
       await rollback()
       // rethrow the error for further handling

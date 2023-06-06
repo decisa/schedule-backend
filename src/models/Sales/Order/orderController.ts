@@ -2,7 +2,9 @@ import * as yup from 'yup'
 import { Transaction } from 'sequelize'
 import { OrderStatus, orderStatuses, MagentoOrder } from '../MagentoOrder/magentoOrder'
 import { Order } from './order'
-import { isId, useTransaction, isString } from '../../../utils/utils'
+import {
+  isId, useTransaction, isString, printYellowLine,
+} from '../../../utils/utils'
 import { OrderAddress } from '../OrderAddress/orderAddress'
 import { OrderComment, OrderCommentCreate } from '../OrderComment/orderComment'
 import { Customer } from '../Customer/customer'
@@ -11,9 +13,10 @@ import { ProductConfiguration } from '../ProductConfiguration/productConfigurati
 import { Product } from '../Product/product'
 import { ProductOption } from '../ProductOption/productOption'
 import ProductConfigurationController, { ConfigurationAsProductRead, productConfigurationSchemaCreate } from '../ProductConfiguration/productConfigurationController'
-import { OrderCommentMagentoCreate, commentSchemaCreate } from '../OrderComment/orderCommentController'
+import OrderCommentController, { OrderCommentMagentoCreate, commentSchemaCreate } from '../OrderComment/orderCommentController'
 import CustomerController, { CustomerCreate, customerSchemaCreate } from '../Customer/customerController'
-import { OrderAddressCreate, orderAddressSchemaCreate } from '../OrderAddress/orderAddressContoller'
+import OrderAddressController, { OrderAddressCreate, orderAddressSchemaCreate } from '../OrderAddress/orderAddressContoller'
+import AddressController from '../Address/addressController'
 
 type OrderCreational = {
   id: number
@@ -695,39 +698,79 @@ export default class OrderController {
         throw new Error('orderData object is missing')
       }
 
-      const parsedOrder = validateOrderCreate(orderData)
+      const orderRaw: {
+        customerId?: number
+      } = {
+        ...orderData,
+      }
 
       // section: CUSTOMER INFO
-      if (!('customer' in orderData)) {
+      if (!('customer' in orderRaw)) {
         throw new Error('Customer record is required')
       }
-      const customerRecord = await CustomerController.upsert(orderData.customer, transaction)
-      parsedOrder.customerId = customerRecord.id
-      // section: CUSTOMER ADDRESSES
-
+      // printYellowLine('upsert CUSTOMER')
+      const customerRecord = await CustomerController.upsert(orderRaw.customer, transaction)
+      orderRaw.customerId = customerRecord.id
       // section: ORDER
+      // printYellowLine('upsert ORDER')
+      const orderRecord = await this.upsert(orderRaw, transaction)
 
       // section: ORDER ADDRESSES
+      if (!('billingAddress' in orderRaw) || (typeof orderRaw.billingAddress !== 'object')) {
+        throw new Error('billingAddress record is required')
+      }
+      // if (!(typeof 'billingAddress' !== 'object')) {
+      //   throw new Error('billingAddress record is required')
+      // }
+      if (!('shippingAddress' in orderRaw) || (typeof orderRaw.shippingAddress !== 'object')) {
+        throw new Error('shippingAddress record is required')
+      }
+      const billingAddressRaw: { orderId: number } = {
+        ...orderRaw.billingAddress,
+        orderId: orderRecord.id,
+      }
+      const shippingAddressRaw: { orderId: number } = {
+        ...orderRaw.shippingAddress,
+        orderId: orderRecord.id,
+      }
+      // printYellowLine('upsert BILLING')
+      const billingRecord = await OrderAddressController.upsert(billingAddressRaw, transaction)
+      // printYellowLine('upsert SHIPPING')
+      const shippingRecord = await OrderAddressController.upsert(shippingAddressRaw, transaction)
+      // printYellowLine('SET BILLING')
+      await orderRecord.setBillingAddress(billingRecord, { transaction })
+      // printYellowLine('SET SHIPPING')
+      await orderRecord.setShippingAddress(shippingRecord, { transaction })
+      // section: CUSTOMER ADDRESSES
+      if (!billingRecord.magento || !shippingRecord.magento) {
+        // should never happen:
+        throw new Error('magento record missing on billing or shipping address')
+      }
+      if (billingRecord.magento.externalCustomerAddressId) {
+        // printYellowLine('CREATE CUSTOMER ADDRESS: billing')
+        await AddressController.createFromOrderAddress(customerRecord.id, billingRecord, transaction)
+      }
+      if (shippingRecord.magento.externalCustomerAddressId) {
+        // printYellowLine('CREATE CUSTOMER ADDRESS: shipping')
+        await AddressController.createFromOrderAddress(customerRecord.id, shippingRecord, transaction)
+      }
 
       // section: COMMENTS
+      if ('comments' in orderRaw) {
+        await OrderCommentController.bulkUpsertByOrderId(orderRecord.id, orderRaw.comments, transaction)
+      }
 
       // section: A. PRODUCTS
-
+      if ('products' in orderRaw) {
+        await ProductConfigurationController.bulkUpsertMagentoProducts(orderRecord.id, orderRaw.products, transaction)
+      }
       // section: A. PRODUCT CONFIGURATIONS & OPTIONS
 
-      if (!('magento' in orderData)) {
-        throw new Error('Magento record is required')
+      const result = await this.getFullOrderInfo(orderRecord.id, transaction)
+
+      if (!result) {
+        throw new Error('Internal Error: order cannot be created')
       }
-
-      const orderRecord = await this.upsert(orderData, transaction)
-
-      let result: Order
-      if (!orderRecord) {
-        result = await this.create(orderData, transaction)
-      } else {
-        result = await this.update(orderRecord.id, orderData, transaction)
-      }
-
       await commit()
       return result
     } catch (error) {

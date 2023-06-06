@@ -95,19 +95,47 @@ export const commentSchemaCreate: yup.ObjectSchema<OrderCommentCreate> = yup.obj
     .label('Malformed data: type field')
     .required(),
   id: yup.number().integer(),
-  orderId: yup.number().integer().required().label('Malformed data: orderId field'),
+  orderId: yup.number()
+    .integer()
+    .positive()
+    .required()
+    .label('Malformed data: orderId field'),
   status: yup
     .mixed<OrderStatus>()
     .oneOf(orderStatuses)
     .nullable()
-    .default(null)
     .label('Malformed data: status field'),
-  externalId: yup.number().integer().nullable().label('Malformed data: externalId field'),
-  externalParentId: yup.number().integer().nullable().label('Malformed data: externalParentId field'),
-  customerNotified: yup.boolean().nullable().label('Malformed data: customerNotified field'),
-  visibleOnFront: yup.boolean().nullable().label('Malformed data: visibleOnFront field'),
+  externalId: yup.number()
+    .integer()
+    .nullable()
+    .label('Malformed data: externalId field'),
+  externalParentId: yup.number()
+    .integer()
+    .nullable()
+    .label('Malformed data: externalParentId field'),
+  customerNotified: yup.boolean()
+    .nullable()
+    .label('Malformed data: customerNotified field'),
+  visibleOnFront: yup.boolean()
+    .nullable()
+    .label('Malformed data: visibleOnFront field'),
   createdAt: yup.date().label('Malformed data: createdAt field'),
   updatedAt: yup.date().label('Malformed data: updatedAt field'),
+})
+
+const commentSchemaUpdate = commentSchemaCreate.clone().shape({
+  comment: yup.string()
+    .nonNullable(),
+  type: yup
+    .mixed<CommentType>()
+    .oneOf(commentTypes)
+    .nonNullable()
+    .label('Malformed data: type field'),
+  orderId: yup.number()
+    .integer()
+    .positive()
+    .nonNullable()
+    .label('Malformed data: orderId field'),
 })
 
 const commentSchemaMagentoCreate: yup.ObjectSchema<OrderCommentMagentoCreate> = commentSchemaCreate
@@ -164,6 +192,16 @@ export function validateCommentCreate(object: unknown): OrderCommentCreate {
   return comment
 }
 
+export function validateCommentUpdate(object: unknown): Omit<Partial<OrderCommentCreate>, 'createdAt' | 'updatedAt' | 'id'> {
+  // restrict update of id, and creation or modification dates
+  const comment = commentSchemaUpdate.omit(['createdAt', 'updatedAt', 'id']).validateSync(object, {
+    stripUnknown: true,
+    abortEarly: false,
+  }) satisfies Partial<OrderCommentCreate>
+
+  return comment
+}
+
 export function validateCommentMagentoUpsert(object: unknown): OrderCommentMagentoUpsert {
   const comment = commentSchemaMagentoUpsert.validateSync(object, {
     stripUnknown: true,
@@ -210,18 +248,16 @@ export default class OrderCommentController {
    * @param t - transaction. If transaction is not provided, method will create its own transaction for this operation
    * @returns OrderComment instance.
    */
-  static async insertOrderComment(comment: unknown, t?: Transaction): Promise<OrderComment> {
+  static async create(comment: unknown, t?: Transaction): Promise<OrderComment> {
     const [transaction, commit, rollback] = await useTransaction(t)
     try {
       const parsedComment = validateCommentCreate(comment)
       const result = await OrderComment.create(parsedComment, {
         transaction,
       })
-      if (result) {
-        await commit()
-        return result
-      }
-      throw new Error('Internal Error: comment was not created')
+
+      await commit()
+      return result
     } catch (error) {
       await rollback()
       // rethrow the error for further handling
@@ -230,23 +266,55 @@ export default class OrderCommentController {
   }
 
   /**
-   * create Order Comment Record. incoming comment object will be validated and Error will be thrown if validation fails. Make sure to wrap in try catch.
+   * update Order Comment Record.
+  * @param {number | unknown} commentId - id of the Comment record to update in DB
+   * @param {unknown | Partial<ProductConfigurationCreate>} productData - update data for Product record
+   * @returns {Product} complete Updated Product object or throws error
+   */
+  static async update(
+    commentId: number | unknown,
+    comment: Partial<OrderCommentCreate> | unknown,
+    t?: Transaction,
+  ): Promise<OrderComment> {
+    const [transaction, commit, rollback] = await useTransaction(t)
+    try {
+      const parsedComment = validateCommentUpdate(comment)
+
+      const id = isId.validateSync(commentId)
+      const commentRecord = await this.get(id, transaction)
+      if (!commentRecord) {
+        throw new Error('Product Configuration does not exist')
+      }
+
+      await commentRecord.update(parsedComment, { transaction })
+      const result = await this.get(commentRecord.id, transaction)
+      if (!result) {
+        throw new Error('error updating the product configuration')
+      }
+      await commit()
+      return result
+    } catch (error) {
+      await rollback()
+      // rethrow the error for further handling
+      throw error
+    }
+  }
+
+  /**
+   * create Magento Order Comment Record.
    * @param comment - object with comment to be created.
    * @param t - transaction. If transaction is not provided, method will create its own transaction for this operation
    * @returns OrderComment instance.
    */
-  static async insertOrderCommentMagento(comment: unknown | OrderCommentMagentoCreate, t?: Transaction): Promise<OrderComment> {
+  static async createMagento(comment: unknown | OrderCommentMagentoCreate, t?: Transaction): Promise<OrderComment> {
     const [transaction, commit, rollback] = await useTransaction(t)
     try {
       const parsedComment = validateCommentMagentoCreate(comment)
       const result = await OrderComment.create(parsedComment, {
         transaction,
       })
-      if (result) {
-        await commit()
-        return result
-      }
-      throw new Error('Internal Error: comment was not created')
+      await commit()
+      return result
     } catch (error) {
       await rollback()
       // rethrow the error for further handling
@@ -255,12 +323,12 @@ export default class OrderCommentController {
   }
 
   /**
-   * upserts (update or insert) Order Comment with Magento Record. incoming comment object will be validated and Error will be thrown if validation fails. Make sure to wrap in try catch.
+   * upserts (update or insert) Order Comment with Magento Record. externalId is required
    * @param comment - object with comment to be created.
    * @param t - transaction. If transaction is not provided, method will create its own transaction for this operation
    * @returns OrderComment instance.
    */
-  static async upsertOrderCommentMagento(comment: unknown, t?: Transaction): Promise<OrderComment | null> {
+  static async upsert(comment: unknown, t?: Transaction): Promise<OrderComment> {
     const [transaction, commit, rollback] = await useTransaction(t)
     try {
       const { externalId } = hasExternalId.validateSync(comment)
@@ -271,37 +339,107 @@ export default class OrderCommentController {
         transaction,
       })
 
-      let result: OrderComment | null = null
+      let result: OrderComment
 
       if (!commentRecord) {
         // create record
-        result = await this.insertOrderCommentMagento(comment, transaction)
-        printYellowLine()
-        console.log('CREATED !')
+        result = await this.createMagento(comment, transaction)
       } else {
         // update record
-        const parsedComment = validateCommentMagentoUpsert(comment)
-        // verify that required fields are not null:
+        result = await this.update(commentRecord.id, comment, transaction)
+      }
+      await commit()
+      return result
+    } catch (error) {
+      await rollback()
+      // rethrow the error for further handling
+      throw error
+    }
+  }
 
-        await OrderComment.update(parsedComment, {
-          where: {
-            externalId,
-          },
-          transaction,
-        })
-        result = await OrderComment.findOne({
-          where: {
-            externalId,
-          },
-          transaction,
-        })
-        console.log('UPDATED !')
+  /**
+   * upserts (update or insert) Order Comment with Magento Record. incoming comment object will be validated and Error will be thrown if validation fails. Make sure to wrap in try catch.
+   * @param comments - object with comment to be created.
+   * @param t - transaction. If transaction is not provided, method will create its own transaction for this operation
+   * @returns OrderComment instance.
+   */
+  static async bulkUpsert(comments: unknown, t?: Transaction): Promise<OrderComment[] | null> {
+    const [transaction, commit, rollback] = await useTransaction(t)
+    try {
+      if (!Array.isArray(comments)) {
+        return null
       }
-      if (result) {
-        await commit()
-        return result
+
+      const result: OrderComment[] | null = []
+      for (let i = 0; i < comments.length; i += 1) {
+        // const { externalId } = hasExternalId.validateSync(comments[i])
+        const comment = await this.upsert(comments[i], transaction)
+        if (comment) {
+          result.push(comment)
+        }
       }
-      throw new Error('Internal Error: comment was not created')
+
+      await commit()
+      return result
+    } catch (error) {
+      await rollback()
+      // rethrow the error for further handling
+      throw error
+    }
+  }
+
+  /**
+   * upserts (update or insert) Order Comment with Magento Record. externalId is required
+   * @param { number } orderId - orderId for which comment need to be upserted.
+   * @param comment - object with comment to be created.
+   * @param t - transaction. If transaction is not provided, method will create its own transaction for this operation
+   * @returns OrderComment instance.
+   */
+  static async upsertByOrderId(orderId: number, comment: unknown, t?: Transaction): Promise<OrderComment> {
+    const [transaction, commit, rollback] = await useTransaction(t)
+    try {
+      if (!comment || typeof comment !== 'object') {
+        throw new Error('Comment data is missing')
+      }
+      const result = await this.upsert({
+        ...comment,
+        orderId,
+      }, transaction)
+
+      await commit()
+      return result
+    } catch (error) {
+      await rollback()
+      // rethrow the error for further handling
+      throw error
+    }
+  }
+
+  /**
+   * upserts (update or insert) Order Comment with Magento Record. externalId is required
+   * @param { number } orderId - orderId for which comments need to be upserted.
+   * @param comments - object with comments to be created.
+   * @param t - transaction. If transaction is not provided, method will create its own transaction for this operation
+   * @returns { OrderComment[] | null } OrderComment[] instance.
+   */
+  static async bulkUpsertByOrderId(orderId: number, comments: unknown, t?: Transaction): Promise<OrderComment[]> {
+    const [transaction, commit, rollback] = await useTransaction(t)
+    try {
+      if (!Array.isArray(comments)) {
+        throw new Error('Comments array was not provided')
+      }
+
+      const result: OrderComment[] = []
+      for (let i = 0; i < comments.length; i += 1) {
+        // const { externalId } = hasExternalId.validateSync(comments[i])
+        const comment = await this.upsertByOrderId(orderId, comments[i], transaction)
+        if (comment) {
+          result.push(comment)
+        }
+      }
+
+      await commit()
+      return result
     } catch (error) {
       await rollback()
       // rethrow the error for further handling
@@ -314,9 +452,9 @@ export default class OrderCommentController {
    * @param id - id of the comment
    * @returns OrderComment instance.
    */
-  static async getCommentById(id: unknown): Promise<OrderComment | null> {
+  static async get(id: unknown, t?: Transaction): Promise<OrderComment | null> {
     const commentId = isId.validateSync(id)
-    const result = await OrderComment.findByPk(commentId)
+    const result = await OrderComment.findByPk(commentId, { transaction: t })
     return result
   }
 
@@ -325,12 +463,13 @@ export default class OrderCommentController {
    * @param magentoId - id of the comment
    * @returns OrderComment instance.
    */
-  static async getCommentByMagentoId(magentoId: unknown): Promise<OrderComment | null> {
+  static async getCommentByMagentoId(magentoId: unknown, t?: Transaction): Promise<OrderComment | null> {
     const externalId = isId.validateSync(magentoId)
     const result = await OrderComment.findOne({
       where: {
         externalId,
       },
+      transaction: t,
     })
     return result
   }
@@ -340,12 +479,13 @@ export default class OrderCommentController {
  * @param orderId - id of the comment
  * @returns {OrderComment | OrderComment[] | null} OrderComment | OrderComment[] | null instance(s).
  */
-  static async getCommentsByOrderId(orderId: unknown): Promise<OrderComment | OrderComment[] | null> {
+  static async getCommentsByOrderId(orderId: unknown, t?: Transaction): Promise<OrderComment | OrderComment[] | null> {
     const id = isId.validateSync(orderId)
     const result = await OrderComment.findAll({
       where: {
         orderId: id,
       },
+      transaction: t,
     })
     return result
   }
@@ -355,7 +495,7 @@ export default class OrderCommentController {
  * @param orderNumber - id of the comment
  * @returns {OrderComment | OrderComment[] | null} OrderComment | OrderComment[] | null instance(s).
  */
-  static async getCommentsByOrderNumber(orderNumber: unknown): Promise<OrderComment | OrderComment[] | null> {
+  static async getCommentsByOrderNumber(orderNumber: unknown, t?: Transaction): Promise<OrderComment | OrderComment[] | null> {
     const orderNum = isString.validateSync(orderNumber)
     const result = await OrderComment.findAll({
       where: {},
@@ -371,6 +511,7 @@ export default class OrderCommentController {
           attributes: ['orderNumber'],
         },
       ],
+      transaction: t,
     })
     return result
   }

@@ -1,409 +1,412 @@
-// import { CreationAttributes, Op, Sequelize } from 'sequelize'
-// import { Order } from './order'
-// import { MagentoOrder } from '../MagentoOrder/magentoOrder'
-// import { Brand } from '../../Brand/brand'
-// import { Product } from '../Product/product'
-// import { ProductConfiguration } from '../ProductConfiguration/productConfiguration'
-// import { ProductOption } from '../ProductOption/productOption'
-// import { Customer } from '../Customer/customer'
-// import { MagentoCustomer } from '../MagentoCustomer/magentoCustomer'
-// import { MagentoOrderAddress } from '../MagentoOrderAddress/magentoOrderAddress'
-// import { OrderAddress } from '../OrderAddress/orderAddress'
-// import {
-//   getDateCanThrow, getOrderStatus, isEmptyObject, isNotEmptyObject, parseMagentoBrand, printYellowLine,
-// } from '../../../utils/utils'
-// import OrderAddressController from '../OrderAddress/orderAddressContoller'
-// import { OrderComment } from '../OrderComment/orderComment'
-// import type { OrderCommentCreate } from '../OrderComment/orderComment'
-// import OrderCommentController from '../OrderComment/orderCommentController'
-// // import type { CommentShape } from '../OrderComment/orderCommentController'
-// import { BrandShape } from '../../models'
-// import ProductOptionController from '../ProductOption/productOptionController'
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable import/export */
+import { CreationAttributes, Op, Sequelize } from 'sequelize'
+import { Order } from './order'
+import { MagentoOrder } from '../MagentoOrder/magentoOrder'
+import { Brand } from '../../Brand/brand'
+import { Product } from '../Product/product'
+import { ProductConfiguration } from '../ProductConfiguration/productConfiguration'
+import { ProductOption } from '../ProductOption/productOption'
+import { Customer } from '../Customer/customer'
+import { MagentoCustomer } from '../MagentoCustomer/magentoCustomer'
+import { MagentoOrderAddress } from '../MagentoOrderAddress/magentoOrderAddress'
+import { OrderAddress } from '../OrderAddress/orderAddress'
+import {
+  getDateCanThrow, getOrderStatus, isEmptyObject, isNotEmptyObject, parseMagentoBrand, printYellowLine,
+} from '../../../utils/utils'
+import OrderAddressController from '../OrderAddress/orderAddressContoller'
+import { OrderComment } from '../OrderComment/orderComment'
+import type { OrderCommentCreate } from '../OrderComment/orderComment'
+import OrderCommentController from '../OrderComment/orderCommentController'
+// import type { CommentShape } from '../OrderComment/orderCommentController'
+import { BrandShape } from '../../models'
+import ProductOptionController from '../ProductOption/productOptionController'
 
-// // type CustomerAddressShape = CreationAttributes<Address> & {
-// //   magento?: CreationAttributes<MagentoAddress>
-// // }
-
-// type CustomerShape = CreationAttributes<Customer> & {
-//   magento?: CreationAttributes<MagentoCustomer>
+// type CustomerAddressShape = CreationAttributes<Address> & {
+//   magento?: CreationAttributes<MagentoAddress>
 // }
 
-// type OrderAddessShape = CreationAttributes<OrderAddress> & {
-//   magento: CreationAttributes<MagentoOrderAddress>
-// }
+type CustomerShape = CreationAttributes<Customer> & {
+  magento?: CreationAttributes<MagentoCustomer>
+}
 
-// type OrderShape = CreationAttributes<Order> & {
-//   magento: CreationAttributes<MagentoOrder>
-// }
+type OrderAddessShape = CreationAttributes<OrderAddress> & {
+  magento: CreationAttributes<MagentoOrderAddress>
+}
 
-// type ProductShape = CreationAttributes<Product>
+type OrderShape = CreationAttributes<Order> & {
+  magento: CreationAttributes<MagentoOrder>
+}
 
-// type ProductConfigurationShape = CreationAttributes<ProductConfiguration>
+type ProductShape = CreationAttributes<Product>
 
-// type ProductOptionShape = CreationAttributes<ProductOption>
+type ProductConfigurationShape = CreationAttributes<ProductConfiguration>
 
-// // type OrderCommentShape = CreationAttributes<OrderComment>
+type ProductOptionShape = CreationAttributes<ProductOption>
 
-// type AppProduct = ProductShape & {
-//   brand?: BrandShape
-//   configuration?: Config
-// }
+// type OrderCommentShape = CreationAttributes<OrderComment>
 
-// type Config = ProductConfigurationShape & {
-//   options?: ProductOptionShape[]
-// }
+type AppProduct = ProductShape & {
+  brand?: BrandShape
+  configuration?: Config
+}
 
-// type OrderData = OrderShape & {
-//   orderDate: Date | string
-//   customer: CustomerShape
-//   billingAddress: OrderAddessShape
-//   shippingAddress: OrderAddessShape
-//   // comments?: CommentShape[]
-//   comments?: OrderCommentCreate[]
-//   products?: AppProduct[]
-// }
+type Config = ProductConfigurationShape & {
+  options?: ProductOptionShape[]
+}
 
-// export default class OrderController {
-//   static async importMagentoOrder(data: OrderData) {
-//     try {
-//       // section: CUSTOMER INFO
-//       // info: customer record is find or create
-//       const customerInfo = data.customer
+type OrderData = OrderShape & {
+  orderDate: Date | string
+  customer: CustomerShape
+  billingAddress: OrderAddessShape
+  shippingAddress: OrderAddessShape
+  // comments?: CommentShape[]
+  comments?: OrderCommentCreate[]
+  products?: AppProduct[]
+}
 
-//       let customerRecord: Customer | null
-//       customerRecord = await Customer.findOne({
-//         where: {
-//           email: customerInfo.email,
-//         },
-//         include: {
-//           model: MagentoCustomer,
-//           as: 'magento',
-//         },
-//       })
+export default class OrderController {
+  static async importMagentoOrder(data: OrderData) {
+    try {
+      // section: CUSTOMER INFO
+      // info: customer record is find or create
+      const customerInfo = data.customer
 
-//       if (!customerRecord) {
-//         customerRecord = await Customer.create(customerInfo, {
-//           include: 'magento',
-//         })
-//       }
+      let customerRecord: Customer | null
+      customerRecord = await Customer.findOne({
+        where: {
+          email: customerInfo.email,
+        },
+        include: {
+          model: MagentoCustomer,
+          as: 'magento',
+        },
+      })
 
-//       // if customer existed, but magento record was missing.
-//       if (isEmptyObject(customerRecord.magento) && isNotEmptyObject(customerInfo.magento)) {
-//         await customerRecord.createMagento(customerInfo.magento)
-//       }
+      if (!customerRecord) {
+        customerRecord = await Customer.create(customerInfo, {
+          include: 'magento',
+        })
+      }
 
-//       // CUSTOMER ADDRESSES
+      // if customer existed, but magento record was missing.
+      if (isEmptyObject(customerRecord.magento) && isNotEmptyObject(customerInfo.magento)) {
+        await customerRecord.createMagento(customerInfo.magento)
+      }
 
-//       const { billingAddress, shippingAddress } = data
-//       // check if billing address is saved to customer record
-//       // TODO: check if externalCustomerAddressId is provided. if provided - add it too
-//       // await customerAddressCreateIfNotExists(customerRecord, billingAddress)
-//       // await customerAddressCreateIfNotExists(customerRecord, shippingAddress)
+      // CUSTOMER ADDRESSES
 
-//       // section: ORDER
-//       const orderInfo: OrderShape = {
-//         orderDate: getDateCanThrow(data.orderDate),
-//         orderNumber: data.orderNumber,
-//         paymentMethod: data.paymentMethod,
-//         shippingCost: data.shippingCost,
-//         taxRate: data.taxRate,
-//         customerId: customerRecord.id,
-//         magento: {
-//           ...data.magento,
-//           status: getOrderStatus(data.magento.status),
-//         },
-//       }
-//       const [orderRecord] = await Order.upsert(orderInfo)
-//       if (orderInfo.magento?.externalId) {
-//         orderInfo.magento.orderId = orderRecord.id
-//         printYellowLine('UPSERT MAGENTO')
-//         const [test] = await MagentoOrder.upsert(orderInfo.magento)
-//         console.log(test && test.toJSON())
-//       }
-//       // section: ORDER ADDRESSES
-//       // done: test if orderId is properly assigned.
-//       const billingRecord = await OrderAddressController.upsertMagentoAddress(billingAddress, orderRecord)
-//       const shippingRecord = await OrderAddressController.upsertMagentoAddress(shippingAddress, orderRecord)
+      const { billingAddress, shippingAddress } = data
+      // check if billing address is saved to customer record
+      // TODO: check if externalCustomerAddressId is provided. if provided - add it too
+      // await customerAddressCreateIfNotExists(customerRecord, billingAddress)
+      // await customerAddressCreateIfNotExists(customerRecord, shippingAddress)
 
-//       if (!billingRecord || !shippingRecord) {
-//         throw new Error('error with billing and shipping addresses encountered')
-//       }
+      // section: ORDER
+      const orderInfo: OrderShape = {
+        orderDate: getDateCanThrow(data.orderDate),
+        orderNumber: data.orderNumber,
+        paymentMethod: data.paymentMethod,
+        shippingCost: data.shippingCost,
+        taxRate: data.taxRate,
+        customerId: customerRecord.id,
+        magento: {
+          ...data.magento,
+          status: getOrderStatus(data.magento.status),
+        },
+      }
+      const [orderRecord] = await Order.upsert(orderInfo)
+      if (orderInfo.magento?.externalId) {
+        orderInfo.magento.orderId = orderRecord.id
+        printYellowLine('UPSERT MAGENTO')
+        const [test] = await MagentoOrder.upsert(orderInfo.magento)
+        console.log(test && test.toJSON())
+      }
+      // section: ORDER ADDRESSES
+      // done: test if orderId is properly assigned.
+      const billingRecord = await OrderAddressController.upsertMagentoAddress(billingAddress, orderRecord)
+      const shippingRecord = await OrderAddressController.upsertMagentoAddress(shippingAddress, orderRecord)
 
-//       await orderRecord.setBillingAddress(billingRecord)
-//       await orderRecord.setShippingAddress(shippingRecord)
+      if (!billingRecord || !shippingRecord) {
+        throw new Error('error with billing and shipping addresses encountered')
+      }
 
-//       // COMMENTS
+      await orderRecord.setBillingAddress(billingRecord)
+      await orderRecord.setShippingAddress(shippingRecord)
 
-//       // FIXME: UNCOMMENT THIS LINES
-//       // if (data.comments && data.comments?.length > 0) {
-//       //   for (let i = 0; i < data.comments.length; i += 1) {
-//       //     await OrderCommentController.upsertMagentoComment(data.comments[i], orderRecord)
-//       //   }
-//       // }
+      // COMMENTS
 
-//       // PRODUCTS
+      // FIXME: UNCOMMENT THIS LINES
+      // if (data.comments && data.comments?.length > 0) {
+      //   for (let i = 0; i < data.comments.length; i += 1) {
+      //     await OrderCommentController.upsertMagentoComment(data.comments[i], orderRecord)
+      //   }
+      // }
 
-//       if (data.products && data.products?.length > 0) {
-//         printYellowLine('products')
-//         for (let i = 0; i < data.products.length; i += 1) {
-//           const {
-//             configuration,
-//             brand,
-//             ...product
-//           } = data.products[i]
+      // PRODUCTS
 
-//           const parsedProduct: ProductShape = {
-//             ...product,
-//           }
+      if (data.products && data.products?.length > 0) {
+        printYellowLine('products')
+        for (let i = 0; i < data.products.length; i += 1) {
+          const {
+            configuration,
+            brand,
+            ...product
+          } = data.products[i]
 
-//           let productConfiguration: Config | null = null
-//           let options: ProductOptionShape[] | null = null
+          const parsedProduct: ProductShape = {
+            ...product,
+          }
 
-//           if (configuration) {
-//             productConfiguration = {
-//               ...configuration,
-//             }
-//             if (productConfiguration.options) {
-//               options = productConfiguration.options
-//               delete productConfiguration.options
-//             }
-//           }
+          let productConfiguration: Config | null = null
+          let options: ProductOptionShape[] | null = null
 
-//           if (isNotEmptyObject(parsedProduct)) {
-//             // parse brand fields, find or create brand record in db
-//             // assign brand id to the product
-//             // FIXME: uncomment this and fix
-//             // if (brand) {
-//             //   const parsedBrand = parseMagentoBrand(brand)
-//             //   if (parsedBrand) {
-//             //     // eslint-disable-next-line no-await-in-loop
-//             //     const [brandRecord] = await Brand.findOrCreate({
-//             //       where: {
-//             //         externalId: parsedBrand.externalId,
-//             //       },
-//             //       defaults: parsedBrand,
-//             //     })
-//             //     if (brandRecord) {
-//             //       parsedProduct.brandId = brandRecord.id
-//             //     }
-//             //   }
-//             // }
+          if (configuration) {
+            productConfiguration = {
+              ...configuration,
+            }
+            if (productConfiguration.options) {
+              options = productConfiguration.options
+              delete productConfiguration.options
+            }
+          }
 
-//             if (!parsedProduct.externalId) {
-//               throw new Error('Product external Id is missing')
-//             }
-//             const [productRecord] = await Product.upsert(parsedProduct)
+          if (isNotEmptyObject(parsedProduct)) {
+            // parse brand fields, find or create brand record in db
+            // assign brand id to the product
+            // FIXME: uncomment this and fix
+            // if (brand) {
+            //   const parsedBrand = parseMagentoBrand(brand)
+            //   if (parsedBrand) {
+            //     // eslint-disable-next-line no-await-in-loop
+            //     const [brandRecord] = await Brand.findOrCreate({
+            //       where: {
+            //         externalId: parsedBrand.externalId,
+            //       },
+            //       defaults: parsedBrand,
+            //     })
+            //     if (brandRecord) {
+            //       parsedProduct.brandId = brandRecord.id
+            //     }
+            //   }
+            // }
 
-//             if (productConfiguration) {
-//               if (!productConfiguration.externalId) {
-//                 throw new Error('product configuration id is missing')
-//               }
+            if (!parsedProduct.externalId) {
+              throw new Error('Product external Id is missing')
+            }
+            const [productRecord] = await Product.upsert(parsedProduct)
 
-//               productConfiguration.productId = productRecord.id
-//               productConfiguration.orderId = orderRecord.id
+            if (productConfiguration) {
+              if (!productConfiguration.externalId) {
+                throw new Error('product configuration id is missing')
+              }
 
-//               const [productConfigRecord] = await ProductConfiguration.upsert(productConfiguration)
+              productConfiguration.productId = productRecord.id
+              productConfiguration.orderId = orderRecord.id
 
-//               if (options) {
-//                 await ProductOptionController.upsertMagentoProductOptions(options, productConfigRecord)
-//               }
-//             }
-//           }
-//         }
-//       }
-//     } catch (error) {
-//       console.log('error encountered while importing order', error)
-//     }
+              const [productConfigRecord] = await ProductConfiguration.upsert(productConfiguration)
 
-//     // CONFIGURATIONS)
-//     return this.getFullOrderByNumber(data.orderNumber)
-//   }
+              if (options) {
+                await ProductOptionController.upsertMagentoProductOptions(options, productConfigRecord)
+              }
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.log('error encountered while importing order', error)
+    }
 
-//   static async getFullOrderByNumber(orderNumber: string) {
-//     const order = await Order.findOne({
-//       where: {
-//         orderNumber,
-//       },
-//       include: [{
-//         model: OrderAddress,
-//         as: 'billingAddress',
-//         include: [
-//           {
-//             association: 'magento',
-//             attributes: {
-//               exclude: ['orderAddressId'],
-//             },
-//           },
+    // CONFIGURATIONS)
+    return this.getFullOrderByNumber(data.orderNumber)
+  }
 
-//         ],
-//         attributes: {
-//           exclude: ['orderId', 'customerAddressId'],
-//         },
-//       },
-//       {
-//         model: OrderAddress,
-//         as: 'shippingAddress',
-//         include: [
-//           {
-//             association: 'magento',
-//             attributes: {
-//               exclude: ['orderAddressId'],
-//             },
-//           },
+  static async getFullOrderByNumber(orderNumber: string) {
+    const order = await Order.findOne({
+      where: {
+        orderNumber,
+      },
+      include: [{
+        model: OrderAddress,
+        as: 'billingAddress',
+        include: [
+          {
+            association: 'magento',
+            attributes: {
+              exclude: ['orderAddressId'],
+            },
+          },
 
-//         ],
-//         attributes: {
-//           exclude: ['orderId', 'customerAddressId'],
-//         },
-//       },
-//       {
-//         model: OrderComment,
-//         as: 'comments',
-//         attributes: {
-//           exclude: ['orderId'],
-//         },
-//       },
-//       {
-//         model: MagentoOrder,
-//         as: 'magento',
-//         attributes: {
-//           exclude: ['orderId'],
-//         },
-//       },
-//       {
-//         model: Customer,
-//         as: 'customer',
-//         include: [{
-//           model: MagentoCustomer,
-//           as: 'magento',
-//         }],
-//         attributes: {
-//           exclude: ['defaultShippingId'],
-//         },
-//       },
-//       {
-//         model: ProductConfiguration,
-//         as: 'products',
-//         attributes: {
-//           exclude: ['productId', 'orderId'],
-//         },
-//         include: [{
-//           model: Product,
-//           as: 'product',
-//           attributes: {
-//             exclude: ['brandId'],
-//           },
-//           include: [{
-//             association: 'brand',
-//           }],
-//         },
-//         {
-//           model: ProductOption,
-//           as: 'options',
-//           attributes: {
-//             exclude: ['configId'],
-//           },
-//           // separate: true,
-//           // order: [
-//           //   ['sortOrder', 'ASC'],
-//           // ],
-//         }],
-//       }],
-//       attributes: {
-//         exclude: [
-//           'billingAddressId',
-//           'shippingAddressId',
-//         ],
-//       },
-//       order: [
-//         [
-//           { model: ProductConfiguration, as: 'products' },
-//           { model: ProductOption, as: 'options' },
-//           'sortOrder', 'ASC',
-//         ],
-//       ],
-//     })
-//     return this.toJSON(order)
-//   }
+        ],
+        attributes: {
+          exclude: ['orderId', 'customerAddressId'],
+        },
+      },
+      {
+        model: OrderAddress,
+        as: 'shippingAddress',
+        include: [
+          {
+            association: 'magento',
+            attributes: {
+              exclude: ['orderAddressId'],
+            },
+          },
 
-//   static async searchOrders(term: string) {
-//     const wildCardTerm = `%${term}%`
-//     const orders = await Order.findAll({
-//       include: [
-//         {
-//           association: 'customer',
-//         },
-//       ],
-//       where: {
-//         [Op.or]: [
-//           {
-//             '$customer.firstName$': {
-//               [Op.like]: wildCardTerm,
-//             },
-//           },
-//           {
-//             '$customer.lastName$': {
-//               [Op.like]: wildCardTerm,
-//             },
-//           },
-//           Sequelize.where(
-//             Sequelize.fn('concat', Sequelize.col('customer.firstName'), ' ', Sequelize.col('customer.lastName')),
-//             {
-//               [Op.like]: wildCardTerm,
-//             },
-//           ),
-//           {
-//             orderNumber: {
-//               [Op.like]: wildCardTerm,
-//             },
-//           },
-//         ],
-//       },
-//     })
-//     return orders.map((order) => this.toJSON(order)).filter((x) => x)
-//   }
+        ],
+        attributes: {
+          exclude: ['orderId', 'customerAddressId'],
+        },
+      },
+      {
+        model: OrderComment,
+        as: 'comments',
+        attributes: {
+          exclude: ['orderId'],
+        },
+      },
+      {
+        model: MagentoOrder,
+        as: 'magento',
+        attributes: {
+          exclude: ['orderId'],
+        },
+      },
+      {
+        model: Customer,
+        as: 'customer',
+        include: [{
+          model: MagentoCustomer,
+          as: 'magento',
+        }],
+        attributes: {
+          exclude: ['defaultShippingId'],
+        },
+      },
+      {
+        model: ProductConfiguration,
+        as: 'products',
+        attributes: {
+          exclude: ['productId', 'orderId'],
+        },
+        include: [{
+          model: Product,
+          as: 'product',
+          attributes: {
+            exclude: ['brandId'],
+          },
+          include: [{
+            association: 'brand',
+          }],
+        },
+        {
+          model: ProductOption,
+          as: 'options',
+          attributes: {
+            exclude: ['configId'],
+          },
+          // separate: true,
+          // order: [
+          //   ['sortOrder', 'ASC'],
+          // ],
+        }],
+      }],
+      attributes: {
+        exclude: [
+          'billingAddressId',
+          'shippingAddressId',
+        ],
+      },
+      order: [
+        [
+          { model: ProductConfiguration, as: 'products' },
+          { model: ProductOption, as: 'options' },
+          'sortOrder', 'ASC',
+        ],
+      ],
+    })
+    return this.toJSON(order)
+  }
 
-//   static toJSON(order: Order | null) {
-//     if (order) {
-//       const billingAddress = OrderAddressController.toJSON(order.billingAddress)
-//       const shippingAddress = OrderAddressController.toJSON(order.shippingAddress)
+  static async searchOrders(term: string) {
+    const wildCardTerm = `%${term}%`
+    const orders = await Order.findAll({
+      include: [
+        {
+          association: 'customer',
+        },
+      ],
+      where: {
+        [Op.or]: [
+          {
+            '$customer.firstName$': {
+              [Op.like]: wildCardTerm,
+            },
+          },
+          {
+            '$customer.lastName$': {
+              [Op.like]: wildCardTerm,
+            },
+          },
+          Sequelize.where(
+            Sequelize.fn('concat', Sequelize.col('customer.firstName'), ' ', Sequelize.col('customer.lastName')),
+            {
+              [Op.like]: wildCardTerm,
+            },
+          ),
+          {
+            orderNumber: {
+              [Op.like]: wildCardTerm,
+            },
+          },
+        ],
+      },
+    })
+    return orders.map((order) => this.toJSON(order)).filter((x) => x)
+  }
 
-//       const orderFinal = {
-//         ...order.toJSON(),
-//       } as OrderShape & {
-//         products: ProductConfiguration[],
+  static toJSON(order: Order | null) {
+    if (order) {
+      const billingAddress = OrderAddressController.toJSON(order.billingAddress)
+      const shippingAddress = OrderAddressController.toJSON(order.shippingAddress)
 
-//       }
+      const orderFinal = {
+        ...order.toJSON(),
+      } as OrderShape & {
+        products: ProductConfiguration[],
 
-//       let customer: CustomerShape | undefined
-//       if (order.customer) {
-//         customer = {
-//           ...order.customer.toJSON(),
-//         }
-//         if (order.customer.magento) {
-//           customer.magento = order.customer.magento.toJSON()
-//         }
-//       }
+      }
 
-//       const result = {
-//         ...orderFinal,
-//         billingAddress,
-//         shippingAddress,
-//         customer,
-//         products: orderFinal.products?.map((configuration: ProductConfiguration) => {
-//           const { product, ...config } = configuration
-//           return {
-//             ...product,
-//             configuration: {
-//               ...config,
-//             },
-//           }
-//         }),
-//       }
-//       return result
-//     }
-//     return null
-//   }
-// }
+      let customer: CustomerShape | undefined
+      if (order.customer) {
+        customer = {
+          ...order.customer.toJSON(),
+        }
+        if (order.customer.magento) {
+          customer.magento = order.customer.magento.toJSON()
+        }
+      }
+
+      const result = {
+        ...orderFinal,
+        billingAddress,
+        shippingAddress,
+        customer,
+        products: orderFinal.products?.map((configuration: ProductConfiguration) => {
+          const { product, ...config } = configuration
+          return {
+            ...product,
+            configuration: {
+              ...config,
+            },
+          }
+        }),
+      }
+      return result
+    }
+    return null
+  }
+}
 
 export default () => console.log('test')

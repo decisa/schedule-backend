@@ -8,7 +8,7 @@ commentRouter.get('/:id', (req, res) => {
   try {
     // const id = 1
     // console.log('params', req.params)
-    OrderCommentController.getCommentById(req.params.id)
+    OrderCommentController.get(req.params.id)
       .then((result) => {
         const commentResult = OrderCommentController.toJSON(result)
         handleResponse(res, commentResult)
@@ -22,7 +22,7 @@ commentRouter.get('/:id', (req, res) => {
 commentRouter.post('/', (req, res) => {
   try {
     const comment = req.body as unknown
-    OrderCommentController.insertOrderComment(comment)
+    OrderCommentController.create(comment)
       .then((result) => handleResponse(res, result))
       .catch((err) => handleError(res, err))
   } catch (error) {
@@ -33,7 +33,7 @@ commentRouter.post('/', (req, res) => {
 commentRouter.put('/magento/upsert', (req, res) => {
   try {
     const comment = req.body as unknown
-    OrderCommentController.upsertOrderCommentMagento(comment)
+    OrderCommentController.upsert(comment)
       .then((result) => handleResponse(res, result))
       .catch((err) => handleError(res, err))
   } catch (error) {

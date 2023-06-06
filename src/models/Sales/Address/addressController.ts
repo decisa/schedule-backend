@@ -6,6 +6,8 @@ import {
 import { MagentoAddressType, magentoAddressTypes } from '../MagentoOrderAddress/magentoOrderAddress'
 import { Address } from './address'
 import { MagentoAddress } from '../MagentoAddress/magentoAddress'
+import { OrderAddress } from '../OrderAddress/orderAddress'
+import OrderAddressController, { OrderAddressMagentoRecord, validateOrderAddressCreate, validateOrderAddressMagento } from '../OrderAddress/orderAddressContoller'
 
 type AddressCreational = {
   id: number
@@ -551,6 +553,54 @@ export default class AddressController {
         }
       }
       throw new Error('Internal Error: Address was not created')
+    } catch (error) {
+      await rollback()
+      // rethrow the error for further handling
+      throw error
+    }
+  }
+
+  /**
+   * insert address record to DB based on order address. Will include magento record if provided.
+   * FK addressId will be ignored on magento record and generated automatically.
+   * @param {OrderAddress} orderAddress - customer address record to insert to DB
+   * @returns {Address} Address object or throws error
+   */
+  static async createFromOrderAddress(customerId: number, orderAddress: OrderAddress, t?: Transaction): Promise<Address> {
+    const [transaction, commit, rollback] = await useTransaction(t)
+    try {
+      const parsedOrderAddress = OrderAddressController.toJSON(orderAddress)
+
+      let customerAddressParsed
+      if (parsedOrderAddress.magento) {
+        customerAddressParsed = {
+          ...parsedOrderAddress,
+          id: undefined,
+          customerId,
+          magento: {
+            externalId: parsedOrderAddress.magento.externalCustomerAddressId,
+            addressType: parsedOrderAddress.magento.addressType,
+          },
+        }
+      } else {
+        customerAddressParsed = {
+          ...parsedOrderAddress,
+          customerId,
+          id: undefined,
+        }
+      }
+      let final: Address
+      if (parsedOrderAddress.magento) {
+        printYellowLine('upserting')
+        console.log(customerAddressParsed)
+        final = await this.upsert(customerAddressParsed, transaction)
+      } else {
+        printYellowLine('creating')
+        final = await this.create(customerAddressParsed, transaction)
+      }
+
+      await commit()
+      return final
     } catch (error) {
       await rollback()
       // rethrow the error for further handling

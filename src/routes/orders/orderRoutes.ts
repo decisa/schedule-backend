@@ -1,8 +1,24 @@
 import express from 'express'
 import { handleError, handleResponse } from '../routeUtils'
 import OrderController from '../../models/Sales/Order/orderController'
+import OrderAddressController from '../../models/Sales/OrderAddress/orderAddressContoller'
 
 const orderRouter = express.Router()
+
+// import magento Order record
+orderRouter.put('/magento', (req, res) => {
+  try {
+    const orderData = req.body as unknown
+    OrderController.importMagentoOrder(orderData)
+      .then((result) => {
+        const orderResult = OrderController.toJSON(result)
+        handleResponse(res, orderResult)
+      })
+      .catch((err) => handleError(res, err))
+  } catch (error) {
+    handleError(res, error)
+  }
+})
 
 // create Order record (with magento if included)
 orderRouter.post('/', (req, res) => {
@@ -68,6 +84,20 @@ orderRouter.get('/:id', (req, res) => {
     OrderController.get(req.params.id)
       .then((result) => {
         const brandResult = OrderController.toJSON(result)
+        handleResponse(res, brandResult)
+      })
+      .catch((err) => handleError(res, err))
+  } catch (error) {
+    handleError(res, error)
+  }
+})
+
+// get all addresses of the order by orderId
+orderRouter.get('/:id/addresses', (req, res) => {
+  try {
+    OrderAddressController.getByOrderId(req.params.id)
+      .then((result) => {
+        const brandResult = OrderAddressController.toJSON(result)
         handleResponse(res, brandResult)
       })
       .catch((err) => handleError(res, err))
