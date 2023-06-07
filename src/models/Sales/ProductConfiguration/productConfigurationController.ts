@@ -544,6 +544,11 @@ export default class ProductConfigurationController {
           productId: productRecord.id,
         }, transaction)
 
+        if (configuration && 'options' in configuration && Array.isArray(configuration.options)) {
+          const { options } = configuration
+          await ProductOptionController.bulkUpsert(configurationRecord.id, options, transaction)
+        }
+
         result.push(configurationRecord)
       }
 
