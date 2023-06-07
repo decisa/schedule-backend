@@ -127,6 +127,7 @@ export const commentSchemaCreate: yup.ObjectSchema<OrderCommentCreate> = yup.obj
 
 const commentSchemaUpdate = commentSchemaCreate.clone().shape({
   comment: yup.string()
+    .ensure()
     .label('Comment malformed data: type comment (update)'),
   // .nonNullable(),
   type: yup

@@ -4,7 +4,7 @@ import { isId, useTransaction, isObjectWithExternalId } from '../../../utils/uti
 // import { ProductConfiguration } from '../ProductConfiguration/productConfiguration'
 // import { BrandRead, BrandCreate } from '../../Brand/brandController';
 import { Product, ProductType, productTypes } from './product'
-import BrandController, { validateBrandCreate } from '../../Brand/brandController'
+import BrandController, { validateBrandCreate, validateBrandPartial, validateBrandUpdate } from '../../Brand/brandController'
 
 type ProductCreational = {
   id: number
@@ -300,7 +300,7 @@ export default class ProductController {
           if (product.brand === null) {
             parsedProduct.brandId = null
           } else {
-            const parsedBrand = validateBrandCreate(product.brand)
+            const parsedBrand = validateBrandPartial(product.brand)
             if (parsedBrand.id) {
             // if id is provided - use it
               parsedProduct.brandId = parsedBrand.id
