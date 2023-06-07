@@ -87,55 +87,58 @@ export type OrderCommentRead = Required<OrderCommentCreate>
 
 export const commentSchemaCreate: yup.ObjectSchema<OrderCommentCreate> = yup.object({
   comment: yup.string()
-    .label('Malformed data: comment field')
-    .defined(),
+    // .nullable()
+    .ensure()
+    .label('Comment malformed data: comment field (create)'),
+  // .defined(),
   type: yup
     .mixed<CommentType>()
     .oneOf(commentTypes)
-    .label('Malformed data: type field')
+    .label('Comment malformed data: type field')
     .required(),
   id: yup.number().integer(),
   orderId: yup.number()
     .integer()
     .positive()
     .required()
-    .label('Malformed data: orderId field'),
+    .label('Comment malformed data: orderId field'),
   status: yup
     .mixed<OrderStatus>()
     .oneOf(orderStatuses)
     .nullable()
-    .label('Malformed data: status field'),
+    .label('Comment malformed data: status field'),
   externalId: yup.number()
     .integer()
     .nullable()
-    .label('Malformed data: externalId field'),
+    .label('Comment malformed data: externalId field'),
   externalParentId: yup.number()
     .integer()
     .nullable()
-    .label('Malformed data: externalParentId field'),
+    .label('Comment malformed data: externalParentId field'),
   customerNotified: yup.boolean()
     .nullable()
-    .label('Malformed data: customerNotified field'),
+    .label('Comment malformed data: customerNotified field'),
   visibleOnFront: yup.boolean()
     .nullable()
-    .label('Malformed data: visibleOnFront field'),
-  createdAt: yup.date().label('Malformed data: createdAt field'),
-  updatedAt: yup.date().label('Malformed data: updatedAt field'),
+    .label('Comment malformed data: visibleOnFront field'),
+  createdAt: yup.date().label('Comment malformed data: createdAt field'),
+  updatedAt: yup.date().label('Comment malformed data: updatedAt field'),
 })
 
 const commentSchemaUpdate = commentSchemaCreate.clone().shape({
   comment: yup.string()
-    .nonNullable(),
+    .label('Comment malformed data: type comment (update)'),
+  // .nonNullable(),
   type: yup
     .mixed<CommentType>()
     .oneOf(commentTypes)
     .nonNullable()
-    .label('Malformed data: type field'),
+    .label('Comment malformed data: type field'),
   orderId: yup.number()
     .integer()
     .positive()
     .nonNullable()
-    .label('Malformed data: orderId field'),
+    .label('Comment malformed data: orderId field'),
 })
 
 const commentSchemaMagentoCreate: yup.ObjectSchema<OrderCommentMagentoCreate> = commentSchemaCreate
@@ -144,45 +147,45 @@ const commentSchemaMagentoCreate: yup.ObjectSchema<OrderCommentMagentoCreate> = 
     type: yup
       .mixed<CommentType>()
       .oneOf(commentTypes)
-      .label('Malformed data: type field')
+      .label('Comment malformed data: type field')
       .default('order'),
     status: yup
       .mixed<OrderStatus>()
       .oneOf(orderStatuses)
       .required()
-      .label('Malformed data: status field'),
-    externalId: yup.number().integer().required().label('Malformed data: externalId field'),
-    externalParentId: yup.number().integer().nullable().label('Malformed data: externalParentId field'),
-    customerNotified: yup.boolean().required().label('Malformed data: customerNotified field'),
-    visibleOnFront: yup.boolean().required().label('Malformed data: visibleOnFront field'),
+      .label('Comment malformed data: status field'),
+    externalId: yup.number().integer().required().label('Comment malformed data: externalId field'),
+    externalParentId: yup.number().integer().nullable().label('Comment malformed data: externalParentId field'),
+    customerNotified: yup.boolean().required().label('Comment malformed data: customerNotified field'),
+    visibleOnFront: yup.boolean().required().label('Comment malformed data: visibleOnFront field'),
   })
 
 const commentSchemaMagentoUpsert: yup.ObjectSchema<OrderCommentMagentoUpsert> = yup.object({
   comment: yup.string()
-    .label('Malformed data: comment field')
-    .nonNullable(),
+    .label('Comment malformed data: comment field (magento upsert)'),
+  // .nonNullable(),
   type: yup
     .mixed<CommentType>()
     .oneOf(commentTypes)
     .nonNullable()
-    .label('Malformed data: type field'),
+    .label('Comment malformed data: type field'),
   id: yup.number().nonNullable().integer(),
-  orderId: yup.number().integer().nonNullable().label('Malformed data: orderId field'),
+  orderId: yup.number().integer().nonNullable().label('Comment malformed data: orderId field'),
   status: yup
     .mixed<OrderStatus>()
     .oneOf(orderStatuses)
     .nonNullable()
-    .label('Malformed data: status field'),
-  externalId: yup.number().integer().required().label('Malformed data: externalId field'),
-  externalParentId: yup.number().integer().nullable().label('Malformed data: externalParentId field'),
-  customerNotified: yup.boolean().nonNullable().label('Malformed data: customerNotified field'),
-  visibleOnFront: yup.boolean().nonNullable().label('Malformed data: visibleOnFront field'),
-  createdAt: yup.date().label('Malformed data: createdAt field'),
-  updatedAt: yup.date().label('Malformed data: updatedAt field'),
+    .label('Comment malformed data: status field'),
+  externalId: yup.number().integer().required().label('Comment malformed data: externalId field'),
+  externalParentId: yup.number().integer().nullable().label('Comment malformed data: externalParentId field'),
+  customerNotified: yup.boolean().nonNullable().label('Comment malformed data: customerNotified field'),
+  visibleOnFront: yup.boolean().nonNullable().label('Comment malformed data: visibleOnFront field'),
+  createdAt: yup.date().label('Comment malformed data: createdAt field'),
+  updatedAt: yup.date().label('Comment malformed data: updatedAt field'),
 })
 
 const hasExternalId = yup.object({
-  externalId: yup.number().integer().required().label('Malformed data: externalId field'),
+  externalId: yup.number().integer().required().label('Comment malformed data: externalId field'),
 })
 
 export function validateCommentCreate(object: unknown): OrderCommentCreate {
