@@ -1,9 +1,9 @@
 import * as yup from 'yup'
-import { Transaction } from 'sequelize'
+import { Op, Sequelize, Transaction } from 'sequelize'
 import { OrderStatus, orderStatuses, MagentoOrder } from '../MagentoOrder/magentoOrder'
 import { Order } from './order'
 import {
-  isId, useTransaction, isString, printYellowLine,
+  isId, useTransaction, isString,
 } from '../../../utils/utils'
 import { OrderAddress } from '../OrderAddress/orderAddress'
 import { OrderComment, OrderCommentCreate } from '../OrderComment/orderComment'
@@ -12,10 +12,10 @@ import { MagentoCustomer } from '../MagentoCustomer/magentoCustomer'
 import { ProductConfiguration } from '../ProductConfiguration/productConfiguration'
 import { Product } from '../Product/product'
 import { ProductOption } from '../ProductOption/productOption'
-import ProductConfigurationController, { ConfigurationAsProductRead, productConfigurationSchemaCreate } from '../ProductConfiguration/productConfigurationController'
-import OrderCommentController, { OrderCommentMagentoCreate, commentSchemaCreate } from '../OrderComment/orderCommentController'
-import CustomerController, { CustomerCreate, customerSchemaCreate } from '../Customer/customerController'
-import OrderAddressController, { OrderAddressCreate, orderAddressSchemaCreate } from '../OrderAddress/orderAddressContoller'
+import ProductConfigurationController, { ConfigurationAsProductRead } from '../ProductConfiguration/productConfigurationController'
+import OrderCommentController from '../OrderComment/orderCommentController'
+import CustomerController, { CustomerCreate } from '../Customer/customerController'
+import OrderAddressController, { OrderAddressCreate } from '../OrderAddress/orderAddressContoller'
 import AddressController from '../Address/addressController'
 
 type OrderCreational = {
@@ -779,9 +779,51 @@ export default class OrderController {
       throw error
     }
   }
+
+  static async searchOrders(term: string, t?: Transaction) {
+    const wildCardTerm = `%${term}%`
+    const orders = await Order.findAll({
+      include: [
+        {
+          association: 'customer',
+          attributes: ['email', 'firstName', 'lastName'],
+        },
+      ],
+      where: {
+        [Op.or]: [
+          {
+            '$customer.firstName$': {
+              [Op.like]: wildCardTerm,
+            },
+          },
+          {
+            '$customer.lastName$': {
+              [Op.like]: wildCardTerm,
+            },
+          },
+          Sequelize.where(
+            Sequelize.fn('concat', Sequelize.col('customer.firstName'), ' ', Sequelize.col('customer.lastName')),
+            {
+              [Op.like]: wildCardTerm,
+            },
+          ),
+          {
+            orderNumber: {
+              [Op.like]: wildCardTerm,
+            },
+          },
+        ],
+      },
+      attributes: ['id', 'orderNumber'],
+      transaction: t,
+    })
+    return orders.map((order) => this.toJSON(order)).filter((x) => x)
+  }
 }
 
 // todo: review toJSON to incljude all associations
+// search
+// done: import MagentoOrder
 // done: toJSON
 // done: get order (by id)
 // done: create order
