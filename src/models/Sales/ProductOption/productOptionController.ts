@@ -56,23 +56,23 @@ const productOptionSchemaCreate: yup.ObjectSchema<ProductOptionCreate> = yup.obj
     .positive()
     .nonNullable()
     .required()
-    .label('Malformed data: configId'),
+    .label('Comment malformed data: configId'),
   // required
   // label: string
   // value: string
   // sortOrder: number // has default value
   label: yup.string()
     .required()
-    .label('Malformed data: label'),
+    .label('Comment malformed data: label'),
   value: yup.string()
     .required()
-    .label('Malformed data: value'),
+    .label('Comment malformed data: value'),
   sortOrder: yup.number()
     .integer()
     .default(-1) // to ease logic.
     .min(-1)
     .nonNullable()
-    .label('Malformed data: sortOrder'),
+    .label('Comment malformed data: sortOrder'),
   // optional
   // externalId: number | null
   // externalValue: string | null
@@ -80,7 +80,7 @@ const productOptionSchemaCreate: yup.ObjectSchema<ProductOptionCreate> = yup.obj
     .integer()
     .positive()
     .nullable()
-    .label('Malformed data: externalId'),
+    .label('Comment malformed data: externalId'),
   externalValue: yup.string(),
   // id: number
   id: yup
@@ -88,11 +88,11 @@ const productOptionSchemaCreate: yup.ObjectSchema<ProductOptionCreate> = yup.obj
     .integer()
     .positive()
     .nonNullable()
-    .label('Malformed data: id'),
+    .label('Comment malformed data: id'),
   // createdAt: Date
   // updatedAt: Date
-  createdAt: yup.date().nonNullable().label('Malformed data: createdAt'),
-  updatedAt: yup.date().nonNullable().label('Malformed data: updatedAt'),
+  createdAt: yup.date().nonNullable().label('Comment malformed data: createdAt'),
+  updatedAt: yup.date().nonNullable().label('Comment malformed data: updatedAt'),
 })
 
 const productOptionSchemaUpdate: yup.ObjectSchema<Partial<ProductOptionCreate>> = productOptionSchemaCreate
@@ -102,18 +102,18 @@ const productOptionSchemaUpdate: yup.ObjectSchema<Partial<ProductOptionCreate>> 
       .integer()
       .positive()
       .nonNullable()
-      .label('Malformed data: configId'),
+      .label('Comment malformed data: configId'),
     label: yup.string()
       .nonNullable()
-      .label('Malformed data: label'),
+      .label('Comment malformed data: label'),
     value: yup.string()
       .nonNullable()
-      .label('Malformed data: value'),
+      .label('Comment malformed data: value'),
     sortOrder: yup.number()
       .integer()
       .min(0)
       .nonNullable()
-      .label('Malformed data: sortOrder'),
+      .label('Comment malformed data: sortOrder'),
   })
 
 // type RequiredExceptFor<T, K extends keyof T> = Omit<T, K> & {
@@ -321,6 +321,36 @@ export default class ProductOptionController {
 
       if (!result) {
         throw new Error('Unknown error upserting Product Option')
+      }
+      await commit()
+      return result
+    } catch (error) {
+      await rollback()
+      // rethrow the error for further handling
+      throw error
+    }
+  }
+
+  /**
+   * Upsert multiple product options at once. Magento productOption externalId is required.
+   * @param configId - configuration id
+   * @param productOptions - options to upsert
+   * @param t - optional transaction
+   * @returns - array of upserted options
+   */
+  static async bulkUpsert(configId:number, productOptions: unknown[], t?: Transaction): Promise<ProductOption[]> {
+    if (!Array.isArray(productOptions)) {
+      throw new Error('productOptions must be an array')
+    }
+    const [transaction, commit, rollback] = await useTransaction(t)
+    try {
+      const result: ProductOption[] = []
+      for (let i = 0; i < productOptions.length; i += 1) {
+        const productOption = productOptions[i]
+        if (productOption && typeof productOption === 'object') {
+          const option = await this.upsert({ ...productOption, configId }, transaction)
+          result.push(option)
+        }
       }
       await commit()
       return result
