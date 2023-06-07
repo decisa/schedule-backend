@@ -34,8 +34,8 @@ const brandSchemaCreate: yup.ObjectSchema<BrandCreate> = yup.object({
   // name: string
   name: yup.string()
     .label('Brand malformed data: name')
-    .nonNullable()
-    .required(),
+    .ensure(),
+  // .required(),
   // optional
   // externalId: number | null
   externalId: yup
@@ -91,6 +91,16 @@ export function validateBrandCreate(object: unknown): BrandCreate {
 export function validateBrandUpdate(object: unknown): Omit<Partial<BrandCreate>, 'id'> {
   // restrict update of id, and creation or modification dates
   const brand = brandSchemaUpdate.omit(['id']).validateSync(object, {
+    stripUnknown: true,
+    abortEarly: false,
+  }) satisfies Partial<BrandCreate>
+
+  return brand
+}
+
+export function validateBrandPartial(object: unknown): Partial<BrandCreate> {
+  // restrict update of id, and creation or modification dates
+  const brand = brandSchemaUpdate.validateSync(object, {
     stripUnknown: true,
     abortEarly: false,
   }) satisfies Partial<BrandCreate>
@@ -217,7 +227,7 @@ export default class BrandController {
   static async upsert(brandData: unknown, t?: Transaction): Promise<Brand> {
     const [transaction, commit, rollback] = await useTransaction(t)
     try {
-      const parsedBrand = validateBrandCreate(brandData)
+      const parsedBrand = validateBrandPartial(brandData)
       if (!parsedBrand.externalId) {
         throw new Error('externalId is required for upsert')
       }
