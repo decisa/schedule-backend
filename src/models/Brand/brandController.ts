@@ -33,7 +33,7 @@ const brandSchemaCreate: yup.ObjectSchema<BrandCreate> = yup.object({
   // required
   // name: string
   name: yup.string()
-    .label('Malformed data: name')
+    .label('Brand malformed data: name')
     .nonNullable()
     .required(),
   // optional
@@ -43,21 +43,21 @@ const brandSchemaCreate: yup.ObjectSchema<BrandCreate> = yup.object({
     .integer()
     .positive()
     .nullable()
-    .label('Malformed data: externalId'),
+    .label('Brand malformed data: externalId'),
   // id: number
   id: yup
     .number()
     .integer()
     .positive()
     .nonNullable()
-    .label('Malformed data: id'),
+    .label('Brand malformed data: id'),
 })
 
 const brandSchemaUpdate: yup.ObjectSchema<Partial<BrandCreate>> = yup.object({
   // required
   // name: string
   name: yup.string()
-    .label('Malformed data: name')
+    .label('Brand malformed data: name')
     .nonNullable(),
   // optional
   // externalId: number | null
@@ -66,14 +66,14 @@ const brandSchemaUpdate: yup.ObjectSchema<Partial<BrandCreate>> = yup.object({
     .integer()
     .positive()
     .nullable()
-    .label('Malformed data: externalId'),
+    .label('Brand malformed data: externalId'),
   // id: number
   id: yup
     .number()
     .integer()
     .positive()
     .nonNullable()
-    .label('Malformed data: id'),
+    .label('Brand malformed data: id'),
 })
 
 // // type RequiredExceptFor<T, K extends keyof T> = Omit<T, K> & {
