@@ -5,6 +5,25 @@ import OrderAddressController from '../../models/Sales/OrderAddress/orderAddress
 
 const orderRouter = express.Router()
 
+// search for Order records
+orderRouter.get('/', (req, res) => {
+  try {
+    const searchTerm = req.query.search || ''
+    console.log('query', searchTerm)
+
+    if (typeof searchTerm !== 'string') {
+      throw new Error('search term must be a string')
+    }
+    OrderController.searchOrders(searchTerm)
+      .then((result) => {
+        handleResponse(res, { count: result.length, results: result })
+      })
+      .catch((err) => handleError(res, err))
+  } catch (error) {
+    handleError(res, error)
+  }
+})
+
 // import magento Order record
 orderRouter.put('/magento', (req, res) => {
   try {
