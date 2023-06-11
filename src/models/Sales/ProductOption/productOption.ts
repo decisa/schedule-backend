@@ -62,7 +62,7 @@ export function initProductOptions(db: Sequelize) {
         allowNull: false,
       },
       value: {
-        type: DataTypes.STRING,
+        type: DataTypes.STRING(600),
         allowNull: false,
       },
       sortOrder: {
@@ -74,7 +74,7 @@ export function initProductOptions(db: Sequelize) {
         allowNull: true,
         unique: 'configid_extid_constraint',
       },
-      externalValue: DataTypes.STRING,
+      externalValue: DataTypes.STRING(600),
       createdAt: {
         type: DataTypes.DATE,
         defaultValue: DataTypes.NOW,
