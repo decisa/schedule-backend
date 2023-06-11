@@ -1,6 +1,9 @@
 import * as yup from 'yup'
 import { Transaction } from 'sequelize'
-import { isId, useTransaction, isObjectWithExternalId } from '../../../utils/utils'
+import { ca } from 'date-fns/locale'
+import {
+  isId, useTransaction, isObjectWithExternalId, printYellowLine,
+} from '../../../utils/utils'
 // import { ProductConfiguration } from '../ProductConfiguration/productConfiguration'
 // import { BrandRead, BrandCreate } from '../../Brand/brandController';
 import { Product, ProductType, productTypes } from './product'
@@ -66,11 +69,10 @@ const productSchemaCreate: yup.ObjectSchema<ProductCreate> = yup.object({
   // type: string
   // name: string
   type: yup.mixed<ProductType>()
-    .nonNullable()
-    // .default('custom')
+    .default('simple')
     .oneOf(productTypes)
-    .label('Malformed data: type')
-    .required(),
+    .required()
+    .label('Malformed data: type (product create)'),
   name: yup.string()
     .label('Malformed data: name')
     .nonNullable()
@@ -135,7 +137,7 @@ const productSchemaUpdate: yup.ObjectSchema<Partial<ProductCreate>> = productSch
       .nonNullable(),
     type: yup.mixed<ProductType>()
       .nonNullable()
-      // .default('custom')
+      // .default('simple')
       .oneOf(productTypes)
       .label('Malformed data: type'),
   })
@@ -145,11 +147,37 @@ const productSchemaUpdate: yup.ObjectSchema<Partial<ProductCreate>> = productSch
 // // };
 
 export function validateProductCreate(object: unknown): ProductCreate {
-  const product = productSchemaCreate.validateSync(object, {
-    stripUnknown: true,
-    abortEarly: false,
-  }) satisfies ProductCreate
-  return product
+  console.log('validating product create:', object)
+  let product: ProductCreate
+  try {
+    product = productSchemaCreate.validateSync(object, {
+      stripUnknown: true,
+      abortEarly: false,
+    }) as ProductCreate
+    return product
+  } catch (error) {
+    if (error instanceof yup.ValidationError) {
+      printYellowLine()
+      if (error.inner.length === 1) {
+        console.log('error validating product create:', error.inner[0].path, error.inner[0].type)
+        if (error.inner[0].path === 'type' && error.inner[0].type === 'oneOf') {
+          if (typeof object === 'object' && object !== null && 'type' in object) {
+            return validateProductCreate({
+              ...object,
+              type: 'custom',
+            })
+          }
+        }
+      }
+    }
+    // rethrow error
+    throw error
+  }
+  // const product = productSchemaCreate.validateSync(object, {
+  //   stripUnknown: true,
+  //   abortEarly: false,
+  // }) satisfies ProductCreate
+  // return product
 }
 
 export function validateProductUpdate(object: unknown): Omit<Partial<ProductCreate>, 'createdAt' | 'updatedAt' | 'id'> {
