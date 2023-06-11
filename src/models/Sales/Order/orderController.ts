@@ -788,6 +788,14 @@ export default class OrderController {
           association: 'customer',
           attributes: ['email', 'firstName', 'lastName'],
         },
+        {
+          association: 'shippingAddress',
+          attributes: ['firstName', 'lastName'],
+        },
+        {
+          association: 'billingAddress',
+          attributes: ['firstName', 'lastName'],
+        },
       ],
       where: {
         [Op.or]: [
@@ -801,8 +809,40 @@ export default class OrderController {
               [Op.like]: wildCardTerm,
             },
           },
+          {
+            '$shippingAddress.firstName$': {
+              [Op.like]: wildCardTerm,
+            },
+          },
+          {
+            '$shippingAddress.lastName$': {
+              [Op.like]: wildCardTerm,
+            },
+          },
+          {
+            '$billingAddress.firstName$': {
+              [Op.like]: wildCardTerm,
+            },
+          },
+          {
+            '$billingAddress.lastName$': {
+              [Op.like]: wildCardTerm,
+            },
+          },
           Sequelize.where(
             Sequelize.fn('concat', Sequelize.col('customer.firstName'), ' ', Sequelize.col('customer.lastName')),
+            {
+              [Op.like]: wildCardTerm,
+            },
+          ),
+          Sequelize.where(
+            Sequelize.fn('concat', Sequelize.col('billingAddress.firstName'), ' ', Sequelize.col('billingAddress.lastName')),
+            {
+              [Op.like]: wildCardTerm,
+            },
+          ),
+          Sequelize.where(
+            Sequelize.fn('concat', Sequelize.col('shippingAddress.firstName'), ' ', Sequelize.col('shippingAddress.lastName')),
             {
               [Op.like]: wildCardTerm,
             },
