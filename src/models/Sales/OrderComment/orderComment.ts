@@ -13,7 +13,9 @@ export const commentTypes = [
   'order',
   'shipping',
   'invoice',
-] as const // memo?
+  'shipment',
+  'creditmemo',
+] as const
 
 export type CommentType = typeof commentTypes[number]
 
