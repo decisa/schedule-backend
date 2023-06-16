@@ -173,9 +173,27 @@ export function initProductConfigurations(db: Sequelize) {
       sku: DataTypes.STRING,
       externalId: DataTypes.INTEGER,
       volume: DataTypes.FLOAT,
-      price: DataTypes.DECIMAL(8, 2),
-      totalTax: DataTypes.DECIMAL(8, 2),
-      totalDiscount: DataTypes.DECIMAL(8, 2),
+      price: {
+        type: DataTypes.DECIMAL(8, 2),
+        get() {
+          const rawValue = this.getDataValue('price')
+          return Number(rawValue)
+        },
+      },
+      totalTax: {
+        type: DataTypes.DECIMAL(8, 2),
+        get() {
+          const rawValue = this.getDataValue('totalTax')
+          return Number(rawValue)
+        },
+      },
+      totalDiscount: {
+        type: DataTypes.DECIMAL(8, 2),
+        get() {
+          const rawValue = this.getDataValue('totalDiscount')
+          return Number(rawValue)
+        },
+      },
       qtyOrdered: {
         type: DataTypes.INTEGER,
         allowNull: false,
