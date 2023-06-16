@@ -3,7 +3,7 @@ import { Op, Sequelize, Transaction } from 'sequelize'
 import { OrderStatus, orderStatuses, MagentoOrder } from '../MagentoOrder/magentoOrder'
 import { Order } from './order'
 import {
-  isId, useTransaction, isString,
+  isId, useTransaction, isString, printYellowLine,
 } from '../../../utils/utils'
 import { OrderAddress } from '../OrderAddress/orderAddress'
 import { OrderComment, OrderCommentCreate } from '../OrderComment/orderComment'
@@ -305,7 +305,8 @@ function orderToJson(order: Order): OrderMagentoRead {
     products,
     magento,
   }
-
+  printYellowLine()
+  console.log('orderToJson', result.products)
   return result
 }
 

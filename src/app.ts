@@ -4,6 +4,15 @@ import rootRouter from './routes'
 
 console.log('running app')
 const app = express()
+
+// FIXME: make cors more restrictive
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*')
+  res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,PATCH,OPTIONS')
+  res.header('Access-Control-Allow-Headers', 'Content-Type')
+  next()
+})
+// app.use(cors())
 app.use(express.json())
 
 app.use('/', rootRouter)

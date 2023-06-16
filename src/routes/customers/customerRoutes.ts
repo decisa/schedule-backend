@@ -58,6 +58,19 @@ customerRouter.put('/', (req, res) => {
   }
 })
 
+customerRouter.get('/all', (req, res) => {
+  try {
+    CustomerController.getAll()
+      .then((result) => {
+        const customerResult = CustomerController.toJSON(result)
+        handleResponse(res, customerResult)
+      })
+      .catch((err) => handleError(res, err))
+  } catch (error) {
+    handleError(res, error)
+  }
+})
+
 customerRouter.get('/:id', (req, res) => {
   try {
     CustomerController.get(req.params.id)

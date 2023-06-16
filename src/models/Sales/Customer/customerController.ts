@@ -261,6 +261,16 @@ export default class CustomerController {
   }
 
   /**
+   * get All customer records from DB. Will include magento record if available
+   * @param {unknown} id - customerId
+   * @returns {Customer} Customer object or null
+   */
+  static async getAll(t?: Transaction): Promise<Customer[] | null> {
+    const final = await Customer.findAll({ include: 'magento', transaction: t })
+    return final
+  }
+
+  /**
    * get customer record by email from DB. Will include magento record if available
    * @param {unknown} params - object with email field
    * @returns {Customer} Customer object or null
