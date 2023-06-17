@@ -213,10 +213,11 @@ export const isObjectWithEmail = yup.object({
 })
 
 export const isObjectWithExternalId = yup.object({
-  externalId: yup.number().positive().integer().required(),
+  externalId: yup.number().min(0).integer().required()
+    .label('check for externalId:'),
 })
 
 export const isObjectWithExternalIdandConfigId = yup.object({
-  externalId: yup.number().positive().integer().required(),
+  externalId: yup.number().min(0).integer().required(),
   configId: yup.number().positive().integer().required(),
 })

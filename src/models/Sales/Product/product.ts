@@ -18,7 +18,7 @@ import {
 import type { Brand } from '../../Brand/brand'
 import type { ProductConfiguration } from '../ProductConfiguration/productConfiguration'
 
-export const productTypes = ['simple', 'configurable', 'custom'] as const
+export const productTypes = ['simple', 'configurable', 'warranty', 'custom'] as const
 
 export type ProductType = typeof productTypes[number]
 

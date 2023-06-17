@@ -78,9 +78,9 @@ const productOptionSchemaCreate: yup.ObjectSchema<ProductOptionCreate> = yup.obj
   // externalValue: string | null
   externalId: yup.number()
     .integer()
-    .positive()
+    .min(0)
     .nullable()
-    .label('Comment malformed data: externalId'),
+    .label('Comment malformed data: option externalId'),
   externalValue: yup.string(),
   // id: number
   id: yup

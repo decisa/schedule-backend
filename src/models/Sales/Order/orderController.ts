@@ -17,6 +17,7 @@ import OrderCommentController from '../OrderComment/orderCommentController'
 import CustomerController, { CustomerCreate } from '../Customer/customerController'
 import OrderAddressController, { OrderAddressCreate } from '../OrderAddress/orderAddressContoller'
 import AddressController from '../Address/addressController'
+import { Brand } from '../../Brand/brand'
 
 type OrderCreational = {
   id: number
@@ -796,6 +797,38 @@ export default class OrderController {
         {
           association: 'billingAddress',
           attributes: ['firstName', 'lastName'],
+        },
+        {
+          model: ProductConfiguration,
+          as: 'products',
+          attributes: ['qtyOrdered', 'qtyShipped', 'qtyRefunded'],
+          include: [
+            {
+              model: Product,
+              as: 'product',
+              attributes: ['name'],
+              include: [
+                {
+                  model: Brand,
+                  as: 'brand',
+                  attributes: ['name'],
+                },
+              ],
+            },
+          ],
+
+          // include: [
+          //   {
+          //     association: 'product',
+          //     attributes: ['name'],
+          //     include: [
+          //       {
+          //         association: 'brand',
+          //         attributes: ['name'],
+          //       },
+          //     ],
+          //   },
+          // ],
         },
       ],
       where: {
