@@ -22,6 +22,8 @@ export class RouteStopItem extends Model<InferAttributes<RouteStopItem>, InferCr
 
   declare qty: number
 
+  declare confirmed: boolean
+
   // associations
   declare routeStopId: ForeignKey<RouteStop['id']>
 
@@ -52,6 +54,10 @@ export function initRouteStopItem(db: Sequelize) {
       qty: {
         type: DataTypes.INTEGER,
         allowNull: false,
+      },
+      confirmed: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
       },
     },
     {
