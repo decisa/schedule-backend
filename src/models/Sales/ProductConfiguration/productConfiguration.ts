@@ -56,7 +56,9 @@ export class ProductConfiguration extends Model<InferAttributes<ProductConfigura
 
   declare qtyRefunded: number
 
-  declare qtyShipped: number
+  // declare qtyShipped: number
+
+  declare qtyShippedExternal: number | null
 
   // associations
 
@@ -203,10 +205,15 @@ export function initProductConfigurations(db: Sequelize) {
         allowNull: false,
         defaultValue: 0,
       },
-      qtyShipped: {
+      // qtyShipped: {
+      //   type: DataTypes.INTEGER,
+      //   allowNull: false,
+      //   defaultValue: 0,
+      // },
+      qtyShippedExternal: {
         type: DataTypes.INTEGER,
-        allowNull: false,
-        defaultValue: 0,
+        allowNull: true,
+        defaultValue: null,
       },
       createdAt: {
         type: DataTypes.DATE,

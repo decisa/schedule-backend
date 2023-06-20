@@ -16,10 +16,11 @@ type ProductConfigurationCreational = {
 type ProductConfigurationRequired = {
   qtyOrdered: number
   qtyRefunded: number // has default value
-  qtyShipped: number // has default value
+  // qtyShipped: number // has default value
 }
 
 type ProductConfigurationOptional = {
+  qtyShippedExternal: number | null
   sku: string | null
   externalId: number | null
   volume: number | null
@@ -98,19 +99,25 @@ export const productConfigurationSchemaCreate: yup.ObjectSchema<ProductConfigura
     .default(0)
     .nonNullable()
     .label('Malformed data: qtyRefunded'),
-  qtyShipped: yup.number()
-    .integer()
-    .default(0)
-    .nonNullable()
-    .label('Malformed data: qtyShipped'),
+  // qtyShipped: yup.number()
+  //   .integer()
+  //   .default(0)
+  //   .nonNullable()
+  //   .label('Malformed data: qtyShipped'),
 
   // optional
+  // qtyShippedExternal: number | null
   // sku: string | null
   // externalId: number | null
   // volume: number | null
   // price: number | null
   // totalTax: number | null
   // totalDiscount: number | null
+  qtyShippedExternal: yup.number()
+    .integer()
+    .default(null)
+    .nullable()
+    .label('Malformed data: qtyShippedExternal'),
   sku: yup.string()
     .label('Malformed data: sku')
     .nullable(),
@@ -167,6 +174,10 @@ const productConfigurationSchemaUpdate: yup.ObjectSchema<Partial<ProductConfigur
       .positive()
       .nonNullable()
       .label('Malformed data: qtyOrdered'),
+    qtyShippedExternal: yup.number()
+      .integer()
+      .nullable()
+      .label('Malformed data: qtyShippedExternal'),
   })
 
 // type RequiredExceptFor<T, K extends keyof T> = Omit<T, K> & {

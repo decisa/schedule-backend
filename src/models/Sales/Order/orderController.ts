@@ -801,7 +801,7 @@ export default class OrderController {
         {
           model: ProductConfiguration,
           as: 'products',
-          attributes: ['qtyOrdered', 'qtyShipped', 'qtyRefunded'],
+          attributes: ['qtyOrdered', 'qtyRefunded', 'qtyShippedExternal'],
           include: [
             {
               model: Product,
