@@ -7,7 +7,6 @@ import { OrderStatus, orderStatuses } from '../MagentoOrder/magentoOrder'
 import {
   isId,
   isString,
-  printYellowLine,
   useTransaction,
 } from '../../../utils/utils'
 import { Order } from '../Order/order'

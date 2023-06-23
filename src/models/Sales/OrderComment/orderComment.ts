@@ -7,7 +7,6 @@ import {
 } from 'sequelize'
 import { Order } from '../Order/order'
 import type { OrderStatus } from '../MagentoOrder/magentoOrder'
-import { Shipment } from '../../Receiving/Shipment/shipment'
 
 export const commentTypes = [
   'order',
@@ -19,16 +18,6 @@ export const commentTypes = [
 
 export type CommentType = typeof commentTypes[number]
 
-type Base = {
-  id: number
-  comment: string
-  externalId: number
-  externalParentId: number
-  customerNotified: boolean
-  visibleOnFront: boolean
-  type: CommentType // has default value
-  status: OrderStatus
-}
 // Creational
 type OrderCommentCreational = {
   id: number
@@ -117,8 +106,10 @@ export function initOrderComment(db: Sequelize) {
       autoIncrement: true,
       primaryKey: true,
     },
-    comment: DataTypes.TEXT,
-
+    comment: {
+      type: DataTypes.TEXT,
+      allowNull: false,
+    },
     createdAt: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
