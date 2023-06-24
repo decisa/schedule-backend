@@ -18,6 +18,7 @@ import CustomerController, { CustomerCreate } from '../Customer/customerControll
 import OrderAddressController, { OrderAddressCreate } from '../OrderAddress/orderAddressContoller'
 import AddressController from '../Address/addressController'
 import { Brand } from '../../Brand/brand'
+import { DeliveryMethod } from '../DeliveryMethod/deliveryMethod'
 
 type OrderCreational = {
   id: number
@@ -42,6 +43,7 @@ type OrderTimeStamps = {
 
 type OrderFK = {
   customerId: number
+  deliveryMethodId: number | null
   shippingAddressId: number | null
   billingAddressId: number | null
 }
@@ -157,6 +159,7 @@ const orderSchemaCreate: yup.ObjectSchema<OrderCreate> = yup.object({
   // customerId: number
   // shippingAddressId: number | null
   // billingAddressId: number | null
+  // deliveryMethodId: number | null
   customerId: yup.number()
     .integer()
     .positive()
@@ -174,6 +177,12 @@ const orderSchemaCreate: yup.ObjectSchema<OrderCreate> = yup.object({
     .default(null)
     .nullable()
     .label('Malformed data: billingAddressId'),
+  deliveryMethodId: yup.number()
+    .integer()
+    .positive()
+    .default(null)
+    .nullable()
+    .label('Malformed data: deliveryMethodId'),
   // Order required
   // orderNumber: string
   // orderDate: Date
@@ -230,6 +239,11 @@ const orderSchemaUpdate = orderSchemaCreate.clone().shape({
     .positive()
     .nullable()
     .label('Malformed data: billingAddressId'),
+  deliveryMethodId: yup.number()
+    .integer()
+    .positive()
+    .nullable()
+    .label('Malformed data: deliveryMethodId'),
   orderNumber: yup.string()
     .nonNullable()
     .label('Malformed data: orderNumber'),
@@ -394,6 +408,13 @@ export default class OrderController {
         attributes: {
           exclude: ['orderId', 'customerAddressId'],
         },
+      },
+      {
+        model: DeliveryMethod,
+        as: 'deliveryMethod',
+        // attributes: {
+        //   exclude: ['id'],
+        // },
       },
       {
         model: OrderComment,

@@ -280,7 +280,7 @@ db
       refTable: OrderAddress,
       refField: 'id',
       onUpdate: 'CASCADE',
-      onDelete: 'SET NULL',
+      onDelete: 'CASCADE',
     }))
     .then(() => addConstraintIfNotExists({
       dbInstance: db,
@@ -289,7 +289,7 @@ db
       refTable: Address,
       refField: 'id',
       onUpdate: 'CASCADE',
-      onDelete: 'SET NULL',
+      onDelete: 'CASCADE',
     }))
     .catch((e) => console.log('there was an error:', e)))
   .then(async () => {

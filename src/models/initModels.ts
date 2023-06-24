@@ -26,6 +26,7 @@ import { initOrderAvailability } from './Delivery/OrderAvailability/orderAvailab
 import { initRouteStop } from './Delivery/RouteStop/routeStop'
 import { initRouteStopItem } from './Delivery/RouteStopItem/routeStopItem'
 import { initVehicle } from './Delivery/Vehicle/vehicle'
+import { initDeliveryMethod } from './Sales/DeliveryMethod/deliveryMethod'
 
 function initModels(db: Sequelize) {
   initMagentoOrder(db)
@@ -41,6 +42,7 @@ function initModels(db: Sequelize) {
   initProducts(db)
   initProductConfigurations(db)
   initProductOptions(db)
+  initDeliveryMethod(db)
 
   // Receiving:
   initCarrier(db)

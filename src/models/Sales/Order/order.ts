@@ -1,6 +1,7 @@
 // TODO: One-to-many relationship between Order and PurchaseOrders.
 // TODO: One-to-many relationship between Order and RouteStops. (nullable)
 // DONE: One-to-many relationship between Orders and OrderAvailability.
+// TODO: One-to-many relationship between DeliveryMethod and Orders
 
 import {
   InferAttributes,
@@ -37,6 +38,7 @@ import type { OrderAddress } from '../OrderAddress/orderAddress'
 import type { OrderComment } from '../OrderComment/orderComment'
 import type { ProductConfiguration } from '../ProductConfiguration/productConfiguration'
 import type { OrderAvailability } from '../../Delivery/OrderAvailability/orderAvailability'
+import type { DeliveryMethod } from '../DeliveryMethod/deliveryMethod'
 
 console.log('running model module')
 
@@ -62,11 +64,15 @@ export class Order extends Model<InferAttributes<Order>, InferCreationAttributes
 
   declare customerId: ForeignKey<Customer['id']>
 
+  declare deliveryMethodId: ForeignKey<DeliveryMethod['id']> | null
+
   declare shippingAddressId: ForeignKey<OrderAddress['id']> | null
 
   declare billingAddressId: ForeignKey<OrderAddress['id']> | null
 
   declare customer?: NonAttribute<Customer>
+
+  declare deliveryMethod?: NonAttribute<DeliveryMethod>
 
   declare shippingAddress?: NonAttribute<OrderAddress>
 
@@ -91,6 +97,7 @@ export class Order extends Model<InferAttributes<Order>, InferCreationAttributes
     shippingAddress: Association<Order, OrderAddress>,
     products: Association<Order, ProductConfiguration>,
     orderAvailabilities: Association<Order, OrderAvailability>,
+    deliveryMethod: Association<Order, DeliveryMethod>,
   }
 
   // MIXINS
@@ -107,6 +114,13 @@ export class Order extends Model<InferAttributes<Order>, InferCreationAttributes
   declare setCustomer: BelongsToSetAssociationMixin<Customer, number>
 
   declare createCustomer: BelongsToCreateAssociationMixin<Customer>
+
+  // deliveryMethod record:
+  declare getDeliveryMethod: BelongsToGetAssociationMixin<DeliveryMethod>
+
+  declare setDeliveryMethod: BelongsToSetAssociationMixin<DeliveryMethod, number>
+
+  // declare createDeliveryMethod: BelongsToCreateAssociationMixin<DeliveryMethod>
 
   // addresses:
   declare createAddress: HasManyCreateAssociationMixin<OrderAddress, 'orderId'>
@@ -142,7 +156,7 @@ export class Order extends Model<InferAttributes<Order>, InferCreationAttributes
 
   declare setShippingAddress: BelongsToSetAssociationMixin<OrderAddress, number>
 
-  declare createShippingAddress: BelongsToCreateAssociationMixin<OrderAddress>
+  // declare createShippingAddress: BelongsToCreateAssociationMixin<OrderAddress>
 
   // comments:
   declare createComment: HasManyCreateAssociationMixin<OrderComment, 'orderId'>

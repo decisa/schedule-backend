@@ -25,6 +25,7 @@ import { OrderAvailability } from './Delivery/OrderAvailability/orderAvailabilit
 import { RouteStop } from './Delivery/RouteStop/routeStop'
 import { Vehicle } from './Delivery/Vehicle/vehicle'
 import { RouteStopItem } from './Delivery/RouteStopItem/routeStopItem'
+import { DeliveryMethod } from './Sales/DeliveryMethod/deliveryMethod'
 
 function createAssociations() {
   // some orders have a magento record
@@ -93,12 +94,16 @@ function createAssociations() {
     as: 'order',
     targetKey: 'id',
     foreignKey: 'orderId',
+    onDelete: 'CASCADE',
+    onUpdate: 'CASCADE',
   })
 
   Order.hasMany(OrderAddress, {
     as: 'addresses',
     sourceKey: 'id',
     foreignKey: 'orderId',
+    onDelete: 'CASCADE',
+    onUpdate: 'CASCADE',
   })
 
   // some addresses have a magento record:
@@ -207,6 +212,18 @@ function createAssociations() {
   ProductOption.belongsTo(ProductConfiguration, {
     as: 'product',
     foreignKey: 'configId',
+  })
+
+  // One-to-many relationship between DeliveryMethod and Orders
+  DeliveryMethod.hasMany(Order, {
+    as: 'orders',
+    foreignKey: 'deliveryMethodId',
+    onDelete: 'CASCADE',
+    onUpdate: 'CASCADE',
+  })
+  Order.belongsTo(DeliveryMethod, {
+    as: 'deliveryMethod',
+    foreignKey: 'deliveryMethodId',
   })
 
   // note: *************  RECEIVING ****************
