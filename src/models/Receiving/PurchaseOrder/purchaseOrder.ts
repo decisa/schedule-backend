@@ -30,13 +30,24 @@ import type { Order } from '../../Sales/Order/order'
 import type { Brand } from '../../Brand/brand'
 import type { PurchaseOrderItem } from '../PurchaseOrderItem/purchaseOrderItem'
 
-type POStatus = 'pending' | 'in production' | 'shipped' | 'received'
+export const poStatuses = ['pending', 'in production', 'shipped', 'received'] as const
+
+export type POStatus = typeof poStatuses[number]
+
 export class PurchaseOrder extends Model<InferAttributes<PurchaseOrder>, InferCreationAttributes<PurchaseOrder>> {
   declare id: CreationOptional<number>
+
+  declare poNumber: string
 
   declare status: POStatus
 
   declare dateSubmitted: Date
+
+  declare productionWeeks: number | null
+
+  declare createdAt: CreationOptional<Date>
+
+  declare updatedAt: CreationOptional<Date>
 
   // declare productionDate?: Date
 
@@ -105,14 +116,41 @@ export function initPurchaseOrder(db: Sequelize) {
         autoIncrement: true,
         primaryKey: true,
       },
-      dateSubmitted: DataTypes.DATE,
+      poNumber: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        // uniqueness is handled by index
+      },
+      dateSubmitted: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        defaultValue: DataTypes.NOW,
+      },
+      productionWeeks: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+      },
       status: {
         type: DataTypes.STRING,
         allowNull: false,
       },
+      createdAt: {
+        type: DataTypes.DATE,
+        defaultValue: DataTypes.NOW,
+      },
+      updatedAt: {
+        type: DataTypes.DATE,
+        defaultValue: DataTypes.NOW,
+      },
     },
     {
       sequelize: db,
+      indexes: [
+        {
+          unique: true,
+          fields: ['poNumber'],
+        },
+      ],
     },
   )
 }
