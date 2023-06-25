@@ -10,6 +10,7 @@ import productConfigurationRouter from './productConfigurations/productConfigura
 import productOptionRouter from './options/optionRoutes'
 import orderAddressRouter from './orderAddresses/orderAddressRoutes'
 import orderRouter from './orders/orderRoutes'
+import deliveryMethodRouter from './deliveryMethods/deliveryMethodRoutes'
 
 const rootRouter = express.Router()
 // rootRouter.use((req, res, next) => {
@@ -30,6 +31,7 @@ rootRouter.use('/configuration', productConfigurationRouter)
 rootRouter.use('/option', productOptionRouter)
 rootRouter.use('/orderaddress', orderAddressRouter)
 rootRouter.use('/order', orderRouter)
+rootRouter.use('/deliverymethod', deliveryMethodRouter)
 
 // create proxy to forward requests to magento
 rootRouter.use('/2031360', (req, res, next) => {
