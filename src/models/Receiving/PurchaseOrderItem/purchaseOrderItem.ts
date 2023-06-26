@@ -38,10 +38,16 @@ export class PurchaseOrderItem extends Model<InferAttributes<PurchaseOrderItem>,
 
   declare qtyOrdered: number
 
-  declare qtyReceived?: number
+  // declare qtyReceived?: number
+  // timestamps
+  declare createdAt: CreationOptional<Date>
 
-  // purchase_order_id (FK from PurchaseOrders)
-  // product_configuration_id (FK from ProductConfigurations)
+  declare updatedAt: CreationOptional<Date>
+
+  // foreign keys
+  declare purchaseOrderId: ForeignKey<PurchaseOrder['id']>
+
+  declare productConfigurationId: ForeignKey<ProductConfiguration['id']>
 
   // associations
   declare purchaseOrder?: NonAttribute<PurchaseOrder>
@@ -51,12 +57,6 @@ export class PurchaseOrderItem extends Model<InferAttributes<PurchaseOrderItem>,
   declare shipmentItems?: NonAttribute<ShipmentItem[]>
 
   declare receivedItems?: NonAttribute<ReceivedItem[]>
-
-  declare purchaseOrderId: ForeignKey<PurchaseOrder['id']>
-
-  declare productConfigurationId: ForeignKey<ProductConfiguration['id']>
-
-  // declare products?: NonAttribute<Products>
 
   declare public static associations: {
     purchaseOrder: Association<PurchaseOrderItem, PurchaseOrder>,
@@ -136,7 +136,15 @@ export function initPurchaseOrderItem(db: Sequelize) {
         type: DataTypes.INTEGER,
         allowNull: false,
       },
-      qtyReceived: DataTypes.INTEGER,
+      createdAt: {
+        type: DataTypes.DATE,
+        defaultValue: DataTypes.NOW,
+      },
+      updatedAt: {
+        type: DataTypes.DATE,
+        defaultValue: DataTypes.NOW,
+      },
+      // qtyReceived: DataTypes.INTEGER,
     },
     {
       sequelize: db,
