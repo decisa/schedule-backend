@@ -170,6 +170,35 @@ function purchaseOrderToJson(purchaseOrder: PurchaseOrder): PurchaseOrderRead {
   return purchaseOrderData
 }
 
+type PurchaseOrderRequest = {
+  dateSubmitted?: Date
+  orderId: number
+  brandId: number
+  items: unknown[]
+  // items: {
+  //   qtyOrdered: number
+  //   configurationId: number
+  // }[]
+}
+
+const purchaseOrderRequestCreate: yup.ObjectSchema<PurchaseOrderRequest> = yup.object({
+  orderId: yup.number()
+    .integer()
+    .positive()
+    .nonNullable()
+    .required()
+    .label('Malformed data: orderId'),
+  brandId: yup.number()
+    .integer()
+    .positive()
+    .nonNullable()
+    .required()
+    .label('Malformed data: brandId'),
+  dateSubmitted: yup.date().nonNullable().label('Malformed data: dateSubmitted'),
+  items: yup.array()
+    .min(1)
+    .label('Malformed data: purchase order items'),
+}
 export default class PurchaseOrderController {
   /**
    * convert PurchaseOrder Instance or array of instances to a regular JSON object.
@@ -259,6 +288,33 @@ export default class PurchaseOrderController {
    * @returns {PurchaseOrder} PurchaseOrder object or throws error
    */
   static async create(purchaseOrderData: PurchaseOrderCreate | unknown, t?: Transaction): Promise<PurchaseOrder> {
+    const [transaction, commit, rollback] = await useTransaction(t)
+    try {
+      const parsedPurchaseOrder = validatePurchaseOrderCreate(purchaseOrderData)
+
+      const result = await PurchaseOrder.create(parsedPurchaseOrder, {
+        transaction,
+      })
+
+      const final = await this.get(result.id, transaction)
+      if (!final) {
+        throw new Error('Internal Error: PurchaseOrder was not created')
+      }
+      await commit()
+      return final
+    } catch (error) {
+      await rollback()
+      // rethrow the error for further handling
+      throw error
+    }
+  }
+
+  /**
+   * create a PurchaseOrder with PurchaseOrderItems
+   * @param {PurchaseOrderCreate | unknown} purchaseOrderData - purchaseOrder data along with purchaseOrderItems
+   * @returns {PurchaseOrder} PurchaseOrder object or throws error
+   */
+  static async createPurchaseOrder(purchaseOrderData: PurchaseOrderCreate | unknown, t?: Transaction): Promise<PurchaseOrder> {
     const [transaction, commit, rollback] = await useTransaction(t)
     try {
       const parsedPurchaseOrder = validatePurchaseOrderCreate(purchaseOrderData)

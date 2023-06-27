@@ -1,9 +1,7 @@
 import * as yup from 'yup'
 import { Transaction } from 'sequelize'
 import { PurchaseOrderItem } from './purchaseOrderItem'
-import { isId, isString, useTransaction } from '../../../utils/utils'
-import { Brand } from '../../Brand/brand'
-import { Product } from '../../Sales/Product/product'
+import { isId, useTransaction } from '../../../utils/utils'
 import { ProductConfiguration } from '../../Sales/ProductConfiguration/productConfiguration'
 
 // building elements of the PurchaseOrderItem type
@@ -230,6 +228,38 @@ export default class PurchaseOrderItemController {
   }
 
   /**
+   * insert PurchaseOrderItem record to DB. purchaseOrderId is required.
+   * @param {PurchaseOrderItemCreate | unknown} purchaseOrderItems - customer PurchaseOrderItem record to insert to DB
+   * @returns {PurchaseOrderItem} PurchaseOrderItem object or throws error
+   */
+  static async bulkCreate(purchaseOrderId: number, purchaseOrderItems: PurchaseOrderItemCreate[] | unknown[], t?: Transaction): Promise<PurchaseOrderItem[]> {
+    const [transaction, commit, rollback] = await useTransaction(t)
+    try {
+      const result: PurchaseOrderItem[] = []
+      for (let i = 0; i < purchaseOrderItems.length; i += 1) {
+        const parsedPurchaseOrderItem = purchaseOrderItemSchemaCreate.omit(['purchaseOrderId']).validateSync(purchaseOrderItems[i], {
+          stripUnknown: true,
+          abortEarly: false,
+        })
+        const purchaseOrderItem = await PurchaseOrderItem.create({
+          ...parsedPurchaseOrderItem,
+          purchaseOrderId,
+        }, {
+          transaction,
+        })
+        result.push(purchaseOrderItem)
+      }
+
+      await commit()
+      return result
+    } catch (error) {
+      await rollback()
+      // rethrow the error for further handling
+      throw error
+    }
+  }
+
+  /**
      * update purchaseOrderItem record in DB.
      * @param {number | unknown} purchaseOrderItemId - id of the purchaseOrderItem record to update in DB
      * @param {unknown} purchaseOrderItemData - update data for purchase order record
@@ -250,38 +280,6 @@ export default class PurchaseOrderItemController {
 
       await commit()
       return purchaseOrderItemRecord
-    } catch (error) {
-      await rollback()
-      // rethrow the error for further handling
-      throw error
-    }
-  }
-
-  /**
-   * upsert(insert or create) purchaseOrderItem record in DB. poNumber is required
-   * @param {unknown} purchaseOrderItemData - update/create data for productConfiguration record
-   * @returns {productConfiguration} updated or created productConfiguration object with Brand Record if available
-   */
-  static async upsert(purchaseOrderItemData: unknown, t?: Transaction): Promise<PurchaseOrderItem> {
-    const [transaction, commit, rollback] = await useTransaction(t)
-    try {
-      const parsedPurchaseOrderItem = validatePurchaseOrderItemCreate(purchaseOrderItemData)
-      const purchaseOrderItemRecord = await PurchaseOrderItem.findOne({
-        where: {
-          poNumber: parsedPurchaseOrderItem.poNumber,
-        },
-        transaction,
-      })
-
-      let result: PurchaseOrderItem
-      if (!purchaseOrderItemRecord) {
-        result = await this.create(purchaseOrderItemData, transaction)
-      } else {
-        result = await this.update(purchaseOrderItemRecord.id, purchaseOrderItemData, transaction)
-      }
-
-      await commit()
-      return result
     } catch (error) {
       await rollback()
       // rethrow the error for further handling
@@ -312,116 +310,4 @@ export default class PurchaseOrderItemController {
       throw error
     }
   }
-
-  // static async searchPurchaseOrderItems(term: string, t?: Transaction) {
-  //   const wildCardTerm = `%${term}%`
-  //   const purchaseOrderItems = await PurchaseOrderItem.findAll({
-  //     include: [
-  //       {
-  //         association: 'customer',
-  //         attributes: ['email', 'firstName', 'lastName'],
-  //       },
-  //       {
-  //         association: 'shippingAddress',
-  //         attributes: ['firstName', 'lastName'],
-  //       },
-  //       {
-  //         association: 'billingAddress',
-  //         attributes: ['firstName', 'lastName'],
-  //       },
-  //       {
-  //         model: ProductConfiguration,
-  //         as: 'products',
-  //         attributes: ['qtyPurchaseOrderItemed', 'qtyRefunded', 'qtyShippedExternal'],
-  //         include: [
-  //           {
-  //             model: Product,
-  //             as: 'product',
-  //             attributes: ['name'],
-  //             include: [
-  //               {
-  //                 model: Brand,
-  //                 as: 'brand',
-  //                 attributes: ['name'],
-  //               },
-  //             ],
-  //           },
-  //         ],
-
-  //         // include: [
-  //         //   {
-  //         //     association: 'product',
-  //         //     attributes: ['name'],
-  //         //     include: [
-  //         //       {
-  //         //         association: 'brand',
-  //         //         attributes: ['name'],
-  //         //       },
-  //         //     ],
-  //         //   },
-  //         // ],
-  //       },
-  //     ],
-  //     where: {
-  //       [Op.or]: [
-  //         {
-  //           '$customer.firstName$': {
-  //             [Op.like]: wildCardTerm,
-  //           },
-  //         },
-  //         {
-  //           '$customer.lastName$': {
-  //             [Op.like]: wildCardTerm,
-  //           },
-  //         },
-  //         {
-  //           '$shippingAddress.firstName$': {
-  //             [Op.like]: wildCardTerm,
-  //           },
-  //         },
-  //         {
-  //           '$shippingAddress.lastName$': {
-  //             [Op.like]: wildCardTerm,
-  //           },
-  //         },
-  //         {
-  //           '$billingAddress.firstName$': {
-  //             [Op.like]: wildCardTerm,
-  //           },
-  //         },
-  //         {
-  //           '$billingAddress.lastName$': {
-  //             [Op.like]: wildCardTerm,
-  //           },
-  //         },
-  //         Sequelize.where(
-  //           Sequelize.fn('concat', Sequelize.col('customer.firstName'), ' ', Sequelize.col('customer.lastName')),
-  //           {
-  //             [Op.like]: wildCardTerm,
-  //           },
-  //         ),
-  //         Sequelize.where(
-  //           Sequelize.fn('concat', Sequelize.col('billingAddress.firstName'), ' ', Sequelize.col('billingAddress.lastName')),
-  //           {
-  //             [Op.like]: wildCardTerm,
-  //           },
-  //         ),
-  //         Sequelize.where(
-  //           Sequelize.fn('concat', Sequelize.col('shippingAddress.firstName'), ' ', Sequelize.col('shippingAddress.lastName')),
-  //           {
-  //             [Op.like]: wildCardTerm,
-  //           },
-  //         ),
-  //         {
-  //           purchaseOrderItemNumber: {
-  //             [Op.like]: wildCardTerm,
-  //           },
-  //         },
-  //       ],
-  //     },
-  //     attributes: ['id', 'purchaseOrderItemNumber'],
-  //     transaction: t,
-  //   })
-  //   return purchaseOrderItems.map((purchaseOrderItem) => this.toJSON(purchaseOrderItem)).filter((x) => x)
-  // }
 }
