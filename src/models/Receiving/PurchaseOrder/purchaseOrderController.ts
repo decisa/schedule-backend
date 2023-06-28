@@ -4,6 +4,8 @@ import { POStatus, PurchaseOrder, poStatuses } from './purchaseOrder'
 import { isId, isString, useTransaction } from '../../../utils/utils'
 import { Brand } from '../../Brand/brand'
 import { PurchaseOrderItem } from '../PurchaseOrderItem/purchaseOrderItem'
+import PurchaseOrderItemController from '../PurchaseOrderItem/purchaseOrderItemController'
+import { Order } from '../../Sales/Order/order'
 
 // building elements of the PurchaseOrder type
 type PurchaseOrderCreational = {
@@ -29,11 +31,11 @@ type PurchaseOrderFK = {
   brandId: number
 }
 
-// type PurchaseOrderAssociations = {
-//   order?: Order
-//   brand?: Brand
-//   purchaseOrderItems?: PurchaseOrderItem[]
-// }
+type PurchaseOrderAssociations = {
+  order?: Order
+  brand?: Brand
+  items?: PurchaseOrderItem[]
+}
 
 // Note: DATA TYPES
 export type PurchaseOrderCreate =
@@ -43,7 +45,7 @@ Partial<PurchaseOrderCreational>
 & Partial<PurchaseOrderTimeStamps>
 & Partial<PurchaseOrderFK>
 
-export type PurchaseOrderRead = Required<PurchaseOrderCreate>
+export type PurchaseOrderRead = Required<PurchaseOrderCreate> & PurchaseOrderAssociations
 
 const purchaseOrderSchemaCreate: yup.ObjectSchema<PurchaseOrderCreate> = yup.object({
   // PurchaseOrderFK
@@ -68,11 +70,13 @@ const purchaseOrderSchemaCreate: yup.ObjectSchema<PurchaseOrderCreate> = yup.obj
   status: yup.mixed<POStatus>()
     .oneOf(poStatuses)
     .nonNullable()
+    .default('in production')
     .required()
     .label('Malformed data: status'),
   dateSubmitted: yup.date()
-    .required()
+    .default(new Date())
     .nonNullable()
+    .required()
     .label('Malformed data: dateSubmitted'),
   poNumber: yup.string()
     .required()
@@ -171,14 +175,12 @@ function purchaseOrderToJson(purchaseOrder: PurchaseOrder): PurchaseOrderRead {
 }
 
 type PurchaseOrderRequest = {
-  dateSubmitted?: Date
   orderId: number
   brandId: number
+  status: POStatus
+  dateSubmitted: Date
+  poNumber: string
   items: unknown[]
-  // items: {
-  //   qtyOrdered: number
-  //   configurationId: number
-  // }[]
 }
 
 const purchaseOrderRequestCreate: yup.ObjectSchema<PurchaseOrderRequest> = yup.object({
@@ -187,18 +189,34 @@ const purchaseOrderRequestCreate: yup.ObjectSchema<PurchaseOrderRequest> = yup.o
     .positive()
     .nonNullable()
     .required()
-    .label('Malformed data: orderId'),
+    .label('Malformed data: purchase order orderId'),
   brandId: yup.number()
     .integer()
     .positive()
     .nonNullable()
     .required()
-    .label('Malformed data: brandId'),
-  dateSubmitted: yup.date().nonNullable().label('Malformed data: dateSubmitted'),
-  items: yup.array()
+    .label('Malformed data: purchase order brandId'),
+  status: yup.mixed<POStatus>()
+    .oneOf(poStatuses)
+    .nonNullable()
+    .default('in production')
+    .required()
+    .label('Malformed data: purchase order status'),
+  dateSubmitted: yup.date()
+    .default(new Date())
+    .nonNullable()
+    .required()
+    .label('Malformed data: purchase order dateSubmitted'),
+  poNumber: yup.string()
+    .required()
+    .nonNullable()
+    .label('Malformed data: purchase order poNumber'),
+  items: yup.array(yup.mixed().required())
     .min(1)
+    .required()
     .label('Malformed data: purchase order items'),
-}
+})
+
 export default class PurchaseOrderController {
   /**
    * convert PurchaseOrder Instance or array of instances to a regular JSON object.
@@ -317,18 +335,23 @@ export default class PurchaseOrderController {
   static async createPurchaseOrder(purchaseOrderData: PurchaseOrderCreate | unknown, t?: Transaction): Promise<PurchaseOrder> {
     const [transaction, commit, rollback] = await useTransaction(t)
     try {
-      const parsedPurchaseOrder = validatePurchaseOrderCreate(purchaseOrderData)
+      const parsedPurchaseOrder = purchaseOrderRequestCreate.validateSync(purchaseOrderData, {
+        stripUnknown: true,
+        abortEarly: false,
+      }) satisfies PurchaseOrderRequest
 
-      const result = await PurchaseOrder.create(parsedPurchaseOrder, {
+      const newPurchaseOrderRecord = await PurchaseOrder.create(parsedPurchaseOrder, {
         transaction,
       })
 
-      const final = await this.get(result.id, transaction)
-      if (!final) {
+      const items = await PurchaseOrderItemController.bulkCreate(newPurchaseOrderRecord.id, parsedPurchaseOrder.items, transaction)
+
+      newPurchaseOrderRecord.purchaseOrderItems = items
+      if (!newPurchaseOrderRecord) {
         throw new Error('Internal Error: PurchaseOrder was not created')
       }
       await commit()
-      return final
+      return newPurchaseOrderRecord
     } catch (error) {
       await rollback()
       // rethrow the error for further handling

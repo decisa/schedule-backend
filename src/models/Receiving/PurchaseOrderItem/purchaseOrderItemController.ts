@@ -52,13 +52,13 @@ const purchaseOrderItemSchemaCreate: yup.ObjectSchema<PurchaseOrderItemCreate> =
     .positive()
     .nonNullable()
     .required()
-    .label('Malformed data: purchaseOrderId'),
+    .label('Malformed data: purchase order item purchaseOrderId'),
   productConfigurationId: yup.number()
     .integer()
     .positive()
     .nonNullable()
     .required()
-    .label('Malformed data: productConfigurationId'),
+    .label('Malformed data: purchase order item productConfigurationId'),
   // PurchaseOrderItemRequired
   // qtyOrdered: number
   qtyOrdered: yup.number()
@@ -66,17 +66,17 @@ const purchaseOrderItemSchemaCreate: yup.ObjectSchema<PurchaseOrderItemCreate> =
     .positive()
     .nonNullable()
     .required()
-    .label('Malformed data: qtyOrdered'),
+    .label('Malformed data: purchase order item qtyOrdered'),
   // PurchaseOrderItemCreational
   // id: number
   id: yup.number()
     .integer()
     .positive()
     .nonNullable()
-    .label('Comment malformed data: id'),
+    .label('Malformed data: purchase order item id'),
   // timestamps
-  createdAt: yup.date().nonNullable().label('Comment malformed data: createdAt'),
-  updatedAt: yup.date().nonNullable().label('Comment malformed data: updatedAt'),
+  createdAt: yup.date().nonNullable().label('Malformed data: purchase order item createdAt'),
+  updatedAt: yup.date().nonNullable().label('Malformed data: purchase order item updatedAt'),
 })
 
 const purchaseOrderItemSchemaUpdate = purchaseOrderItemSchemaCreate.clone()
@@ -85,17 +85,17 @@ const purchaseOrderItemSchemaUpdate = purchaseOrderItemSchemaCreate.clone()
       .integer()
       .positive()
       .nonNullable()
-      .label('Malformed data: purchaseOrderId'),
+      .label('Malformed data: purchase order item purchaseOrderId'),
     productConfigurationId: yup.number()
       .integer()
       .positive()
       .nonNullable()
-      .label('Malformed data: productConfigurationId'),
+      .label('Malformed data: purchase order item productConfigurationId'),
     qtyOrdered: yup.number()
       .integer()
       .positive()
       .nonNullable()
-      .label('Malformed data: qtyOrdered'),
+      .label('Malformed data: purchase order item qtyOrdered'),
   })
 
 export function validatePurchaseOrderItemCreate(object: unknown): PurchaseOrderItemCreate {

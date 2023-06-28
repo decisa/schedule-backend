@@ -144,6 +144,14 @@ export function initPurchaseOrderItem(db: Sequelize) {
         type: DataTypes.DATE,
         defaultValue: DataTypes.NOW,
       },
+      purchaseOrderId: {
+        type: DataTypes.INTEGER,
+        unique: 'poid_configid_constraint',
+      },
+      productConfigurationId: {
+        type: DataTypes.INTEGER,
+        unique: 'poid_configid_constraint',
+      },
       // qtyReceived: DataTypes.INTEGER,
     },
     {
