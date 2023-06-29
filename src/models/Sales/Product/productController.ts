@@ -7,7 +7,9 @@ import {
 // import { ProductConfiguration } from '../ProductConfiguration/productConfiguration'
 // import { BrandRead, BrandCreate } from '../../Brand/brandController';
 import { Product, ProductType, productTypes } from './product'
-import BrandController, { validateBrandCreate, validateBrandPartial, validateBrandUpdate } from '../../Brand/brandController'
+import BrandController, {
+  BrandRead, validateBrandCreate, validateBrandPartial, validateBrandUpdate,
+} from '../../Brand/brandController'
 
 type ProductCreational = {
   id: number
@@ -54,7 +56,7 @@ export type ProductCreate =
   // & Partial<ProductAssociations>
 
 export type ProductRead = Omit<Required<ProductCreate>, 'brandId'> & {
-  brand: string | null
+  brand: string | null | BrandRead
 }
 
 const productSchemaCreate: yup.ObjectSchema<ProductCreate> = yup.object({
@@ -219,7 +221,7 @@ function productToJson(product: Product): ProductRead {
   }
   if (product.brand) {
     const brandData = product.brand.toJSON()
-    result.brand = brandData.name
+    result.brand = brandData
   }
   delete result.brandId
 

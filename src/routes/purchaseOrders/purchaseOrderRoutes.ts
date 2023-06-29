@@ -19,4 +19,17 @@ purchaseOrderRouter.post('/', (req, res) => {
   }
 })
 
+purchaseOrderRouter.get('/number/:poNumber', (req, res) => {
+  try {
+    PurchaseOrderController.getByPoNumber(req.params.poNumber)
+      .then((result) => {
+        const purchaseOrderResult = PurchaseOrderController.toJSON(result)
+        handleResponse(res, purchaseOrderResult)
+      })
+      .catch((err) => handleError(res, err))
+  } catch (error) {
+    handleError(res, error)
+  }
+})
+
 export default purchaseOrderRouter

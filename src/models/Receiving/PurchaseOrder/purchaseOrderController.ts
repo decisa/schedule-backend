@@ -1,11 +1,18 @@
 import * as yup from 'yup'
 import { Transaction } from 'sequelize'
 import { POStatus, PurchaseOrder, poStatuses } from './purchaseOrder'
-import { isId, isString, useTransaction } from '../../../utils/utils'
+import {
+  isId, isString, printYellowLine, useTransaction,
+} from '../../../utils/utils'
 import { Brand } from '../../Brand/brand'
 import { PurchaseOrderItem } from '../PurchaseOrderItem/purchaseOrderItem'
 import PurchaseOrderItemController from '../PurchaseOrderItem/purchaseOrderItemController'
 import { Order } from '../../Sales/Order/order'
+import { Customer } from '../../Sales/Customer/customer'
+import { ProductConfiguration } from '../../Sales/ProductConfiguration/productConfiguration'
+import { Product } from '../../Sales/Product/product'
+import { ProductOption } from '../../Sales/ProductOption/productOption'
+import ProductConfigurationController from '../../Sales/ProductConfiguration/productConfigurationController'
 
 // building elements of the PurchaseOrder type
 type PurchaseOrderCreational = {
@@ -34,7 +41,8 @@ type PurchaseOrderFK = {
 type PurchaseOrderAssociations = {
   order?: Order
   brand?: Brand
-  items?: PurchaseOrderItem[]
+  purchaseOrderItems?: PurchaseOrderItem[]
+  items?: unknown
 }
 
 // Note: DATA TYPES
@@ -158,19 +166,30 @@ export function validatePurchaseOrderUpdate(object: unknown): Partial<PurchaseOr
   return purchaseOrder
 }
 
-function purchaseOrderToJson(purchaseOrder: PurchaseOrder): PurchaseOrderRead {
+function purchaseOrderToJson(purchaseOrderRaw: PurchaseOrder): PurchaseOrderRead {
   // TODO: take care of purchase order items
   // let products: ConfigurationAsProductRead[] | undefined
   // if (purchaseOrder.products) {
   //   products = ProductConfigurationController.toJsonAsProduct(purchaseOrder.products)
   // }
-  const purchaseOrderData = purchaseOrder.toJSON()
+  const purchaseOrderData: PurchaseOrderRead = purchaseOrderRaw.toJSON()
   // const result = {
   //   ...purchaseOrderData,
   //   products,
   //   magento,
   // }
   // return result
+  if (purchaseOrderRaw.purchaseOrderItems) {
+    const poItems = purchaseOrderRaw.purchaseOrderItems.map((item) => {
+      const itemData = item.toJSON()
+      const product = ProductConfigurationController.toJsonAsProduct(item.productConfiguration || null)
+      return {
+        ...itemData,
+        product,
+      }
+    })
+    purchaseOrderData.items = poItems
+  }
   return purchaseOrderData
 }
 
@@ -252,6 +271,86 @@ export default class PurchaseOrderController {
     const final = await PurchaseOrder.findByPk(purchaseOrderId, {
       transaction: t,
     })
+    return final
+  }
+
+  /**
+   * get PurchaseOrder record by id from DB.
+   * @param {unknown} id - purchaseOrderId
+   * @returns {PurchaseOrder} PurchaseOrder object or null
+   */
+  static async getFullPO(id: number | unknown, t?: Transaction): Promise<PurchaseOrder | null> {
+    const purchaseOrderId = isId.validateSync(id)
+    const final = await PurchaseOrder.findByPk(purchaseOrderId, {
+      include: [
+        {
+          model: PurchaseOrderItem,
+          as: 'purchaseOrderItems',
+          attributes: {
+            exclude: ['purchaseOrderId', 'createdAt', 'updatedAt'],
+          },
+          include: [
+            {
+              model: ProductConfiguration,
+              as: 'productConfiguration',
+              include: [
+                {
+                  model: Product,
+                  as: 'product',
+                  include: [
+                    {
+                      model: Brand,
+                      as: 'brand',
+                    },
+                  ],
+                },
+                {
+                  model: ProductOption,
+                  as: 'options',
+                  attributes: ['label', 'value'],
+                },
+              ],
+            },
+          ],
+        },
+        {
+          model: Order,
+          as: 'order',
+          attributes: ['orderNumber'],
+          include: [{
+            model: Customer,
+            as: 'customer',
+            attributes: {
+              exclude: ['defaultShippingId', 'createdAt', 'updatedAt'],
+            },
+          },
+          ],
+        },
+      ],
+      transaction: t,
+    })
+    return final
+  }
+
+  /**
+   * get PurchaseOrder record by po number from DB.
+   * @param {string | unknown} poNumber - purchaseOrder number
+   * @returns {PurchaseOrder} PurchaseOrder object or null
+   */
+  static async getByPoNumber(poNumber: string | unknown, t?: Transaction): Promise<PurchaseOrder | null> {
+    const purchaseOrderNumber = isString.validateSync(poNumber)
+    let final = await PurchaseOrder.findOne({
+      where: {
+        poNumber: purchaseOrderNumber,
+      },
+      transaction: t,
+    })
+    if (!final) {
+      return null
+    }
+    final = await PurchaseOrderController.getFullPO(final.id, t)
+    printYellowLine()
+    console.log('final', final)
     return final
   }
 
