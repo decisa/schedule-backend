@@ -47,12 +47,12 @@ export class PurchaseOrderItem extends Model<InferAttributes<PurchaseOrderItem>,
   // foreign keys
   declare purchaseOrderId: ForeignKey<PurchaseOrder['id']>
 
-  declare productConfigurationId: ForeignKey<ProductConfiguration['id']>
+  declare configurationId: ForeignKey<ProductConfiguration['id']>
 
   // associations
   declare purchaseOrder?: NonAttribute<PurchaseOrder>
 
-  declare productConfiguration?: NonAttribute<ProductConfiguration>
+  declare product?: NonAttribute<ProductConfiguration>
 
   declare shipmentItems?: NonAttribute<ShipmentItem[]>
 
@@ -60,7 +60,7 @@ export class PurchaseOrderItem extends Model<InferAttributes<PurchaseOrderItem>,
 
   declare public static associations: {
     purchaseOrder: Association<PurchaseOrderItem, PurchaseOrder>,
-    productConfiguration: Association<PurchaseOrderItem, ProductConfiguration>,
+    product: Association<PurchaseOrderItem, ProductConfiguration>,
     shipmentItems: Association<PurchaseOrderItem, ShipmentItem>,
     receivedItems: Association<PurchaseOrderItem, ReceivedItem>,
   }
@@ -74,11 +74,11 @@ export class PurchaseOrderItem extends Model<InferAttributes<PurchaseOrderItem>,
   declare createPurchaseOrder: BelongsToCreateAssociationMixin<PurchaseOrder>
 
   // ProductConfiguration:
-  declare getProductConfiguration: BelongsToGetAssociationMixin<ProductConfiguration>
+  declare getProduct: BelongsToGetAssociationMixin<ProductConfiguration>
 
-  declare setProductConfiguration: BelongsToSetAssociationMixin<ProductConfiguration, number>
+  declare setProduct: BelongsToSetAssociationMixin<ProductConfiguration, number>
 
-  declare createProductConfiguration: BelongsToCreateAssociationMixin<ProductConfiguration>
+  declare createProduct: BelongsToCreateAssociationMixin<ProductConfiguration>
 
   // shipmentItems:
   declare createShipmentItem: HasManyCreateAssociationMixin<ShipmentItem, 'purchaseOrderItemId'>
@@ -148,7 +148,7 @@ export function initPurchaseOrderItem(db: Sequelize) {
         type: DataTypes.INTEGER,
         unique: 'poid_configid_constraint',
       },
-      productConfigurationId: {
+      configurationId: {
         type: DataTypes.INTEGER,
         unique: 'poid_configid_constraint',
       },

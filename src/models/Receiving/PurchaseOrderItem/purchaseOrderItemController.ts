@@ -24,7 +24,7 @@ type PurchaseOrderItemTimeStamps = {
 
 type PurchaseOrderItemFK = {
   purchaseOrderId: number
-  productConfigurationId: number
+  configurationId: number
 }
 
 // type PurchaseOrderItemAssociations = {
@@ -53,7 +53,7 @@ const purchaseOrderItemSchemaCreate: yup.ObjectSchema<PurchaseOrderItemCreate> =
     .nonNullable()
     .required()
     .label('Malformed data: purchase order item purchaseOrderId'),
-  productConfigurationId: yup.number()
+  configurationId: yup.number()
     .integer()
     .positive()
     .nonNullable()

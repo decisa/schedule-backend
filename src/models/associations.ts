@@ -275,13 +275,13 @@ function createAssociations() {
   // One-to-many relationship between ProductConfigurations and PurchaseOrderItems.
   ProductConfiguration.hasMany(PurchaseOrderItem, {
     as: 'purchaseOrderItems',
-    foreignKey: 'productConfigurationId',
+    foreignKey: 'configurationId',
     onDelete: 'NO ACTION',
     onUpdate: 'CASCADE',
   })
   PurchaseOrderItem.belongsTo(ProductConfiguration, {
-    as: 'productConfiguration',
-    foreignKey: 'productConfigurationId',
+    as: 'product',
+    foreignKey: 'configurationId',
   })
   // One-to-many relationship between PurchaseOrderItems and ShipmentItems.
   PurchaseOrderItem.hasMany(ShipmentItem, {
