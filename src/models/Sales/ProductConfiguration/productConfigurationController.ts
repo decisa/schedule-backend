@@ -62,7 +62,7 @@ export type ProductConfigurationRead = Omit<Required<ProductConfigurationCreate>
 }
 
 export type ConfigurationAsProductRead = Omit<ProductRead, 'id'> & {
-  id: number
+  configurationId: number
   orderId: number
   configuration: Omit<Required<ProductConfigurationCreate>, 'productId' | 'id' | 'orderId'>
   mainProductId: number
@@ -240,7 +240,7 @@ function configurationToJson(configuration: ProductConfiguration): ProductConfig
 function configurationToJsonAsProduct(configuration: ProductConfiguration): ConfigurationAsProductRead {
   const {
     product,
-    id,
+    id: configurationId,
     orderId,
     ...configurationJson
   } = configurationToJson(configuration)
@@ -254,7 +254,7 @@ function configurationToJsonAsProduct(configuration: ProductConfiguration): Conf
   } = product
 
   const result = {
-    id,
+    configurationId,
     orderId,
     ...productJson,
     configuration: configurationJson,
