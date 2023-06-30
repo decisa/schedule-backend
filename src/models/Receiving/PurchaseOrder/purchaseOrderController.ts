@@ -179,13 +179,13 @@ function purchaseOrderToJson(purchaseOrderRaw: PurchaseOrder): PurchaseOrderRead
   //   magento,
   // }
   // return result
-  if (purchaseOrderRaw.purchaseOrderItems) {
-    const poItems = purchaseOrderRaw.purchaseOrderItems.map((item) => {
+  if (purchaseOrderRaw.items) {
+    const poItems = purchaseOrderRaw.items.map((item) => {
       const itemData = item.toJSON()
       const product = ProductConfigurationController.toJsonAsProduct(item.productConfiguration || null)
       return {
         ...itemData,
-        product,
+        product: product || undefined,
       }
     })
     purchaseOrderData.items = poItems
@@ -285,7 +285,7 @@ export default class PurchaseOrderController {
       include: [
         {
           model: PurchaseOrderItem,
-          as: 'purchaseOrderItems',
+          as: 'items',
           attributes: {
             exclude: ['purchaseOrderId', 'createdAt', 'updatedAt'],
           },
@@ -445,7 +445,7 @@ export default class PurchaseOrderController {
 
       const items = await PurchaseOrderItemController.bulkCreate(newPurchaseOrderRecord.id, parsedPurchaseOrder.items, transaction)
 
-      newPurchaseOrderRecord.purchaseOrderItems = items
+      newPurchaseOrderRecord.items = items
       if (!newPurchaseOrderRecord) {
         throw new Error('Internal Error: PurchaseOrder was not created')
       }
