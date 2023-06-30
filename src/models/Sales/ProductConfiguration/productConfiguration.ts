@@ -142,7 +142,7 @@ export class ProductConfiguration extends Model<InferAttributes<ProductConfigura
   declare addRouteStop: BelongsToManyAddAssociationMixin<RouteStop, number>
 
   // purchaseOrderItems:
-  declare createPurchaseOrderItem: HasManyCreateAssociationMixin<PurchaseOrderItem, 'productConfigurationId'>
+  declare createPurchaseOrderItem: HasManyCreateAssociationMixin<PurchaseOrderItem, 'configurationId'>
 
   declare getPurchaseOrderItems: HasManyGetAssociationsMixin<PurchaseOrderItem>
 

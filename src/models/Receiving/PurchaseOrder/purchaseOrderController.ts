@@ -6,13 +6,15 @@ import {
 } from '../../../utils/utils'
 import { Brand } from '../../Brand/brand'
 import { PurchaseOrderItem } from '../PurchaseOrderItem/purchaseOrderItem'
-import PurchaseOrderItemController from '../PurchaseOrderItem/purchaseOrderItemController'
+import PurchaseOrderItemController, { PurchaseOrderItemRead } from '../PurchaseOrderItem/purchaseOrderItemController'
 import { Order } from '../../Sales/Order/order'
 import { Customer } from '../../Sales/Customer/customer'
 import { ProductConfiguration } from '../../Sales/ProductConfiguration/productConfiguration'
 import { Product } from '../../Sales/Product/product'
 import { ProductOption } from '../../Sales/ProductOption/productOption'
 import ProductConfigurationController from '../../Sales/ProductConfiguration/productConfigurationController'
+import { BrandRead } from '../../Brand/brandController'
+import { OrderRead } from '../../Sales/Order/orderController'
 
 // building elements of the PurchaseOrder type
 type PurchaseOrderCreational = {
@@ -39,10 +41,9 @@ type PurchaseOrderFK = {
 }
 
 type PurchaseOrderAssociations = {
-  order?: Order
-  brand?: Brand
-  purchaseOrderItems?: PurchaseOrderItem[]
-  items?: unknown
+  order?: OrderRead
+  brand?: BrandRead
+  items?: PurchaseOrderItemRead[]
 }
 
 // Note: DATA TYPES
@@ -182,7 +183,7 @@ function purchaseOrderToJson(purchaseOrderRaw: PurchaseOrder): PurchaseOrderRead
   if (purchaseOrderRaw.items) {
     const poItems = purchaseOrderRaw.items.map((item) => {
       const itemData = item.toJSON()
-      const product = ProductConfigurationController.toJsonAsProduct(item.productConfiguration || null)
+      const product = ProductConfigurationController.toJsonAsProduct(item.product || null)
       return {
         ...itemData,
         product: product || undefined,
@@ -292,7 +293,7 @@ export default class PurchaseOrderController {
           include: [
             {
               model: ProductConfiguration,
-              as: 'productConfiguration',
+              as: 'product',
               include: [
                 {
                   model: Product,
