@@ -62,12 +62,12 @@ export class PurchaseOrder extends Model<InferAttributes<PurchaseOrder>, InferCr
 
   declare brandId: ForeignKey<Brand['id']>
 
-  declare purchaseOrderItems: NonAttribute<PurchaseOrderItem[]>
+  declare items: NonAttribute<PurchaseOrderItem[]>
 
   declare public static associations: {
     order: Association<PurchaseOrder, Order>,
     brand: Association<PurchaseOrder, Brand>,
-    purchaseOrderItems: Association<PurchaseOrder, PurchaseOrderItem>,
+    items: Association<PurchaseOrder, PurchaseOrderItem>,
   }
 
   // MIXINS
@@ -86,25 +86,25 @@ export class PurchaseOrder extends Model<InferAttributes<PurchaseOrder>, InferCr
   declare createBrand: BelongsToCreateAssociationMixin<Brand>
 
   // PurchaseOrderItems:
-  declare createPurchaseOrderItem: HasManyCreateAssociationMixin<PurchaseOrderItem, 'purchaseOrderId'>
+  declare createItem: HasManyCreateAssociationMixin<PurchaseOrderItem, 'purchaseOrderId'>
 
-  declare getPurchaseOrderItems: HasManyGetAssociationsMixin<PurchaseOrderItem>
+  declare getItems: HasManyGetAssociationsMixin<PurchaseOrderItem>
 
-  declare countPurchaseOrderItems: HasManyCountAssociationsMixin
+  declare countItems: HasManyCountAssociationsMixin
 
-  declare hasPurchaseOrderItem: HasManyHasAssociationMixin<PurchaseOrderItem, number>
+  declare hasItem: HasManyHasAssociationMixin<PurchaseOrderItem, number>
 
-  declare hasPurchaseOrderItems: HasManyHasAssociationsMixin<PurchaseOrderItem, number>
+  declare hasItems: HasManyHasAssociationsMixin<PurchaseOrderItem, number>
 
-  declare setPurchaseOrderItems: HasManySetAssociationsMixin<PurchaseOrderItem, number>
+  declare setItems: HasManySetAssociationsMixin<PurchaseOrderItem, number>
 
-  declare addPurchaseOrderItem: HasManyAddAssociationMixin<PurchaseOrderItem, number>
+  declare addItem: HasManyAddAssociationMixin<PurchaseOrderItem, number>
 
-  declare addPurchaseOrderItems: HasManyAddAssociationsMixin<PurchaseOrderItem, number>
+  declare addItems: HasManyAddAssociationsMixin<PurchaseOrderItem, number>
 
-  declare removePurchaseOrderItem: HasManyRemoveAssociationMixin<PurchaseOrderItem, number>
+  declare removeItem: HasManyRemoveAssociationMixin<PurchaseOrderItem, number>
 
-  declare removePurchaseOrderItems: HasManyRemoveAssociationsMixin<PurchaseOrderItem, number>
+  declare removeItems: HasManyRemoveAssociationsMixin<PurchaseOrderItem, number>
 }
 
 export function initPurchaseOrder(db: Sequelize) {

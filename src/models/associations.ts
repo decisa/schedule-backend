@@ -252,9 +252,9 @@ function createAssociations() {
   })
   //  One-to-many relationship between PurchaseOrders and PurchaseOrderItems.
   PurchaseOrder.hasMany(PurchaseOrderItem, {
-    as: 'purchaseOrderItems',
+    as: 'items',
     foreignKey: 'purchaseOrderId',
-    onDelete: 'NO ACTION',
+    onDelete: 'CASCADE',
     onUpdate: 'CASCADE',
   })
   PurchaseOrderItem.belongsTo(PurchaseOrder, {
