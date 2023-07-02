@@ -23,7 +23,7 @@ purchaseOrderRouter.get('/number/:poNumber', (req, res) => {
   try {
     PurchaseOrderController.getByPoNumber(req.params.poNumber)
       .then((result) => {
-        const purchaseOrderResult = PurchaseOrderController.toJSON(result)
+        const purchaseOrderResult = PurchaseOrderController.fullPOtoJSON(result)
         handleResponse(res, purchaseOrderResult)
       })
       .catch((err) => handleError(res, err))

@@ -64,7 +64,9 @@ export type ProductConfigurationRead = Omit<Required<ProductConfigurationCreate>
 export type ConfigurationAsProductRead = Omit<ProductRead, 'id'> & {
   configurationId: number
   orderId: number
-  configuration: Omit<Required<ProductConfigurationCreate>, 'productId' | 'id' | 'orderId'>
+  configuration: Omit<Required<ProductConfigurationCreate>, 'productId' | 'id' | 'orderId'> & {
+    options?: ProductOptionRead[] | null,
+  }
   mainProductId: number
 }
 

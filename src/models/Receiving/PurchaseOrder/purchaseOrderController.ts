@@ -12,7 +12,7 @@ import { Customer } from '../../Sales/Customer/customer'
 import { ProductConfiguration } from '../../Sales/ProductConfiguration/productConfiguration'
 import { Product } from '../../Sales/Product/product'
 import { ProductOption } from '../../Sales/ProductOption/productOption'
-import ProductConfigurationController from '../../Sales/ProductConfiguration/productConfigurationController'
+import ProductConfigurationController, { ConfigurationAsProductRead } from '../../Sales/ProductConfiguration/productConfigurationController'
 import { BrandRead } from '../../Brand/brandController'
 import { OrderRead } from '../../Sales/Order/orderController'
 
@@ -55,6 +55,71 @@ Partial<PurchaseOrderCreational>
 & Partial<PurchaseOrderFK>
 
 export type PurchaseOrderRead = Required<PurchaseOrderCreate> & PurchaseOrderAssociations
+
+// FullPOInfo is the typesafe version of the data returned by the getFullPOInfo method.
+// It is used to typecheck the POInfoShape
+// Yhis is a very complex type, and it is not used anywhere else in the codebase
+// It will warn with errors if database fields are changed
+type POProduct = Pick<ConfigurationAsProductRead, 'name' | 'sku' > & {
+  configuration: Pick<ConfigurationAsProductRead['configuration'], 'qtyOrdered' | 'qtyRefunded' | 'qtyShippedExternal' | 'sku'>
+}
+type POItem = Pick<PurchaseOrderItemRead, 'id' | 'qtyOrdered' | 'configurationId'> & {
+  product: POProduct
+}
+type FullPOInfo = Pick<PurchaseOrderRead, 'id' | 'poNumber' | 'status' | 'dateSubmitted' | 'productionWeeks' | 'createdAt' | 'updatedAt'> & {
+  brand: BrandRead
+  items: POItem[]
+  order: Pick<OrderRead, 'id' | 'orderNumber'> & {
+    customer: Pick<Customer, 'id' | 'firstName' | 'lastName' | 'company' | 'phone' | 'altPhone' | 'email'>
+  }
+}
+
+export type POInfoShape = {
+  id: number
+  poNumber: string
+  dateSubmitted: Date
+  productionWeeks: number | null
+  status: string
+  createdAt: Date
+  updatedAt: Date
+  brand: {
+    id: number
+    name: string
+    externalId: number | null
+  },
+  items: {
+    id: number
+    qtyOrdered: number
+    configurationId: number
+    product: {
+      name: string
+      sku: string | null
+      configuration: {
+        qtyOrdered: number
+        qtyRefunded: number
+        qtyShippedExternal: number | null
+        sku: string | null
+        options?: {
+          label: string
+          value: string
+        }[]
+      }
+    }
+  }[]
+  order: {
+    orderNumber: string,
+    id: number
+    customer: {
+      id: number
+      firstName: string
+      lastName: string
+      company: string | null,
+      phone: string
+      altPhone: string | null,
+      email: string | null
+    }
+  }
+}
 
 const purchaseOrderSchemaCreate: yup.ObjectSchema<PurchaseOrderCreate> = yup.object({
   // PurchaseOrderFK
@@ -167,33 +232,6 @@ export function validatePurchaseOrderUpdate(object: unknown): Partial<PurchaseOr
   return purchaseOrder
 }
 
-function purchaseOrderToJson(purchaseOrderRaw: PurchaseOrder): PurchaseOrderRead {
-  // TODO: take care of purchase order items
-  // let products: ConfigurationAsProductRead[] | undefined
-  // if (purchaseOrder.products) {
-  //   products = ProductConfigurationController.toJsonAsProduct(purchaseOrder.products)
-  // }
-  const purchaseOrderData: PurchaseOrderRead = purchaseOrderRaw.toJSON()
-  // const result = {
-  //   ...purchaseOrderData,
-  //   products,
-  //   magento,
-  // }
-  // return result
-  if (purchaseOrderRaw.items) {
-    const poItems = purchaseOrderRaw.items.map((item) => {
-      const itemData = item.toJSON()
-      const product = ProductConfigurationController.toJsonAsProduct(item.product || null)
-      return {
-        ...itemData,
-        product: product || undefined,
-      }
-    })
-    purchaseOrderData.items = poItems
-  }
-  return purchaseOrderData
-}
-
 type PurchaseOrderRequest = {
   orderId: number
   brandId: number
@@ -237,6 +275,88 @@ const purchaseOrderRequestCreate: yup.ObjectSchema<PurchaseOrderRequest> = yup.o
     .label('Malformed data: purchase order items'),
 })
 
+function purchaseOrderToJson(purchaseOrderRaw: PurchaseOrder): PurchaseOrderRead {
+  const purchaseOrderData: PurchaseOrderRead = purchaseOrderRaw.toJSON()
+  // const result = {
+  //   ...purchaseOrderData,
+  //   products,
+  //   magento,
+  // }
+  // return result
+  if (purchaseOrderRaw.items) {
+    const poItems = purchaseOrderRaw.items.map((item) => {
+      const itemData = item.toJSON()
+      const product = ProductConfigurationController.toJsonAsProduct(item.product || null)
+      return {
+        ...itemData, // will keep origninal po item data
+        product: product || undefined, // converted db product configuration to ConfigurationAsProduct or remove if null
+      }
+    })
+    purchaseOrderData.items = poItems
+  }
+  return purchaseOrderData
+}
+
+function parseFullPOToJson(purchaseOrderRaw: PurchaseOrder): POInfoShape {
+  const purchaseOrderData: PurchaseOrderRead = purchaseOrderRaw.toJSON()
+
+  if (!purchaseOrderRaw.brand) {
+    console.log('Purchase Order: unable to parse brand')
+    throw new Error('Purchase Order: unable to parse brand')
+  }
+  console.log('threw error')
+  purchaseOrderData.brand = purchaseOrderRaw.brand?.toJSON()
+
+  let items: POItem[] = []
+  if (purchaseOrderRaw.items) {
+    const poItems = purchaseOrderRaw.items.map((item) => {
+      const {
+        id,
+        qtyOrdered,
+        configurationId,
+      } = item.toJSON()
+
+      if (!item.product) {
+        throw new Error('Purchase Order: unable to parse product information')
+      }
+      const product = ProductConfigurationController.toJsonAsProduct(item.product)
+
+      if (!product.configuration.options) {
+        throw new Error('Purchase Order: unable to parse product configuration options')
+      }
+
+      return {
+        id,
+        qtyOrdered,
+        configurationId,
+        product, // converted db product configuration to ConfigurationAsProduct
+      }
+    })
+    items = poItems
+  }
+
+  if (!purchaseOrderRaw.order) {
+    throw new Error('Purchase Order: unable to parse order information')
+  }
+
+  if (!purchaseOrderRaw.order.customer) {
+    throw new Error('Purchase Order: unable to parse customer information')
+  }
+
+  const customer = purchaseOrderRaw.order.customer.toJSON()
+
+  const order = {
+    ...purchaseOrderRaw.order.toJSON(),
+    customer,
+  }
+  const result: FullPOInfo = {
+    ...purchaseOrderData,
+    items,
+    order,
+    brand: purchaseOrderRaw.brand.toJSON(),
+  } satisfies POInfoShape
+  return result
+}
 export default class PurchaseOrderController {
   /**
    * convert PurchaseOrder Instance or array of instances to a regular JSON object.
@@ -263,6 +383,30 @@ export default class PurchaseOrderController {
   }
 
   /**
+   * convert PurchaseOrder Instance or array of instances to a regular JSON object.
+   * @param {PurchaseOrder | PurchaseOrder[] | null} data - purchase order, array of purchase orders or null
+   * @returns {PurchaseOrderMagentoRecord | PurchaseOrderMagentoRecord[] | null} JSON format nullable.
+   */
+  static fullPOtoJSON(data: PurchaseOrder): POInfoShape
+  static fullPOtoJSON(data: PurchaseOrder | null): POInfoShape | null
+  static fullPOtoJSON(data: PurchaseOrder[]): POInfoShape[]
+  static fullPOtoJSON(data: PurchaseOrder[] | null): POInfoShape[] | null
+  static fullPOtoJSON(data: null): null
+  static fullPOtoJSON(data: PurchaseOrder | PurchaseOrder[] | null): POInfoShape | POInfoShape[] | null {
+    // try {
+    if (data instanceof PurchaseOrder) {
+      return parseFullPOToJson(data)
+    }
+    if (Array.isArray(data)) {
+      return data.map(parseFullPOToJson)
+    }
+    return null
+    // } catch (error) {
+    //   return null
+    // }
+  }
+
+  /**
    * get PurchaseOrder record by id from DB.
    * @param {unknown} id - purchaseOrderId
    * @returns {PurchaseOrder} PurchaseOrder object or null
@@ -283,7 +427,12 @@ export default class PurchaseOrderController {
   static async getFullPO(id: number | unknown, t?: Transaction): Promise<PurchaseOrder | null> {
     const purchaseOrderId = isId.validateSync(id)
     const final = await PurchaseOrder.findByPk(purchaseOrderId, {
+      attributes: ['id', 'poNumber', 'dateSubmitted', 'productionWeeks', 'status', 'createdAt', 'updatedAt'],
       include: [
+        {
+          model: Brand,
+          as: 'brand',
+        },
         {
           model: PurchaseOrderItem,
           as: 'items',
@@ -294,16 +443,12 @@ export default class PurchaseOrderController {
             {
               model: ProductConfiguration,
               as: 'product',
+              attributes: ['qtyOrdered', 'qtyRefunded', 'qtyShippedExternal', 'sku'],
               include: [
                 {
                   model: Product,
                   as: 'product',
-                  include: [
-                    {
-                      model: Brand,
-                      as: 'brand',
-                    },
-                  ],
+                  attributes: ['name', 'sku'],
                 },
                 {
                   model: ProductOption,
@@ -317,7 +462,7 @@ export default class PurchaseOrderController {
         {
           model: Order,
           as: 'order',
-          attributes: ['orderNumber'],
+          attributes: ['orderNumber', 'id'],
           include: [{
             model: Customer,
             as: 'customer',
@@ -351,7 +496,7 @@ export default class PurchaseOrderController {
     }
     final = await PurchaseOrderController.getFullPO(final.id, t)
     printYellowLine()
-    console.log('final', final)
+    // console.log('final', final)
     return final
   }
 

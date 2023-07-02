@@ -1,6 +1,5 @@
 import * as yup from 'yup'
 import { Transaction } from 'sequelize'
-import { ca } from 'date-fns/locale'
 import {
   isId, useTransaction, isObjectWithExternalId, printYellowLine,
 } from '../../../utils/utils'
@@ -56,7 +55,7 @@ export type ProductCreate =
   // & Partial<ProductAssociations>
 
 export type ProductRead = Omit<Required<ProductCreate>, 'brandId'> & {
-  brand: string | null | BrandRead
+  brand?: string | BrandRead
 }
 
 const productSchemaCreate: yup.ObjectSchema<ProductCreate> = yup.object({
@@ -217,7 +216,7 @@ function productToJson(product: Product): ProductRead {
     brandId?: number | null
   } = {
     ...productData,
-    brand: null,
+    brand: undefined,
   }
   if (product.brand) {
     const brandData = product.brand.toJSON()
