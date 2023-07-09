@@ -46,7 +46,7 @@ export type PurchaseOrderItemRead = Required<PurchaseOrderItemCreate>
 const purchaseOrderItemSchemaCreate: yup.ObjectSchema<PurchaseOrderItemCreate> = yup.object({
   // PurchaseOrderItemFK
   // purchaseOrderId: number
-  // productConfigurationId: number
+  // configurationId: number
   purchaseOrderId: yup.number()
     .integer()
     .positive()
@@ -58,7 +58,7 @@ const purchaseOrderItemSchemaCreate: yup.ObjectSchema<PurchaseOrderItemCreate> =
     .positive()
     .nonNullable()
     .required()
-    .label('Malformed data: purchase order item productConfigurationId'),
+    .label('Malformed data: purchase order item configurationId'),
   // PurchaseOrderItemRequired
   // qtyOrdered: number
   qtyOrdered: yup.number()
@@ -86,11 +86,11 @@ const purchaseOrderItemSchemaUpdate = purchaseOrderItemSchemaCreate.clone()
       .positive()
       .nonNullable()
       .label('Malformed data: purchase order item purchaseOrderId'),
-    productConfigurationId: yup.number()
+    configurationId: yup.number()
       .integer()
       .positive()
       .nonNullable()
-      .label('Malformed data: purchase order item productConfigurationId'),
+      .label('Malformed data: purchase order item configurationId'),
     qtyOrdered: yup.number()
       .integer()
       .positive()

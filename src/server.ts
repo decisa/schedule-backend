@@ -4,37 +4,12 @@ import {
 // import app from './app'
 import db from './models'
 import { Address } from './models/Sales/Address/address'
-import { Customer } from './models/Sales/Customer/customer'
-import { MagentoCustomer } from './models/Sales/MagentoCustomer/magentoCustomer'
 import { Order } from './models/Sales/Order/order'
 import { OrderAddress } from './models/Sales/OrderAddress/orderAddress'
 import { printYellowLine } from './utils/utils'
-import { TripRoute } from './models/Delivery/TripRoute/tripRoute'
 import { Driver } from './models/Delivery/Driver/driver'
-import OrderController from './models/Sales/Order/orderControllerOld'
 import app from './app'
-import { OrderComment } from './models/Sales/OrderComment/orderComment'
-// import Customer from './models/Customer/customer'
-// import MagentoOrder from './models/MagentoOrder/magentoOrder'
-// import Order from './models/Order/order'
-// import createAssociations from './models/associations'
-// console.log('order instance:', Order)
-
-// const constraintExistsQuery = ({
-//   dbName,
-//   tableName,
-//   constraintName,
-// }: {
-//   dbName: string,
-//   tableName: string,
-//   constraintName: string,
-// }) => `
-// SELECT COUNT(*)
-// FROM information_schema.referential_constraints
-// WHERE constraint_schema = '${dbName}'
-//   AND table_name = '${tableName}'
-//   AND constraint_name = '${constraintName}';
-// `
+import { createIfNotExistsProductSummaryView } from './views/ProductSummary/productSummary'
 
 const PORT = process.env.PORT || 8080
 
@@ -101,92 +76,6 @@ async function addConstraintIfNotExists<Table extends Model, RefTable extends Mo
   } else {
     console.log(`foreign key constraint: ${constraint} already exists. skipping`)
   }
-}
-
-async function addCustomers() {
-  const data1 = {
-    firstName: 'Art',
-    lastName: 'Telesh',
-    phone: '215.917.2940',
-    altPhone: '215.676.6100 x102',
-    email: 'decarea@yahoo.com',
-  }
-
-  const data1magento = {
-    externalGroupId: 12130,
-    isGuest: true,
-    email: 'decarea@yahoo.com',
-    externalCustomerId: null,
-  }
-  const data2 = {
-    firstName: 'Dina',
-    lastName: 'Telesh',
-    phone: '215.917.2940',
-    altPhone: '215.676.6100 x102',
-    email: 'dinatelesh@gmail.com',
-
-  }
-
-  const data2magento = {
-    externalGroupId: 12130,
-    isGuest: false,
-    email: 'dinatelesh@gmail.com',
-    externalCustomerId: 143245,
-  }
-
-  const data3 = {
-    firstName: 'Tony',
-    lastName: 'Stark',
-    phone: '215.917.2940',
-    altPhone: '215.676.6100 x102',
-    email: 'tony2@gmail.com',
-
-  }
-
-  const data3magento = {
-    externalGroupId: 12130,
-    isGuest: false,
-    email: 'tony2@gmail.com',
-    externalCustomerId: 1432435,
-  }
-  const record = await Customer.bulkCreate([data1, data2, data3])
-  const record2 = await MagentoCustomer.bulkCreate([data1magento, data2magento, data3magento])
-
-  if (record) {
-    console.log('customer records:', record)
-  }
-  if (record2) {
-    console.log('magento records:', record2)
-  }
-}
-
-async function addRoutes() {
-  await TripRoute.create({
-    startDate: new Date(2023, 3, 25, 8, 0),
-    endDate: new Date(2023, 3, 25, 18, 0),
-    startTime: 7 * 60,
-    endTime: 19 * 60,
-    name: 'Local Route',
-    status: 'in progress',
-  })
-
-  await TripRoute.create({
-    startDate: new Date(2023, 3, 28, 8, 0),
-    endDate: new Date(2023, 4, 5, 18, 0),
-    startTime: 8 * 60,
-    endTime: 5 * 60,
-    name: 'Florida trip April-May',
-    status: 'in progress',
-  })
-
-  await TripRoute.create({
-    startDate: new Date(2023, 4, 15, 8, 0),
-    endDate: new Date(2023, 4, 29, 18, 0),
-    startTime: 8 * 60,
-    endTime: 20 * 60,
-    name: 'CA May',
-    status: 'scheduled',
-  })
 }
 
 async function addDrivers() {
@@ -291,170 +180,12 @@ db
       onUpdate: 'CASCADE',
       onDelete: 'CASCADE',
     }))
+    .then(() => createIfNotExistsProductSummaryView(db, 'ProductSummaryView'))
     .catch((e) => console.log('there was an error:', e)))
   .then(async () => {
     // note: import orders:
-    // printYellowLine('IMPORT ORDER')
-    // importOrder()
-    //   .then(() => console.log('SUCCESS!!'))
-    //   .catch((e) => console.log('ERROR!', e))
 
-    // addCustomers().then(() => {
-    //   console.log('record success')
-    // })
-    //   .catch((err) => {
-    //     console.log('error in customer creation', err)
-    //   })
-    // addOrder()
-
-    // MagentoOrder.create({
-    //   externalId: 2144,
-    //   externalQuoteId: 35253,
-    //   state: 'complete',
-    //   status: 'complete',
-    //   updatedAt: new Date()
-    // }).then((record) => {
-    //   console.log('order record:', record.toJSON())
-    // })
-    //   .catch((err) => {
-    //     console.log('error in customer creation', err)
-    //   })
-    // Customer.create({
-    //   firstName: 'Art',
-    //   lastName: 'Telesh',
-    //   phone: '215.917.2940',
-    //   email: null,
-    // }).then((record) => {
-    //   console.log('record:', record.toJSON())
-    // })
-    //   .catch((err) => {
-    //     console.log('error in customer creation', err)
-    //   })
-
-    // Address.create({
-    //   // customerId,
-    //   firstName: 'Art',
-    //   lastName: 'Telesh',
-    //   company: 'room service 360',
-    //   phone: '215.676.6100',
-    //   altPhone: '215.676.6100 ×102',
-    //   state: 'PA',
-    //   // street1: '2031 Byberry Rd',
-    //   street: ['211 Erica St', '2nd Floor'],
-    //   // street2,
-    //   city: 'Philadelphia',
-    //   zipCode: '19116',
-    //   country: 'US',
-    //   // id,
-    //   latitude: 35.766114,
-    //   longitude: -56.1121231,
-    //   notes: 'custom notes',
-    // })
-
-    // Address.create({
-    //   // customerId,
-    //   firstName: 'Art',
-    //   lastName: 'Telesh',
-    //   company: 'room service 360',
-    //   phone: '215.676.6100',
-    //   altPhone: '215.676.6100 ×102',
-    //   state: 'PA',
-    //   // street1: '2031 Byberry Rd',
-    //   street: ['2031 Byberry St'],
-    //   // street2,
-    //   city: 'Philadelphia',
-    //   zipCode: '19116',
-    //   country: 'US',
-    //   // id,
-    //   // latitude: -90,
-    //   // coordinates: [48.55441, -55.1435255],
-    //   // longitude: -56.1121231,
-    //   notes: 'custom notes',
-    // })
-
-    // Customer.findByPk(2, { include: 'addresses' })
-    //   .then((record) => {
-    //     if (record) {
-    //       console.log('record found:', record.toJSON())
-    //     }
-    //   })
-    //   .catch((err) => console.log('error:', err))
-
-    // Customer.findByPk(2, { include: ['magento', 'orders'] })
-    //   .then((record) => {
-    //     if (record) {
-    //       console.log('found record: ', record?.toJSON())
-    //     } else {
-    //       console.log('your search returned no results')
-    //     }
-    //   })
-    //   .catch((err) => console.log('there was an error getting order', err))
-    // await addRoutes()
-    // await addDrivers()
-    // console.log('DATABASE NAME:', db.getDatabaseName(), Order.getTableName())
-
-    // for (let i = 0; i < orders.length; i += 1) {
-    // for (let i = 4; i < 5; i += 1) {
-    //   const order = orders[i]
-    //   const addr: OrderAddessShape = order.billingAddress
-    //   const { magento, ...noMagento } = addr
-    //   // addr.city = 'Bensalem'
-    //   // addr.magento.externalCustomerAddressId = 777
-    //   // addr.id = 1
-    //   if (addr.magento) {
-    //     addr.magento.externalId = 778
-    //     addr.magento.externalCustomerAddressId = 6680 // 'shipping'
-    //   }
-    //   addr.notes = 'testing !'
-    //   // addr.firstName = 'Tony'
-    //   // const address = await OrderAddressController.upsertMagentoAddress(addr, 0)
-
-    //   // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-    //   const orderResult = await OrderController.importMagentoOrder(order as any)
-
-    //   printYellowLine()
-    //   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-var-requires, global-require
-    //   const fs = require('fs')
-
-    //   const filePath = 'output.json' // the path and filename of the file you want to write to
-
-    //   // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-    //   fs.writeFile(filePath, JSON.stringify(orderResult, null, 4), (err) => {
-    //     if (err) {
-    //       console.error(err)
-    //       return
-    //     }
-    //     console.log(`Data written to ${filePath}`)
-    //   })
-
-    //   console.log(orderResult?.products[0].configuration.options)
-    // }
-
-    // const order = await OrderController.getFullOrderByNumber('100006572')
-
-    // const order = await OrderController.searchOrders('a')
-
-    // const result = order.map((ord) => {
-    //   if (ord) {
-    //     const { orderNumber, customer } = ord
-    //     console.log('customer = ', customer)
-    //     const { firstName, lastName } = customer || {}
-    //     return firstName && lastName ? `${firstName} ${lastName} : ${orderNumber}` : orderNumber
-    //   }
-    //   return ''
-    // })
-
-    // // console.log(result.join('\n'))
-    // console.log(result)
-    // if (orderResult) {
     printYellowLine('FINAL')
-
-    const comment = await OrderComment.findByPk(83)
-    if (comment) {
-      console.log(comment.toJSON())
-    }
-    // console.log(orderResult.toJSON())
-    // }
   })
   .then(() => {
     app.listen(PORT, () => {
