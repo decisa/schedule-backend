@@ -27,7 +27,7 @@ import {
 } from 'sequelize'
 import type { Shipment } from '../Shipment/shipment'
 
-type CarrierType = 'container' | 'freight' | 'parcel'
+type CarrierType = 'container' | 'freight' | 'parcel' | 'auto'
 export class Carrier extends Model<InferAttributes<Carrier>, InferCreationAttributes<Carrier>> {
   declare id: CreationOptional<number>
 
@@ -35,15 +35,15 @@ export class Carrier extends Model<InferAttributes<Carrier>, InferCreationAttrib
 
   declare type: CarrierType
 
-  declare contactName?: string
+  declare contactName: string | null
 
-  declare phone?: string
+  declare phone: string | null
 
-  declare altPhone?: string
+  declare altPhone: string | null
 
-  declare email?: string
+  declare email: string | null
 
-  declare accountNumber?: string
+  declare accountNumber: string | null
 
   // tracking url template?
   // address ?

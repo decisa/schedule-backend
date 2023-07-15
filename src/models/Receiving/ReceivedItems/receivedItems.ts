@@ -27,15 +27,13 @@ export class ReceivedItem extends Model<InferAttributes<ReceivedItem>, InferCrea
 
   declare receivedDate: Date
 
-  declare auto: boolean
-
   // associations
 
   declare purchaseOrderItemId: ForeignKey<PurchaseOrderItem['id']>
 
   declare purchaseOrderItem?: NonAttribute<PurchaseOrderItem>
 
-  declare shipmentId?: ForeignKey<Shipment['id']>
+  declare shipmentId: ForeignKey<Shipment['id']>
 
   declare shipment?: NonAttribute<Shipment>
 
@@ -68,10 +66,6 @@ export function initReceivedItem(db: Sequelize) {
         unique: true,
         autoIncrement: true,
         primaryKey: true,
-      },
-      auto: {
-        type: DataTypes.BOOLEAN,
-        defaultValue: false,
       },
       qtyReceived: {
         type: DataTypes.INTEGER,

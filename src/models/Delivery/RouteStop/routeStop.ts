@@ -45,7 +45,7 @@ import type { Order } from '../../Sales/Order/order'
 import { ProductConfiguration } from '../../Sales/ProductConfiguration/productConfiguration'
 
 type StopType = 'break' | 'hotel' | 'delivery'
-type StopStatus = 'Scheduled' | 'In Progress' | 'Completed' | 'Cancelled' | 'Pending'
+type StopStatus = 'Scheduled' | 'In Progress' | 'Completed' | 'Cancelled' | 'Pending' | 'Confirmed'
 
 export class RouteStop extends Model<InferAttributes<RouteStop>, InferCreationAttributes<RouteStop>> {
   declare id: CreationOptional<number>
@@ -60,15 +60,15 @@ export class RouteStop extends Model<InferAttributes<RouteStop>, InferCreationAt
 
   declare estimatedDuration: number[]
 
-  declare notes?: string
+  declare notes: string | null
 
   // associations
 
   declare tripRouteId: ForeignKey<TripRoute['id']>
 
-  declare orderAddressId: ForeignKey<OrderAddress['id']>
+  declare orderAddressId: ForeignKey<OrderAddress['id']> | null
 
-  declare orderId: ForeignKey<Order['id']>
+  declare orderId: ForeignKey<Order['id']> | null
 
   declare trip?: NonAttribute<TripRoute>
 

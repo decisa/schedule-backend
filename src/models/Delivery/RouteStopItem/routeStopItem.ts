@@ -27,6 +27,7 @@ export class RouteStopItem extends Model<InferAttributes<RouteStopItem>, InferCr
   // associations
   declare routeStopId: ForeignKey<RouteStop['id']>
 
+  // fixme: rename to configurationId to be consistent with ProductSummaryView
   declare productConfigurationId: ForeignKey<ProductConfiguration['id']>
 
   declare routeStop?: NonAttribute<RouteStop>
@@ -55,6 +56,7 @@ export function initRouteStopItem(db: Sequelize) {
         type: DataTypes.INTEGER,
         allowNull: false,
       },
+      // fixme: should confirm be moved to ROUTE_STOP?
       confirmed: {
         type: DataTypes.BOOLEAN,
         defaultValue: false,
