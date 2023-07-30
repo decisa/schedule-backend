@@ -5,6 +5,12 @@
   "main": "server.js",
   "scripts": {
     "dev": "ts-node-dev --respawn src/server.ts",
+    "migrate": "ts-node migrator.ts",
+    "migrate-up": "ts-node migrator.ts up",
+    "migrate-down": "ts-node migrator.ts down",
+    "seeder": "ts-node seeder.ts",
+    "seeder-up": "ts-node seeder.ts up",
+    "seeder-down": "ts-node seeder.ts down",
     "build": "tsc",
     "start": "node dist/server.js"
   },
@@ -31,6 +37,7 @@
     "mysql2": "^3.2.0",
     "sequelize": "^6.31.0",
     "ts-node": "^10.9.1",
+    "umzug": "^3.2.1",
     "validator": "^13.9.0",
     "yup": "^1.1.1"
   }
