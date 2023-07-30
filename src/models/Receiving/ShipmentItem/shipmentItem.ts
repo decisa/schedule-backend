@@ -21,6 +21,12 @@ export class ShipmentItem extends Model<InferAttributes<ShipmentItem>, InferCrea
   declare id: CreationOptional<number>
 
   declare qtyShipped: number
+
+  // timestamps
+  declare createdAt: CreationOptional<Date>
+
+  declare updatedAt: CreationOptional<Date>
+
   // shipment_id (FK from Shipments)
   // purchase_order_item_id (FK from PurchaseOrderItems)
 
@@ -68,6 +74,8 @@ export function initShipmentItem(db: Sequelize) {
         type: DataTypes.INTEGER,
         allowNull: false,
       },
+      createdAt: DataTypes.DATE,
+      updatedAt: DataTypes.DATE,
     },
     {
       sequelize: db,

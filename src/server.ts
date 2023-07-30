@@ -150,9 +150,9 @@ async function addDrivers() {
 
 // console.log('starting auth')
 db
-  // .authenticate()
+  .authenticate()
   // .sync({ force: true })
-  .sync()
+  // .sync()
   .then(() => addConstraintIfNotExists({
     dbInstance: db,
     table: Order,
