@@ -1,0 +1,142 @@
+[
+	{
+		"id" : 1,
+		"name" : "Cattelan Italia",
+		"externalId" : 2
+	},
+	{
+		"id" : 2,
+		"name" : "Costantini Pietro",
+		"externalId" : 12
+	},
+	{
+		"id" : 3,
+		"name" : "Porada",
+		"externalId" : 67
+	},
+	{
+		"id" : 4,
+		"name" : "Fiam Italia",
+		"externalId" : 16
+	},
+	{
+		"id" : 6,
+		"name" : "BDI",
+		"externalId" : 5
+	},
+	{
+		"id" : 7,
+		"name" : "Tonelli",
+		"externalId" : 33
+	},
+	{
+		"id" : 8,
+		"name" : "Pianca",
+		"externalId" : 27
+	},
+	{
+		"id" : 9,
+		"name" : "Lago",
+		"externalId" : 45
+	},
+	{
+		"id" : 10,
+		"name" : "Bontempi Casa",
+		"externalId" : 7
+	},
+	{
+		"id" : 11,
+		"name" : "Tonin Casa",
+		"externalId" : 34
+	},
+	{
+		"id" : 12,
+		"name" : "Gamma Arredamenti",
+		"externalId" : 18
+	},
+	{
+		"id" : 14,
+		"name" : "Cierre",
+		"externalId" : 10
+	},
+	{
+		"id" : 16,
+		"name" : "BDI5 test",
+		"externalId" : null
+	},
+	{
+		"id" : 24,
+		"name" : "Midj",
+		"externalId" : 46
+	},
+	{
+		"id" : 26,
+		"name" : "",
+		"externalId" : 60
+	},
+	{
+		"id" : 27,
+		"name" : "Presotto Italia",
+		"externalId" : 29
+	},
+	{
+		"id" : 28,
+		"name" : "Uffix",
+		"externalId" : 35
+	},
+	{
+		"id" : 29,
+		"name" : "Talenti",
+		"externalId" : 55
+	},
+	{
+		"id" : 30,
+		"name" : "Tomasella",
+		"externalId" : 39
+	},
+	{
+		"id" : 31,
+		"name" : "Nomon",
+		"externalId" : 50
+	},
+	{
+		"id" : 32,
+		"name" : "Jaipur Living",
+		"externalId" : 61
+	},
+	{
+		"id" : 33,
+		"name" : "Bonaldo",
+		"externalId" : 6
+	},
+	{
+		"id" : 34,
+		"name" : "Nicoline Italia",
+		"externalId" : 26
+	},
+	{
+		"id" : 35,
+		"name" : "Kartell",
+		"externalId" : 43
+	},
+	{
+		"id" : 36,
+		"name" : "Naos",
+		"externalId" : 25
+	},
+	{
+		"id" : 37,
+		"name" : "Foscarini",
+		"externalId" : 17
+	},
+	{
+		"id" : 44,
+		"name" : "San Giacomo",
+		"externalId" : 49
+	},
+	{
+		"id" : 45,
+		"name" : "Magniflex",
+		"externalId" : 21
+	}
+]
