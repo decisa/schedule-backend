@@ -1,3 +1,4 @@
+import fs from 'fs'
 import * as yup from 'yup'
 import { parseISO } from 'date-fns'
 import { Transaction } from 'sequelize'
@@ -221,3 +222,8 @@ export const isObjectWithExternalIdandConfigId = yup.object({
   externalId: yup.number().min(0).integer().required(),
   configId: yup.number().positive().integer().required(),
 })
+
+export function readJsonFromFile<T>(filePath: string):T {
+  const fileContent = fs.readFileSync(filePath, 'utf8')
+  return JSON.parse(fileContent) as T
+}
