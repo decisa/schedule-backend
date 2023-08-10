@@ -1,8 +1,5 @@
-// import { MigrationFn } from 'umzug';
-import { Model, QueryOptionsWithModel, Sequelize } from 'sequelize'
 import db from '../src/models'
 import type { Seeder } from '../umzug'
-import { DeliveryMethod } from '../src/models/Sales/DeliveryMethod/deliveryMethod'
 
 const deliveryMethods = [
   {
@@ -84,12 +81,6 @@ export const up: Seeder = async ({ context: queryInterface }) => {
       },
     )
   }
-
-  // queryInterface.upsert('DeliveryMethods', deliveryMethods, {)
-  // await queryInterface.bulkInsert('DeliveryMethods', deliveryMethods, {
-  //   // updateOnDuplicate: ['name', 'description'],
-
-  // })
 }
 
 export const down: Seeder = async ({ context: queryInterface }) => {
