@@ -45,6 +45,11 @@ export class Carrier extends Model<InferAttributes<Carrier>, InferCreationAttrib
 
   declare accountNumber: string | null
 
+  // timestamps
+  declare createdAt: CreationOptional<Date>
+
+  declare updatedAt: CreationOptional<Date>
+
   // tracking url template?
   // address ?
 
@@ -100,6 +105,15 @@ export function initCarrier(db: Sequelize) {
       contactName: DataTypes.STRING,
       email: DataTypes.STRING,
       phone: DataTypes.STRING,
+      // timestamps
+      createdAt: {
+        type: DataTypes.DATE,
+        defaultValue: DataTypes.NOW,
+      },
+      updatedAt: {
+        type: DataTypes.DATE,
+        defaultValue: DataTypes.NOW,
+      },
     },
     {
       sequelize: db,
