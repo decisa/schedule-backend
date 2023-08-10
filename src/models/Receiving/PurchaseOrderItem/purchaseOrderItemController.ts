@@ -3,6 +3,7 @@ import { Transaction } from 'sequelize'
 import { PurchaseOrderItem } from './purchaseOrderItem'
 import { isId, useTransaction } from '../../../utils/utils'
 import { ProductConfiguration } from '../../Sales/ProductConfiguration/productConfiguration'
+import { PurchaseOrder } from '../PurchaseOrder/purchaseOrder'
 
 // building elements of the PurchaseOrderItem type
 type PurchaseOrderItemCreational = {
@@ -210,16 +211,59 @@ export default class PurchaseOrderItemController {
     try {
       const parsedPurchaseOrderItem = validatePurchaseOrderItemCreate(purchaseOrderItemData)
 
+      // ensure data integrity
+      // find which orderId does the purchase order belong to
+      const purchaseOrderRecord = await PurchaseOrder.findByPk(parsedPurchaseOrderItem.purchaseOrderId, {
+        attributes: ['orderId', 'brandId'],
+        transaction,
+      })
+
+      // throw an error if purchase order not found
+      if (!purchaseOrderRecord) {
+        throw new Error('Purchase order not found')
+      }
+
+      // find a product configuration that belongs to the same order and has the same configuration id
+      // retrieve brandId as well
+      const configuration = await ProductConfiguration.findOne({
+        where: {
+          id: parsedPurchaseOrderItem.configurationId,
+          orderId: purchaseOrderRecord.orderId,
+        },
+        attributes: ['id', 'orderId'],
+        include: [
+          {
+            association: 'product',
+            attributes: ['brandId'],
+          },
+        ],
+        // attributes: ['id'],
+        transaction,
+      })
+
+      // if no such configuration found, throw an error
+      if (!configuration) {
+        throw new Error('Incompatible purchase order and product configuration. Must belong to the same order.')
+      }
+
+      // if brandId of the configuration and purchase order do not match, throw an error
+      if (configuration?.product?.brandId !== purchaseOrderRecord.brandId) {
+        throw new Error('Incompatible purchase order and product configuration. Must belong to the same brand.')
+      }
+
+      // console.log('configuration', configuration.toJSON())
+
+      // let x = 1
+      // if (x === 1) throw new Error('hahahahah')
+      // x = 2
+
+      // if everything is ok, create a purchase order item
       const result = await PurchaseOrderItem.create(parsedPurchaseOrderItem, {
         transaction,
       })
 
-      const final = await this.get(result.id, transaction)
-      if (!final) {
-        throw new Error('Internal Error: PurchaseOrderItem was not created')
-      }
       await commit()
-      return final
+      return result
     } catch (error) {
       await rollback()
       // rethrow the error for further handling
