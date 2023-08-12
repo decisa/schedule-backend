@@ -53,7 +53,7 @@ export function initMagentoAddress(db: Sequelize) {
       indexes: [
         {
           unique: true,
-          fields: ['addressId'],
+          fields: ['externalId'],
         },
       ],
     },
