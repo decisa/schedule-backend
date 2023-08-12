@@ -1,64 +1,9 @@
 import db from '../src/models'
+import { DeliveryMethod } from '../src/models/Sales/DeliveryMethod/deliveryMethod'
+import { readJsonFromFile } from '../src/utils/utils'
 import type { Seeder } from '../umzug'
 
-const deliveryMethods = [
-  {
-    id: 1,
-    name: 'Standard',
-    description: 'delivery to your doorstep without assembly',
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: 2,
-    name: 'Inside',
-    description: 'inside delivery without assembly',
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: 3,
-    name: 'White Glove',
-    description: 'inside delivery with assembly',
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: 4,
-    name: 'Premium',
-    description: 'premium white glove delivery with full assembly',
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: 5,
-    name: 'Service Call',
-    description: 'service appointment',
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: 6,
-    name: 'Pickup',
-    description: 'pick up appointment',
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: 7,
-    name: 'Special Delivery',
-    description: 'premium white glove delivery with full assembly',
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: 8,
-    name: 'Standard (International)',
-    description: 'delivery to your doorstep without assembly',
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-]
+const deliveryMethods = readJsonFromFile<DeliveryMethod[]>('./seeds/json/delivery-methods.json')
 
 export const up: Seeder = async ({ context: queryInterface }) => {
   // for (const method of deliveryMethods) {
