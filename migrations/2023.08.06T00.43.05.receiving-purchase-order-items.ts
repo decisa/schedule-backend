@@ -33,16 +33,18 @@ export const up: Migration = async ({ context: queryIterface }) => {
         model: 'PurchaseOrders',
         key: 'id',
       },
+      // if purchaseOrder is deleted, delete these records too
       onDelete: 'CASCADE',
       onUpdate: 'CASCADE',
     },
     configurationId: {
       type: DataTypes.INTEGER,
       references: {
-        model: 'Brands',
+        model: 'ProductConfigurations',
         key: 'id',
       },
-      onDelete: 'CASCADE',
+      // restrict deletion of configuration if purchaseOrderItems exist
+      onDelete: 'RESTRICT',
       onUpdate: 'CASCADE',
     },
   })
