@@ -21,7 +21,8 @@ export const up: Migration = async ({ context: queryIterface }) => {
         model: 'Carriers',
         key: 'id',
       },
-      onDelete: 'CASCADE',
+      // restrict deletion of carrier if shipments exist
+      onDelete: 'RESTRICT',
       onUpdate: 'CASCADE',
     },
 

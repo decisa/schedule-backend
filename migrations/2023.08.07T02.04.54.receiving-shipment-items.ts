@@ -22,6 +22,7 @@ export const up: Migration = async ({ context: queryIterface }) => {
         model: 'Shipments',
         key: 'id',
       },
+      // if shipment is deleted, delete these records too
       onDelete: 'CASCADE',
       onUpdate: 'CASCADE',
     },
@@ -31,7 +32,8 @@ export const up: Migration = async ({ context: queryIterface }) => {
         model: 'PurchaseOrderItems',
         key: 'id',
       },
-      onDelete: 'CASCADE',
+      // restrict deletion of purchaseOrderItem if shipments exist
+      onDelete: 'RESTRICT',
       onUpdate: 'CASCADE',
     },
 

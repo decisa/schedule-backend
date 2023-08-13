@@ -9,7 +9,8 @@ export const up: Migration = async ({ context: queryIterface }) => {
       model: 'Addresses',
       key: 'id',
     },
-    onDelete: 'CASCADE',
+    // if address is deleted, set defaultShippingId to null
+    onDelete: 'SET NULL',
     onUpdate: 'CASCADE',
   })
 }

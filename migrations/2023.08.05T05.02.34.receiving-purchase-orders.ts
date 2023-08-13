@@ -39,7 +39,8 @@ export const up: Migration = async ({ context: queryIterface }) => {
         model: 'Orders',
         key: 'id',
       },
-      onDelete: 'CASCADE',
+      // restrict deletion of order if purchase order exists
+      onDelete: 'RESTRICT',
       onUpdate: 'CASCADE',
     },
     brandId: {
@@ -48,7 +49,9 @@ export const up: Migration = async ({ context: queryIterface }) => {
         model: 'Brands',
         key: 'id',
       },
-      onDelete: 'CASCADE',
+      // set brandId to null if brand is deleted
+      // fixme: not sure if this is the right behavior
+      onDelete: 'SET NULL',
       onUpdate: 'CASCADE',
     },
   })

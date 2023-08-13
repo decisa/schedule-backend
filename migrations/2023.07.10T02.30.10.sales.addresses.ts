@@ -66,6 +66,7 @@ export const up: Migration = async ({ context: queryIterface }) => {
         model: 'Customers',
         key: 'id',
       },
+      // if customer is deleted, delete all of the addresses too
       onDelete: 'CASCADE',
       onUpdate: 'CASCADE',
     },

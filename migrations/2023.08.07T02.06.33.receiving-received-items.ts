@@ -25,7 +25,8 @@ export const up: Migration = async ({ context: queryIterface }) => {
         model: 'Shipments',
         key: 'id',
       },
-      onDelete: 'CASCADE',
+      // if items were received, don't allow to delete the shipment
+      onDelete: 'RESTRICT',
       onUpdate: 'CASCADE',
     },
     purchaseOrderItemId: {
@@ -34,7 +35,8 @@ export const up: Migration = async ({ context: queryIterface }) => {
         model: 'PurchaseOrderItems',
         key: 'id',
       },
-      onDelete: 'CASCADE',
+      // if items were received, don't allow to delete the purchase order item
+      onDelete: 'RESTRICT',
       onUpdate: 'CASCADE',
     },
 
