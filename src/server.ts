@@ -153,35 +153,35 @@ db
   .authenticate()
   // .sync({ force: true })
   // .sync()
-  .then(() => addConstraintIfNotExists({
-    dbInstance: db,
-    table: Order,
-    field: 'shippingAddressId',
-    refTable: OrderAddress,
-    refField: 'id',
-    onUpdate: 'CASCADE',
-    onDelete: 'SET NULL',
-  })
-    .then(() => addConstraintIfNotExists({
-      dbInstance: db,
-      table: Order,
-      field: 'billingAddressId',
-      refTable: OrderAddress,
-      refField: 'id',
-      onUpdate: 'CASCADE',
-      onDelete: 'CASCADE',
-    }))
-    .then(() => addConstraintIfNotExists({
-      dbInstance: db,
-      table: OrderAddress,
-      field: 'customerAddressId',
-      refTable: Address,
-      refField: 'id',
-      onUpdate: 'CASCADE',
-      onDelete: 'CASCADE',
-    }))
-    .then(() => createIfNotExistsProductSummaryView(db, 'ProductSummaryView'))
-    .catch((e) => console.log('there was an error:', e)))
+  // .then(() => addConstraintIfNotExists({
+  //   dbInstance: db,
+  //   table: Order,
+  //   field: 'shippingAddressId',
+  //   refTable: OrderAddress,
+  //   refField: 'id',
+  //   onUpdate: 'CASCADE',
+  //   onDelete: 'SET NULL',
+  // })
+  // .then(() => addConstraintIfNotExists({
+  //   dbInstance: db,
+  //   table: Order,
+  //   field: 'billingAddressId',
+  //   refTable: OrderAddress,
+  //   refField: 'id',
+  //   onUpdate: 'CASCADE',
+  //   onDelete: 'CASCADE',
+  // }))
+  // .then(() => addConstraintIfNotExists({
+  //   dbInstance: db,
+  //   table: OrderAddress,
+  //   field: 'customerAddressId',
+  //   refTable: Address,
+  //   refField: 'id',
+  //   onUpdate: 'CASCADE',
+  //   onDelete: 'CASCADE',
+  // }))
+  // .then(() => createIfNotExistsProductSummaryView(db, 'ProductSummaryView'))
+  // .catch((e) => console.log('there was an error:', e)))
   .then(async () => {
     // note: import orders:
 

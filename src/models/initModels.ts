@@ -27,6 +27,7 @@ import { initRouteStop } from './Delivery/RouteStop/routeStop'
 import { initRouteStopItem } from './Delivery/RouteStopItem/routeStopItem'
 import { initVehicle } from './Delivery/Vehicle/vehicle'
 import { initDeliveryMethod } from './Sales/DeliveryMethod/deliveryMethod'
+import { initProductSummaryView } from '../views/ProductSummary/productSummary'
 
 function initModels(db: Sequelize) {
   initMagentoOrder(db)
@@ -61,6 +62,9 @@ function initModels(db: Sequelize) {
   initRouteStopItem(db)
   initTripRoute(db)
   initVehicle(db)
+
+  // Views:
+  initProductSummaryView(db)
 }
 
 export default initModels
