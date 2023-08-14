@@ -35,6 +35,21 @@ purchaseOrderRouter.post('/item', (req, res) => {
   }
 })
 
+// add new purchase order item:
+purchaseOrderRouter.delete('/:id', (req, res) => {
+  try {
+    // const purchaseOrderItem = req.body as unknown
+    PurchaseOrderController.delete(req.params.id)
+      .then((result) => {
+        // const purchaseOrderItemResult = PurchaseOrderItemController.toJSON(result)
+        handleResponse(res, result)
+      })
+      .catch((err) => handleError(res, err))
+  } catch (error) {
+    handleError(res, error)
+  }
+})
+
 purchaseOrderRouter.get('/number/:poNumber', (req, res) => {
   try {
     PurchaseOrderController.getByPoNumber(req.params.poNumber)
