@@ -11,8 +11,8 @@ export const up: Seeder = async ({ context: queryInterface }) => {
   try {
     // use transaction to ensure that all or none of the data is inserted
     await queryInterface.sequelize.transaction(async (t) => {
-      await queryInterface.bulkInsert('PurchaseOrders', purchaseOrders, { transaction: t })
-      await queryInterface.bulkInsert('PurchaseOrderItems', purchaseOrderItems, { transaction: t })
+      // await queryInterface.bulkInsert('PurchaseOrders', purchaseOrders, { transaction: t })
+      // await queryInterface.bulkInsert('PurchaseOrderItems', purchaseOrderItems, { transaction: t })
       console.log('up')
     })
   } catch (error) {
