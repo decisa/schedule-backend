@@ -285,12 +285,10 @@ export default class PurchaseOrderItemController {
           stripUnknown: true,
           abortEarly: false,
         })
-        const purchaseOrderItem = await PurchaseOrderItem.create({
+        const purchaseOrderItem = await this.create({
           ...parsedPurchaseOrderItem,
           purchaseOrderId,
-        }, {
-          transaction,
-        })
+        }, transaction)
         result.push(purchaseOrderItem)
       }
 
