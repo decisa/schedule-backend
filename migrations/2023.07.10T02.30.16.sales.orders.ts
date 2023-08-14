@@ -62,8 +62,8 @@ export const up: Migration = async ({ context: queryIterface }) => {
         model: 'OrderAddresses',
         key: 'id',
       },
-      // restrict deletion of OrderAddress if it is used in an Order
-      onDelete: 'RESTRICT',
+      // set to NULL if address is deleted
+      onDelete: 'SET NULL',
       onUpdate: 'CASCADE',
     },
     billingAddressId: {
@@ -73,8 +73,8 @@ export const up: Migration = async ({ context: queryIterface }) => {
         model: 'OrderAddresses',
         key: 'id',
       },
-      // restrict deletion of OrderAddress if it is used in an Order
-      onDelete: 'RESTRICT',
+      // set to NULL if address is deleted
+      onDelete: 'SET NULL',
       onUpdate: 'CASCADE',
     },
     // timestamps: - no timestamps
