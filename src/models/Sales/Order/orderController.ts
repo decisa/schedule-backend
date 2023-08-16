@@ -19,6 +19,7 @@ import OrderAddressController, { OrderAddressCreate } from '../OrderAddress/orde
 import AddressController from '../Address/addressController'
 import { Brand } from '../../Brand/brand'
 import { DeliveryMethod } from '../DeliveryMethod/deliveryMethod'
+import { ProductSummaryView } from '../../../views/ProductSummary/productSummary'
 
 type OrderCreational = {
   id: number
@@ -825,6 +826,10 @@ export default class OrderController {
           attributes: ['qtyOrdered', 'qtyRefunded', 'qtyShippedExternal'],
           include: [
             {
+              model: ProductSummaryView,
+              as: 'summary',
+            },
+            {
               model: Product,
               as: 'product',
               attributes: ['name'],
@@ -832,7 +837,7 @@ export default class OrderController {
                 {
                   model: Brand,
                   as: 'brand',
-                  attributes: ['name'],
+                  attributes: ['name', 'id'],
                 },
               ],
             },

@@ -8,6 +8,32 @@ import ProductController, { ProductRead } from '../Product/productController'
 import ProductOptionController from '../ProductOption/productOptionController'
 import type { ProductOptionRead } from '../ProductOption/productOptionController'
 import { ProductOption } from '../ProductOption/productOption'
+import db from '../..'
+import { PurchaseOrderItem } from '../../Receiving/PurchaseOrderItem/purchaseOrderItem'
+import { ProductSummaryView } from '../../../views/ProductSummary/productSummary'
+import { Product } from '../Product/product'
+import { Brand } from '../../Brand/brand'
+
+// create sequleize literals to count quantities of products that were ordered, shipped, received, etc.
+const purchasedLiteral = () => {
+  printYellowLine()
+  const dbName = db.getDatabaseName()
+  console.log('dbName = ', dbName)
+  printYellowLine()
+  const { tableName: poTableName } = PurchaseOrderItem
+  // const poTableName = 'PurchaseOrderItem'
+  const qtyOrdered = PurchaseOrderItem.getAttributes().qtyOrdered.field || 'qtyOrdered'
+  const configurationId = PurchaseOrderItem.getAttributes().configurationId.field || 'configurationId'
+
+  // const { tableName: pcTableName } = ProductConfiguration
+  const pcTableName = 'ProductConfiguration'
+  const pcId = ProductConfiguration.getAttributes().id.field || 'id'
+  return db.literal(`(
+    SELECT SUM(${poTableName}.${qtyOrdered})
+    FROM ${poTableName}
+    WHERE ${poTableName}.${configurationId} = ${dbName}.${pcTableName}.${pcId}
+  )`)
+}
 
 type ProductConfigurationCreational = {
   id: number
@@ -324,12 +350,24 @@ export default class ProductConfigurationController {
   static async get(id: number | unknown, t?: Transaction): Promise<ProductConfiguration | null> {
     const productConfigurationId = isId.validateSync(id)
     const final = await ProductConfiguration.findByPk(productConfigurationId, {
-      include: [{
-        association: 'product',
-        include: [{
-          association: 'brand',
-        }],
-      }],
+      // attributes: {
+      //   include: [
+      //     [purchasedLiteral(), 'qtyPurchased'],
+      //   ],
+      // },
+      include: [
+        {
+          association: 'product',
+          include: [{
+            association: 'brand',
+          }],
+        },
+        {
+          model: ProductSummaryView,
+          as: 'summary',
+        },
+      ],
+      // group: `${ProductConfiguration.getAttributes().id.field || 'id'}`,
       transaction: t,
     })
     return final
@@ -343,22 +381,43 @@ export default class ProductConfigurationController {
   static async getWithOptions(id: number | unknown, t?: Transaction): Promise<ProductConfiguration | null> {
     const productConfigurationId = isId.validateSync(id)
     const final = await ProductConfiguration.findByPk(productConfigurationId, {
-      include: [{
-        association: 'product',
-        include: [{
-          association: 'brand',
-        }],
-      }, {
-        association: 'options',
-      }],
+      include: [
+        {
+          association: 'product',
+          include: [{
+            association: 'brand',
+          }],
+        },
+        {
+          model: ProductOption,
+          as: 'options',
+        },
+        {
+          model: ProductSummaryView,
+          as: 'summary',
+        },
+      ],
       order: [
         [
           { model: ProductOption, as: 'options' },
           'sortOrder', 'ASC',
         ],
       ],
+      // attributes: {
+      //   include: [
+      //     [purchasedLiteral(), 'qtyPurchased'],
+      //   ],
+      // },
+      // group: `${ProductConfiguration.getAttributes().id.field || 'id'}`,
       transaction: t,
     })
+    printYellowLine()
+    const x = ProductConfiguration.getAttributes().id
+    console.log(x)
+    console.log('type', x.type)
+    console.log('field', x.field)
+    console.log('references', x.references)
+
     return final
   }
 
@@ -373,14 +432,26 @@ export default class ProductConfigurationController {
       where: {
         orderId,
       },
-      include: [{
-        association: 'product',
-        include: [{
-          association: 'brand',
-        }],
-      }, {
-        association: 'options',
-      }],
+      include: [
+        {
+          model: Product,
+          as: 'product',
+          include: [
+            {
+              model: Brand,
+              as: 'brand',
+            },
+          ],
+        },
+        {
+          model: ProductOption,
+          as: 'options',
+        },
+        {
+          model: ProductSummaryView,
+          as: 'summary',
+        },
+      ],
       order: [
         [
           { model: ProductOption, as: 'options' },

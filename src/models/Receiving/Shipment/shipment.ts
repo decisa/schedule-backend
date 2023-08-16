@@ -34,13 +34,12 @@ import type { ReceivedItem } from '../ReceivedItems/receivedItems'
 export class Shipment extends Model<InferAttributes<Shipment>, InferCreationAttributes<Shipment>> {
   declare id: CreationOptional<number>
 
-  declare trackingNumber?: string
+  declare trackingNumber: string | null
 
-  declare eta?: string
+  // fixme: - should it be date or string?
+  declare eta: string | null
 
-  declare dateReceived?: string
-
-  declare dateShipped?: string
+  declare dateShipped: string | null
 
   // associations
 
@@ -120,7 +119,6 @@ export function initShipment(db: Sequelize) {
       },
       trackingNumber: DataTypes.STRING,
       eta: DataTypes.DATE,
-      dateReceived: DataTypes.DATE,
       dateShipped: DataTypes.DATE,
     },
     {
