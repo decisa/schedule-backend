@@ -41,6 +41,10 @@ export class Shipment extends Model<InferAttributes<Shipment>, InferCreationAttr
 
   declare dateShipped: string | null
 
+  declare createdAt: CreationOptional<Date>
+
+  declare updatedAt: CreationOptional<Date>
+
   // associations
 
   declare carrier?: NonAttribute<Carrier>
@@ -120,6 +124,8 @@ export function initShipment(db: Sequelize) {
       trackingNumber: DataTypes.STRING,
       eta: DataTypes.DATE,
       dateShipped: DataTypes.DATE,
+      createdAt: DataTypes.DATE,
+      updatedAt: DataTypes.DATE,
     },
     {
       sequelize: db,

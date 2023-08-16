@@ -27,6 +27,11 @@ export class ReceivedItem extends Model<InferAttributes<ReceivedItem>, InferCrea
 
   declare receivedDate: Date
 
+  // timestamps
+  declare createdAt: CreationOptional<Date>
+
+  declare updatedAt: CreationOptional<Date>
+
   // associations
 
   declare purchaseOrderItemId: ForeignKey<PurchaseOrderItem['id']>
@@ -75,6 +80,8 @@ export function initReceivedItem(db: Sequelize) {
         type: DataTypes.DATE,
         allowNull: false,
       },
+      createdAt: DataTypes.DATE,
+      updatedAt: DataTypes.DATE,
     },
     {
       sequelize: db,

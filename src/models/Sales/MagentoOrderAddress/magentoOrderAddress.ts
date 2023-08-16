@@ -62,12 +62,6 @@ export function initMagentoOrderAddress(db: Sequelize) {
     {
       timestamps: false,
       sequelize: db,
-      indexes: [
-        {
-          unique: true,
-          fields: ['externalId'],
-        },
-      ],
     },
   )
 }

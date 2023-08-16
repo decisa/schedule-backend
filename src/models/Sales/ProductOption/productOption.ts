@@ -26,7 +26,7 @@ export class ProductOption extends Model<InferAttributes<ProductOption>, InferCr
 
   // associations
   // declare configId:
-  declare configId?: ForeignKey<ProductConfiguration['id']>
+  declare configId: ForeignKey<ProductConfiguration['id']> // required
 
   declare configuration?: NonAttribute<ProductConfiguration>
 

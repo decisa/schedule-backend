@@ -62,9 +62,9 @@ export class ProductConfiguration extends Model<InferAttributes<ProductConfigura
 
   // associations
 
-  declare productId?: ForeignKey<Product['id']>
+  declare productId: ForeignKey<Product['id']> // required
 
-  declare orderId: ForeignKey<Order['id']>
+  declare orderId: ForeignKey<Order['id']> // required
 
   declare product?: NonAttribute<Product>
 

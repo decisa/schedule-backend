@@ -1,0 +1,58 @@
+[
+	{
+		"id" : 1,
+		"name" : "Standard",
+		"description" : "delivery to your doorstep without assembly",
+		"createdAt" : "2023-08-05 00:28:01",
+		"updatedAt" : "2023-08-05 00:28:01"
+	},
+	{
+		"id" : 2,
+		"name" : "Inside",
+		"description" : "inside delivery without assembly",
+		"createdAt" : "2023-08-05 00:28:01",
+		"updatedAt" : "2023-08-05 00:28:01"
+	},
+	{
+		"id" : 3,
+		"name" : "White Glove",
+		"description" : "inside delivery with assembly",
+		"createdAt" : "2023-08-05 00:28:01",
+		"updatedAt" : "2023-08-05 00:28:01"
+	},
+	{
+		"id" : 4,
+		"name" : "Premium",
+		"description" : "premium white glove delivery with full assembly",
+		"createdAt" : "2023-08-05 00:28:01",
+		"updatedAt" : "2023-08-05 00:28:01"
+	},
+	{
+		"id" : 5,
+		"name" : "Service Call",
+		"description" : "service appointment",
+		"createdAt" : "2023-08-05 00:28:01",
+		"updatedAt" : "2023-08-05 00:28:01"
+	},
+	{
+		"id" : 6,
+		"name" : "Pickup",
+		"description" : "pick up appointment",
+		"createdAt" : "2023-08-05 00:28:01",
+		"updatedAt" : "2023-08-05 00:28:01"
+	},
+	{
+		"id" : 7,
+		"name" : "Special Delivery",
+		"description" : "premium white glove delivery with full assembly",
+		"createdAt" : "2023-08-05 00:28:01",
+		"updatedAt" : "2023-08-05 00:28:01"
+	},
+	{
+		"id" : 8,
+		"name" : "Standard (International)",
+		"description" : "delivery to your doorstep without assembly",
+		"createdAt" : "2023-08-05 00:28:01",
+		"updatedAt" : "2023-08-05 00:28:01"
+	}
+]

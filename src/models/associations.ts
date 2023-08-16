@@ -26,6 +26,7 @@ import { RouteStop } from './Delivery/RouteStop/routeStop'
 import { Vehicle } from './Delivery/Vehicle/vehicle'
 import { RouteStopItem } from './Delivery/RouteStopItem/routeStopItem'
 import { DeliveryMethod } from './Sales/DeliveryMethod/deliveryMethod'
+import { ProductSummaryView } from '../views/ProductSummary/productSummary'
 
 function createAssociations() {
   // some orders have a magento record
@@ -416,6 +417,17 @@ function createAssociations() {
   TripRoute.belongsTo(Vehicle, {
     as: 'vehicle',
     foreignKey: 'vehicleId',
+  })
+
+  // associations for the Product Summary View:
+  ProductConfiguration.hasOne(ProductSummaryView, {
+    as: 'summary',
+    sourceKey: 'id',
+    foreignKey: 'configurationId',
+  })
+  ProductSummaryView.belongsTo(ProductConfiguration, {
+    as: 'product',
+    foreignKey: 'configurationId',
   })
 
   // note: for "super M:N relationship" need to add:

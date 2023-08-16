@@ -1,0 +1,13 @@
+[
+	{
+		"id" : 4,
+		"poNumber" : "11328",
+		"dateSubmitted" : "2023-07-02 15:23:16",
+		"productionWeeks" : null,
+		"status" : "in production",
+		"createdAt" : "2023-07-02 15:24:46",
+		"updatedAt" : "2023-07-02 15:24:46",
+		"orderId" : 1,
+		"brandId" : 2
+	}
+]
