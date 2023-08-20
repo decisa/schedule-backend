@@ -31,7 +31,8 @@ import type { Product } from '../Product/product'
 import type { Order } from '../Order/order'
 import type { ProductOption } from '../ProductOption/productOption'
 import type { RouteStop } from '../../Delivery/RouteStop/routeStop'
-import { PurchaseOrderItem } from '../../Receiving/PurchaseOrderItem/purchaseOrderItem'
+import type { PurchaseOrderItem } from '../../Receiving/PurchaseOrderItem/purchaseOrderItem'
+import type { DeliveryItem } from '../../Delivery/DeliveryItem/DeliveryItem'
 
 export class ProductConfiguration extends Model<InferAttributes<ProductConfiguration>, InferCreationAttributes<ProductConfiguration>> {
   declare id: CreationOptional<number>
@@ -76,12 +77,15 @@ export class ProductConfiguration extends Model<InferAttributes<ProductConfigura
 
   declare purchaseOrderItems?: NonAttribute<PurchaseOrderItem[]>
 
+  declare deliveryItems?: NonAttribute<DeliveryItem[]>
+
   declare public static associations: {
     product: Association<ProductConfiguration, Product>,
     order: Association<ProductConfiguration, Order>,
     options: Association<ProductConfiguration, ProductOption>,
     routeStops: Association<ProductConfiguration, RouteStop>,
     purchaseOrderItems: Association<ProductConfiguration, PurchaseOrderItem>,
+    deliveryItems: Association<ProductConfiguration, DeliveryItem>,
   }
 
   // MIXINS
@@ -161,6 +165,28 @@ export class ProductConfiguration extends Model<InferAttributes<ProductConfigura
   declare removePurchaseOrderItem: HasManyRemoveAssociationMixin<PurchaseOrderItem, number>
 
   declare removePurchaseOrderItems: HasManyRemoveAssociationsMixin<PurchaseOrderItem, number>
+
+  // One-to-many relationship between ProductConfiguration and DeliveryItems
+  // DeliveryItems:
+  declare createDeliveryItem: HasManyCreateAssociationMixin<DeliveryItem, 'configurationId'>
+
+  declare getDeliveryItems: HasManyGetAssociationsMixin<DeliveryItem>
+
+  declare countDeliveryItems: HasManyCountAssociationsMixin
+
+  declare hasDeliveryItem: HasManyHasAssociationMixin<DeliveryItem, number>
+
+  declare hasDeliveryItems: HasManyHasAssociationsMixin<DeliveryItem, number>
+
+  declare setDeliveryItems: HasManySetAssociationsMixin<DeliveryItem, number>
+
+  declare addDeliveryItem: HasManyAddAssociationMixin<DeliveryItem, number>
+
+  declare addDeliveryItems: HasManyAddAssociationsMixin<DeliveryItem, number>
+
+  declare removeDeliveryItem: HasManyRemoveAssociationMixin<DeliveryItem, number>
+
+  declare removeDeliveryItems: HasManyRemoveAssociationsMixin<DeliveryItem, number>
 }
 
 export function initProductConfigurations(db: Sequelize) {

@@ -39,6 +39,7 @@ import type { OrderComment } from '../OrderComment/orderComment'
 import type { ProductConfiguration } from '../ProductConfiguration/productConfiguration'
 import type { OrderAvailability } from '../../Delivery/OrderAvailability/orderAvailability'
 import type { DeliveryMethod } from '../DeliveryMethod/deliveryMethod'
+import type { Delivery } from '../../Delivery/Delivery/Delivery'
 
 console.log('running model module')
 
@@ -88,6 +89,8 @@ export class Order extends Model<InferAttributes<Order>, InferCreationAttributes
 
   declare orderAvailabilities?: NonAttribute<OrderAvailability[]>
 
+  declare deliveries?: NonAttribute<Delivery[]>
+
   declare public static associations: {
     magento: Association<Order, MagentoOrder>,
     customer: Association<Order, Customer>,
@@ -98,9 +101,33 @@ export class Order extends Model<InferAttributes<Order>, InferCreationAttributes
     products: Association<Order, ProductConfiguration>,
     orderAvailabilities: Association<Order, OrderAvailability>,
     deliveryMethod: Association<Order, DeliveryMethod>,
+    deliveries: Association<Order, Delivery>,
   }
 
   // MIXINS
+
+  // done: one-to-many relationship between Order and Delivery
+  // Deliveries:
+  declare createDelivery: HasManyCreateAssociationMixin<Delivery, 'orderId'>
+
+  declare getDeliveries: HasManyGetAssociationsMixin<Delivery>
+
+  declare countDeliveries: HasManyCountAssociationsMixin
+
+  declare hasDelivery: HasManyHasAssociationMixin<Delivery, number>
+
+  declare hasDeliveries: HasManyHasAssociationsMixin<Delivery, number>
+
+  declare setDeliveries: HasManySetAssociationsMixin<Delivery, number>
+
+  declare addDelivery: HasManyAddAssociationMixin<Delivery, number>
+
+  declare addDeliveries: HasManyAddAssociationsMixin<Delivery, number>
+
+  declare removeDelivery: HasManyRemoveAssociationMixin<Delivery, number>
+
+  declare removeDeliveries: HasManyRemoveAssociationsMixin<Delivery, number>
+
   // magento record:
   declare getMagento: HasOneGetAssociationMixin<MagentoOrder>
 

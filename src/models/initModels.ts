@@ -19,7 +19,7 @@ import { initReceivedItem } from './Receiving/ReceivedItems/receivedItems'
 import { initShipment } from './Receiving/Shipment/shipment'
 import { initShipmentItem } from './Receiving/ShipmentItem/shipmentItem'
 import { initTripRoute } from './Delivery/TripRoute/tripRoute'
-import { initDriver } from './Delivery/Driver/driver'
+import { initDriver } from './Delivery/Driver/Driver'
 import { initRouteDriver } from './Delivery/RouteDriver/routeDrivers'
 import { initDriverDowntime } from './Delivery/DriverDowntime/driverDowntime'
 import { initOrderAvailability } from './Delivery/OrderAvailability/orderAvailability'
@@ -28,6 +28,11 @@ import { initRouteStopItem } from './Delivery/RouteStopItem/routeStopItem'
 import { initVehicle } from './Delivery/Vehicle/vehicle'
 import { initDeliveryMethod } from './Sales/DeliveryMethod/deliveryMethod'
 import { initProductSummaryView } from '../views/ProductSummary/productSummary'
+import { initTrip } from './Delivery/Trip/Trip'
+import { initTripDriver } from './Delivery/TripDriver/TripDriver'
+import { initDeliveryItem } from './Delivery/DeliveryItem/DeliveryItem'
+import { initDelivery } from './Delivery/Delivery/Delivery'
+import { initDeliveryStop } from './Delivery/DeliveryStop/DeliveryStop'
 
 function initModels(db: Sequelize) {
   initMagentoOrder(db)
@@ -54,14 +59,20 @@ function initModels(db: Sequelize) {
   initShipmentItem(db)
 
   // Shipping:
-  initDriver(db)
   initDriverDowntime(db)
   initOrderAvailability(db)
   initRouteDriver(db)
   initRouteStop(db)
   initRouteStopItem(db)
   initTripRoute(db)
+
   initVehicle(db)
+  initDriver(db)
+  initTrip(db)
+  initTripDriver(db)
+  initDeliveryItem(db)
+  initDelivery(db)
+  initDeliveryStop(db)
 
   // Views:
   initProductSummaryView(db)

@@ -2,14 +2,17 @@ import {
   InferAttributes, Model, QueryTypes, Sequelize,
 } from 'sequelize'
 // import app from './app'
+import { add } from 'date-fns'
 import db from './models'
 import { Address } from './models/Sales/Address/address'
 import { Order } from './models/Sales/Order/order'
 import { OrderAddress } from './models/Sales/OrderAddress/orderAddress'
 import { printYellowLine } from './utils/utils'
-import { Driver } from './models/Delivery/Driver/driver'
+import { Driver } from './models/Delivery/Driver/Driver'
 import app from './app'
 import { createIfNotExistsProductSummaryView } from './views/ProductSummary/productSummary'
+import { Vehicle } from './models/Delivery/Vehicle/vehicle'
+import { Trip } from './models/Delivery/Trip/Trip'
 
 const PORT = process.env.PORT || 8080
 
@@ -116,6 +119,57 @@ async function addDrivers() {
   })
 }
 
+async function addTrip() {
+  await Trip.create({
+    name: 'Florida Trip',
+    start: new Date(2023, 7, 18, 8, 0, 0),
+    end: new Date(2023, 7, 20, 18, 0, 0),
+    vehicleId: 1,
+  })
+
+  await Trip.create({
+    start: new Date(2023, 7, 19, 8, 0, 0),
+    end: new Date(2023, 7, 19, 18, 0, 0),
+    vehicleId: 2,
+  })
+}
+
+async function addVehicles() {
+  await Vehicle.create({
+    name: 'Isuzu NPR',
+    height: 12 * 12 + 6,
+    width: 8 * 12,
+    length: 24 * 12,
+    gvw: 25995,
+    axles: 2,
+    semi: false,
+    hazMat: false,
+    // maxVolume: ,
+    make: 'Isuzu',
+    model: 'NPR',
+    year: 2021,
+    vin: '54DK6S16XMSG50274',
+    type: 'truck',
+  })
+
+  await Vehicle.create({
+    name: 'Van',
+    height: 10 * 12 + 6,
+    width: 8 * 12,
+    length: 170 + 48,
+    gvw: 12000,
+    axles: 2,
+    semi: false,
+    hazMat: false,
+    // maxVolume: ,
+    make: 'Mersedes-Benz',
+    model: 'Sprinter',
+    year: 2020,
+    vin: 'W1W5ECHY1LT037374',
+    type: 'van',
+  })
+}
+
 // function addOrder() {
 //   Customer.findByPk(2)
 //     .then((customer) => {
@@ -184,7 +238,33 @@ db
   // .catch((e) => console.log('there was an error:', e)))
   .then(async () => {
     // note: import orders:
+    // await addDrivers()
+    // await addVehicles()
+    // const trip = await Trip.findByPk(3, {
+    //   include: [
+    //     {
+    //       model: Driver,
+    //     },
+    //   ],
+    // })
+    // if (trip) {
+    //   // await trip.addDrivers([3])
+    //   console.log(trip.toJSON())
+    // }
 
+    const driver = await Driver.findByPk(1, {
+      include: [
+        {
+          model: Trip,
+          required: true,
+        },
+
+      ],
+    })
+
+    if (driver) {
+      console.log(driver.toJSON())
+    }
     printYellowLine('FINAL')
   })
   .then(() => {

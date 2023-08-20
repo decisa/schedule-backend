@@ -9,7 +9,7 @@
 import {
   InferAttributes, InferCreationAttributes, Model, Sequelize, ForeignKey,
 } from 'sequelize'
-import type { Driver } from '../Driver/driver'
+import type { Driver } from '../Driver/Driver'
 import type { TripRoute } from '../TripRoute/tripRoute'
 
 export class RouteDriver extends Model<InferAttributes<RouteDriver>, InferCreationAttributes<RouteDriver>> {

@@ -33,60 +33,65 @@ export class Vehicle extends Model<InferAttributes<Vehicle>, InferCreationAttrib
 
   declare name: string
 
-  declare height?: string
+  declare height: number | null // inches
 
-  declare width?: number
+  declare width: number | null
 
-  declare length?: number
+  declare length: number | null
 
-  declare gvw?: number
+  declare gvw: number | null
 
-  declare axles?: number
+  declare axles: number | null
 
-  declare semi?: boolean
+  declare semi: boolean // default false
 
-  declare hazMat?: boolean
+  declare hazMat: boolean // default false
 
-  declare maxVolume?: number
+  declare maxVolume: number | null
 
-  declare make?: string
+  declare make: string | null
 
-  declare model?: string
+  declare model: string | null
 
-  declare year?: number
+  declare year: number | null
 
-  declare vin?: string
+  declare vin: string | null
 
   declare type: VehicleType
 
-  // associations
-  declare tripRoutes?: NonAttribute<TripRoute[]>
+  declare createdAt: CreationOptional<Date>
 
-  declare public static associations: {
-    tripRoutes: Association<Vehicle, TripRoute>,
-  }
+  declare updatedAt: CreationOptional<Date>
+
+  // associations
+  // fixme: Redo ALL ASSOCIATIONS
+  // declare tripRoutes?: NonAttribute<TripRoute[]>
+
+  // declare public static associations: {
+  //   tripRoutes: Association<Vehicle, TripRoute>,
+  // }
 
   // MIXINS
   // tripRoutes:
-  declare createTripRoute: HasManyCreateAssociationMixin<TripRoute, 'vehicleId'>
+  // declare createTripRoute: HasManyCreateAssociationMixin<TripRoute, 'vehicleId'>
 
-  declare getTripRoutes: HasManyGetAssociationsMixin<TripRoute>
+  // declare getTripRoutes: HasManyGetAssociationsMixin<TripRoute>
 
-  declare countTripRoutes: HasManyCountAssociationsMixin
+  // declare countTripRoutes: HasManyCountAssociationsMixin
 
-  declare hasTripRoute: HasManyHasAssociationMixin<TripRoute, number>
+  // declare hasTripRoute: HasManyHasAssociationMixin<TripRoute, number>
 
-  declare hasTripRoutes: HasManyHasAssociationsMixin<TripRoute, number>
+  // declare hasTripRoutes: HasManyHasAssociationsMixin<TripRoute, number>
 
-  declare setTripRoutes: HasManySetAssociationsMixin<TripRoute, number>
+  // declare setTripRoutes: HasManySetAssociationsMixin<TripRoute, number>
 
-  declare addTripRoute: HasManyAddAssociationMixin<TripRoute, number>
+  // declare addTripRoute: HasManyAddAssociationMixin<TripRoute, number>
 
-  declare addTripRoutes: HasManyAddAssociationsMixin<TripRoute, number>
+  // declare addTripRoutes: HasManyAddAssociationsMixin<TripRoute, number>
 
-  declare removeTripRoute: HasManyRemoveAssociationMixin<TripRoute, number>
+  // declare removeTripRoute: HasManyRemoveAssociationMixin<TripRoute, number>
 
-  declare removeTripRoutes: HasManyRemoveAssociationsMixin<TripRoute, number>
+  // declare removeTripRoutes: HasManyRemoveAssociationsMixin<TripRoute, number>
 }
 
 export function initVehicle(db: Sequelize) {
@@ -121,6 +126,14 @@ export function initVehicle(db: Sequelize) {
       year: DataTypes.INTEGER,
       vin: DataTypes.STRING,
       type: DataTypes.STRING,
+      createdAt: {
+        type: DataTypes.DATE,
+        defaultValue: DataTypes.NOW,
+      },
+      updatedAt: {
+        type: DataTypes.DATE,
+        defaultValue: DataTypes.NOW,
+      },
     },
     {
       sequelize: db,

@@ -32,7 +32,7 @@ import {
   BelongsToCreateAssociationMixin,
   ForeignKey,
 } from 'sequelize'
-import type { Driver } from '../Driver/driver'
+import type { Driver } from '../Driver/Driver'
 import type { Vehicle } from '../Vehicle/vehicle'
 // import type { RouteDriver } from '../RouteDriver/routeDrivers'
 

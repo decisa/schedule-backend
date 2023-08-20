@@ -1,0 +1,54 @@
+plan:
+
+x0. brands
+x1. customers
+x2. MagentoCustomers
+x3. addresses
+x4. magento addresses
+x4b. add defaultShippingId to customer
+x5. order addresses (no order Id)
+x6. magentoOrderAddress
+x7. deliverymethods
+x8. delivery methods seeder
+x9. orders 
+x10. magentoOrders
+x11. orderComments
+x12. add orderId column to orderAddresses
+x13. products
+x14. product configurations
+x15. product options
+
+// RECEIVING
+x16. purchaseOrders
+x17. purchaseOrderItems
+x18. carriers
+x19. shipments
+x20. shipmentItems
+x21. recievedItems
+
+// DELIVERY
+x22. Vehicles
+x23. Drivers
+x24. Trips 
+25. TripDrivers // reference table for drivers on a trip
+27. StopTypes
+28. DeliveryStops // actual delivery on the schedule
+29. TripStops // reference table of all deliveries on a trip
+30. Deliveries // delivery work order of one sales order
+31. DeliveryItems // reference table of all items on a delivery
+32. DeliveryStopOrders // reference table of all orders on actual delivery
+
+28. driverdowntimes
+29. orderAvailabilities
+
+30. product summary views
+
+
+
+
+change all ids to unsigned
+
+test if cascade updates the brand after deletion
+
+a. fix vehicle associations and mixins
+b

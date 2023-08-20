@@ -1,29 +1,17 @@
-// Driver/driver.ts
-// 17. Drivers:
-// id (PK)
-// first_name
-// last_name
-// phone_number
-// email
-// DL_number
-// driver_role (e.g., 'Helper', 'Master Installer')
-// created_at
-// updated_at
-
-// done: Many-to-many relationship between TripRoutes and Drivers (through the RouteDrivers table).
-// done: One-to-many relationship between Drivers and DriverDowntime.
+// done: Many-to-many relationship between Tris and Drivers (through the TripDrivers table).
+// todo: One-to-many relationship between Drivers and DriverDowntime.
 import {
   Association, CreationOptional, InferAttributes, InferCreationAttributes, Model, NonAttribute, Sequelize, DataTypes,
-  HasManyCreateAssociationMixin,
-  HasManyGetAssociationsMixin,
-  HasManyCountAssociationsMixin,
-  HasManyHasAssociationMixin,
-  HasManyHasAssociationsMixin,
-  HasManySetAssociationsMixin,
-  HasManyAddAssociationMixin,
-  HasManyAddAssociationsMixin,
-  HasManyRemoveAssociationMixin,
-  HasManyRemoveAssociationsMixin,
+  // HasManyCreateAssociationMixin,
+  // HasManyGetAssociationsMixin,
+  // HasManyCountAssociationsMixin,
+  // HasManyHasAssociationMixin,
+  // HasManyHasAssociationsMixin,
+  // HasManySetAssociationsMixin,
+  // HasManyAddAssociationMixin,
+  // HasManyAddAssociationsMixin,
+  // HasManyRemoveAssociationMixin,
+  // HasManyRemoveAssociationsMixin,
   BelongsToManyAddAssociationMixin,
   BelongsToManyAddAssociationsMixin,
   BelongsToManyCountAssociationsMixin,
@@ -37,7 +25,7 @@ import {
   ,
 } from 'sequelize'
 import type { DriverDowntime } from '../DriverDowntime/driverDowntime'
-import type { TripRoute } from '../TripRoute/tripRoute'
+import type { Trip } from '../Trip/Trip'
 
 type DriverRole = 'Helper' | 'Master Installer'
 export class Driver extends Model<InferAttributes<Driver>, InferCreationAttributes<Driver>> {
@@ -47,68 +35,72 @@ export class Driver extends Model<InferAttributes<Driver>, InferCreationAttribut
 
   declare lastName: string
 
-  declare phoneNumber: string
+  declare phoneNumber: string | null
 
-  declare email?: string
+  declare email: string | null
 
-  declare licenceNumber: string
+  declare licenceNumber: string | null
 
   declare driverRole: DriverRole
 
+  declare createdAt: CreationOptional<Date>
+
+  declare updatedAt: CreationOptional<Date>
+
   // associations
+  // fixme: UPDATE ALL ASSOCIATIONS
 
-  declare driverDowntimes?: NonAttribute<DriverDowntime>
+  // declare driverDowntimes?: NonAttribute<DriverDowntime[]>
 
-  declare tripRoutes?: NonAttribute<TripRoute>
+  declare trips?: NonAttribute<Trip[]>
 
-  // declare orderId: ForeignKey<Order['id']>
   declare public static associations: {
-    driverDowntimes: Association<Driver, DriverDowntime>,
-    tripRoutes: Association<Driver, TripRoute>
+    // driverDowntimes: Association<Driver, DriverDowntime>,
+    trips: Association<Driver, Trip>
   }
 
   // MIXINS
+  // trips:
+  declare createTrip: BelongsToManyCreateAssociationMixin<Trip>
+
+  declare setTrips: BelongsToManySetAssociationsMixin<Trip, number>
+
+  declare removeTrip: BelongsToManyRemoveAssociationMixin<Trip, number>
+
+  declare removeTrips: BelongsToManyRemoveAssociationsMixin<Trip, number>
+
+  declare hasTrips: BelongsToManyHasAssociationsMixin<Trip, number>
+
+  declare hasTrip: BelongsToManyHasAssociationMixin<Trip, number>
+
+  declare getTrips: BelongsToManyGetAssociationsMixin<Trip>
+
+  declare countTrips: BelongsToManyCountAssociationsMixin
+
+  declare addTrips: BelongsToManyAddAssociationsMixin<Trip, number>
+
+  declare addTrip: BelongsToManyAddAssociationMixin<Trip, number>
+
   // driverDowntimes:
-  declare createDriverDowntime: HasManyCreateAssociationMixin<DriverDowntime, 'driverId'>
+  // declare createDriverDowntime: HasManyCreateAssociationMixin<DriverDowntime, 'driverId'>
 
-  declare getDriverDowntimes: HasManyGetAssociationsMixin<DriverDowntime>
+  // declare getDriverDowntimes: HasManyGetAssociationsMixin<DriverDowntime>
 
-  declare countDriverDowntimes: HasManyCountAssociationsMixin
+  // declare countDriverDowntimes: HasManyCountAssociationsMixin
 
-  declare hasDriverDowntime: HasManyHasAssociationMixin<DriverDowntime, number>
+  // declare hasDriverDowntime: HasManyHasAssociationMixin<DriverDowntime, number>
 
-  declare hasDriverDowntimes: HasManyHasAssociationsMixin<DriverDowntime, number>
+  // declare hasDriverDowntimes: HasManyHasAssociationsMixin<DriverDowntime, number>
 
-  declare setDriverDowntimes: HasManySetAssociationsMixin<DriverDowntime, number>
+  // declare setDriverDowntimes: HasManySetAssociationsMixin<DriverDowntime, number>
 
-  declare addDriverDowntime: HasManyAddAssociationMixin<DriverDowntime, number>
+  // declare addDriverDowntime: HasManyAddAssociationMixin<DriverDowntime, number>
 
-  declare addDriverDowntimes: HasManyAddAssociationsMixin<DriverDowntime, number>
+  // declare addDriverDowntimes: HasManyAddAssociationsMixin<DriverDowntime, number>
 
-  declare removeDriverDowntime: HasManyRemoveAssociationMixin<DriverDowntime, number>
+  // declare removeDriverDowntime: HasManyRemoveAssociationMixin<DriverDowntime, number>
 
-  declare removeDriverDowntimes: HasManyRemoveAssociationsMixin<DriverDowntime, number>
-
-  // tripRoutes:
-  declare createTripRoute: BelongsToManyCreateAssociationMixin<TripRoute>
-
-  declare setTripRoutes: BelongsToManySetAssociationsMixin<TripRoute, number>
-
-  declare removeTripRoute: BelongsToManyRemoveAssociationMixin<TripRoute, number>
-
-  declare removeTripRoutes: BelongsToManyRemoveAssociationsMixin<TripRoute, number>
-
-  declare hasTripRoutes: BelongsToManyHasAssociationsMixin<TripRoute, number>
-
-  declare hasTripRoute: BelongsToManyHasAssociationMixin<TripRoute, number>
-
-  declare getTripRoutes: BelongsToManyGetAssociationsMixin<TripRoute>
-
-  declare countTripRoutes: BelongsToManyCountAssociationsMixin
-
-  declare addTripRoutes: BelongsToManyAddAssociationsMixin<TripRoute, number>
-
-  declare addTripRoute: BelongsToManyAddAssociationMixin<TripRoute, number>
+  // declare removeDriverDowntimes: HasManyRemoveAssociationsMixin<DriverDowntime, number>
 }
 
 export function initDriver(db: Sequelize) {
@@ -130,7 +122,7 @@ export function initDriver(db: Sequelize) {
       },
       phoneNumber: {
         type: DataTypes.STRING,
-        allowNull: false,
+        allowNull: true,
       },
       email: {
         type: DataTypes.STRING,
@@ -143,11 +135,19 @@ export function initDriver(db: Sequelize) {
       },
       licenceNumber: {
         type: DataTypes.STRING,
-        allowNull: false,
+        allowNull: true,
       },
       driverRole: {
         type: DataTypes.STRING,
         allowNull: false,
+      },
+      createdAt: {
+        type: DataTypes.DATE,
+        defaultValue: DataTypes.NOW,
+      },
+      updatedAt: {
+        type: DataTypes.DATE,
+        defaultValue: DataTypes.NOW,
       },
     },
     {

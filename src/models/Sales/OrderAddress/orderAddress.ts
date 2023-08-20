@@ -20,6 +20,8 @@ import {
 import type { Order } from '../Order/order'
 import type { MagentoOrderAddress } from '../MagentoOrderAddress/magentoOrderAddress'
 import type { RouteStop } from '../../Delivery/RouteStop/routeStop'
+import type { Delivery } from '../../Delivery/Delivery/Delivery'
+import type { DeliveryStop } from '../../Delivery/DeliveryStop/DeliveryStop'
 
 export class OrderAddress extends Model<InferAttributes<OrderAddress>, InferCreationAttributes<OrderAddress>> {
   declare id: CreationOptional<number>
@@ -74,13 +76,63 @@ export class OrderAddress extends Model<InferAttributes<OrderAddress>, InferCrea
 
   declare routeStops?: NonAttribute<RouteStop[]>
 
+  declare deliveries?: NonAttribute<Delivery[]>
+
+  declare deliveryStops?: NonAttribute<DeliveryStop[]>
+
   declare public static associations: {
     order: Association<OrderAddress, Order>,
     magento: Association<OrderAddress, MagentoOrderAddress>,
     routeStops: Association<OrderAddress, RouteStop>,
+    deliveries: Association<OrderAddress, Delivery>,
+    deliveryStops: Association<OrderAddress, DeliveryStop>,
   }
 
   // MIXINS:
+  // todo: one-to-many relationship between OrderAddress and DeliveryStops
+  // deliveryStops:
+  declare createDeliveryStop: HasManyCreateAssociationMixin<DeliveryStop, 'shippingAddressId'>
+
+  declare getDeliveryStops: HasManyGetAssociationsMixin<DeliveryStop>
+
+  declare countDeliveryStops: HasManyCountAssociationsMixin
+
+  declare hasDeliveryStop: HasManyHasAssociationMixin<DeliveryStop, number>
+
+  declare hasDeliveryStops: HasManyHasAssociationsMixin<DeliveryStop, number>
+
+  declare setDeliveryStops: HasManySetAssociationsMixin<DeliveryStop, number>
+
+  declare addDeliveryStop: HasManyAddAssociationMixin<DeliveryStop, number>
+
+  declare addDeliveryStops: HasManyAddAssociationsMixin<DeliveryStop, number>
+
+  declare removeDeliveryStop: HasManyRemoveAssociationMixin<DeliveryStop, number>
+
+  declare removeDeliveryStops: HasManyRemoveAssociationsMixin<DeliveryStop, number>
+
+  // done: one-to-many relationship between OrderAddress and Delivery
+  // deliveries:
+  declare createDelivery: HasManyCreateAssociationMixin<Delivery, 'shippingAddressId'>
+
+  declare getDeliveries: HasManyGetAssociationsMixin<Delivery>
+
+  declare countDeliveries: HasManyCountAssociationsMixin
+
+  declare hasDelivery: HasManyHasAssociationMixin<Delivery, number>
+
+  declare hasDeliveries: HasManyHasAssociationsMixin<Delivery, number>
+
+  declare setDeliveries: HasManySetAssociationsMixin<Delivery, number>
+
+  declare addDelivery: HasManyAddAssociationMixin<Delivery, number>
+
+  declare addDeliveries: HasManyAddAssociationsMixin<Delivery, number>
+
+  declare removeDelivery: HasManyRemoveAssociationMixin<Delivery, number>
+
+  declare removeDeliveries: HasManyRemoveAssociationsMixin<Delivery, number>
+
   // order:
   declare getOrder: BelongsToGetAssociationMixin<Order>
 

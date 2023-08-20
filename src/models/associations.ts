@@ -18,7 +18,7 @@ import { PurchaseOrderItem } from './Receiving/PurchaseOrderItem/purchaseOrderIt
 import { ShipmentItem } from './Receiving/ShipmentItem/shipmentItem'
 import { ReceivedItem } from './Receiving/ReceivedItems/receivedItems'
 import { TripRoute } from './Delivery/TripRoute/tripRoute'
-import { Driver } from './Delivery/Driver/driver'
+import { Driver } from './Delivery/Driver/Driver'
 import { RouteDriver } from './Delivery/RouteDriver/routeDrivers'
 import { DriverDowntime } from './Delivery/DriverDowntime/driverDowntime'
 import { OrderAvailability } from './Delivery/OrderAvailability/orderAvailability'
@@ -27,6 +27,11 @@ import { Vehicle } from './Delivery/Vehicle/vehicle'
 import { RouteStopItem } from './Delivery/RouteStopItem/routeStopItem'
 import { DeliveryMethod } from './Sales/DeliveryMethod/deliveryMethod'
 import { ProductSummaryView } from '../views/ProductSummary/productSummary'
+import { Trip } from './Delivery/Trip/Trip'
+import { TripDriver } from './Delivery/TripDriver/TripDriver'
+import { Delivery } from './Delivery/Delivery/Delivery'
+import { DeliveryItem } from './Delivery/DeliveryItem/DeliveryItem'
+import { DeliveryStop } from './Delivery/DeliveryStop/DeliveryStop'
 
 function createAssociations() {
   // some orders have a magento record
@@ -330,17 +335,7 @@ function createAssociations() {
   })
 
   // note: *************  SHIPPING ****************
-  // Many-to-many relationship between TripRoutes and Drivers (through the RouteDrivers table)
-  TripRoute.belongsToMany(Driver, {
-    through: RouteDriver,
-    foreignKey: 'tripRouteId',
-    otherKey: 'driverId',
-  })
-  Driver.belongsToMany(TripRoute, {
-    through: RouteDriver,
-    foreignKey: 'driverId',
-    otherKey: 'tripRouteId',
-  })
+
   // One-to-many relationship between Drivers and DriverDowntime.
   Driver.hasMany(DriverDowntime, {
     as: 'driverDowntimes',
@@ -429,6 +424,107 @@ function createAssociations() {
     as: 'product',
     foreignKey: 'configurationId',
   })
+
+  // note: new Delivery Relations:
+  // One-to-many relationship between Vehicle and Trips
+  Vehicle.hasMany(Trip, {
+    as: 'trips',
+    foreignKey: 'vehicleId',
+  })
+  Trip.belongsTo(Vehicle, {
+    as: 'vehicle',
+    foreignKey: 'vehicleId',
+  })
+
+  // Many-to-many relationship between Trips and Drivers (through the TripDrivers table)
+  Trip.belongsToMany(Driver, {
+    through: TripDriver,
+    foreignKey: 'tripId',
+    otherKey: 'driverId',
+  })
+  Driver.belongsToMany(Trip, {
+    through: TripDriver,
+    foreignKey: 'driverId',
+    otherKey: 'tripId',
+  })
+
+  // One-to-many relationship between Delivery and DeliveryItems
+  Delivery.hasMany(DeliveryItem, {
+    as: 'deliveryItems',
+    foreignKey: 'deliveryId',
+  })
+  DeliveryItem.belongsTo(Delivery, {
+    as: 'delivery',
+    foreignKey: 'deliveryId',
+  })
+
+  // One-to-many relationship between ProductConfiguration and DeliveryItems
+  ProductConfiguration.hasMany(DeliveryItem, {
+    as: 'deliveryItems',
+    foreignKey: 'configurationId',
+  })
+  DeliveryItem.belongsTo(ProductConfiguration, {
+    as: 'product',
+    foreignKey: 'configurationId',
+  })
+
+  // one-to-many relationship between DeliveryStop and Delivery
+  DeliveryStop.hasMany(Delivery, {
+    as: 'deliveries',
+    foreignKey: 'deliveryStopId',
+  })
+  Delivery.belongsTo(DeliveryStop, {
+    as: 'deliveryStop',
+    foreignKey: 'deliveryStopId',
+  })
+
+  // one-to-many relationship between OrderAddress and Delivery
+  OrderAddress.hasMany(Delivery, {
+    as: 'deliveries',
+    foreignKey: 'shippingAddressId',
+  })
+  Delivery.belongsTo(OrderAddress, {
+    as: 'shippingAddress',
+    foreignKey: 'shippingAddressId',
+  })
+
+  // done: one-to-many relationship between Order and Delivery
+  Order.hasMany(Delivery, {
+    as: 'deliveries',
+    foreignKey: 'orderId',
+
+  })
+  Delivery.belongsTo(Order, {
+    as: 'order',
+    foreignKey: 'orderId',
+  })
+
+  // done: one-to-many relationship between OrderAddress and DeliveryStops
+  OrderAddress.hasMany(DeliveryStop, {
+    as: 'deliveryStops',
+    foreignKey: 'shippingAddressId',
+  })
+  DeliveryStop.belongsTo(OrderAddress, {
+    as: 'shippingAddress',
+    foreignKey: 'shippingAddressId',
+  })
+
+  // done: one-to-many relationship between Trip and DeliveryStops
+  Trip.hasMany(DeliveryStop, {
+    as: 'deliveryStops',
+    foreignKey: 'tripId',
+  })
+  DeliveryStop.belongsTo(Trip, {
+    as: 'trip',
+    foreignKey: 'tripId',
+  })
+
+  // User.belongsToMany(Profile, { through: Grant });
+  // Profile.belongsToMany(User, { through: Grant });
+  // User.hasMany(Grant);
+  // Grant.belongsTo(User);
+  // Profile.hasMany(Grant);
+  // Grant.belongsTo(Profile);
 
   // note: for "super M:N relationship" need to add:
   // note: one-to-many between RouteStops and RouteStopItems
