@@ -256,7 +256,7 @@ db
       include: [
         {
           model: Trip,
-          required: true,
+          // required: true,
         },
 
       ],

@@ -58,6 +58,7 @@ export class Trip extends Model<InferAttributes<Trip>, InferCreationAttributes<T
 
   declare public static associations: {
     vehicle: Association<Trip, Vehicle>,
+    drivers: Association<Trip, Driver>,
     deliveryStops: Association<Trip, DeliveryStop>,
   }
 

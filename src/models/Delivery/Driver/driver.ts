@@ -60,6 +60,7 @@ export class Driver extends Model<InferAttributes<Driver>, InferCreationAttribut
   }
 
   // MIXINS
+  // done: many-to-many relationship between Drivers and Trips (through the TripDrivers table).
   // trips:
   declare createTrip: BelongsToManyCreateAssociationMixin<Trip>
 
@@ -80,27 +81,6 @@ export class Driver extends Model<InferAttributes<Driver>, InferCreationAttribut
   declare addTrips: BelongsToManyAddAssociationsMixin<Trip, number>
 
   declare addTrip: BelongsToManyAddAssociationMixin<Trip, number>
-
-  // driverDowntimes:
-  // declare createDriverDowntime: HasManyCreateAssociationMixin<DriverDowntime, 'driverId'>
-
-  // declare getDriverDowntimes: HasManyGetAssociationsMixin<DriverDowntime>
-
-  // declare countDriverDowntimes: HasManyCountAssociationsMixin
-
-  // declare hasDriverDowntime: HasManyHasAssociationMixin<DriverDowntime, number>
-
-  // declare hasDriverDowntimes: HasManyHasAssociationsMixin<DriverDowntime, number>
-
-  // declare setDriverDowntimes: HasManySetAssociationsMixin<DriverDowntime, number>
-
-  // declare addDriverDowntime: HasManyAddAssociationMixin<DriverDowntime, number>
-
-  // declare addDriverDowntimes: HasManyAddAssociationsMixin<DriverDowntime, number>
-
-  // declare removeDriverDowntime: HasManyRemoveAssociationMixin<DriverDowntime, number>
-
-  // declare removeDriverDowntimes: HasManyRemoveAssociationsMixin<DriverDowntime, number>
 }
 
 export function initDriver(db: Sequelize) {

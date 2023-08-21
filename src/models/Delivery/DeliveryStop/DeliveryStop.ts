@@ -1,10 +1,3 @@
-// TODO: how do you track which items and quantities from the order are being delivered? how do you check if there are any outstanding items on the order?
-
-// done: One-to-many relationship between TripRoute and DeliveryStops.
-// done: One-to-many relationship between Orders and DeliveryStops.
-// done: One-to-many relationship between OrderAddresses and DeliveryStops. (nullable)
-// done: many-to-many relationship between DeliveryStops and ProductConfigurations through DeliveryStopItems
-
 import {
   Association, CreationOptional, InferAttributes, InferCreationAttributes, Model, NonAttribute, Sequelize, DataTypes, ForeignKey,
   HasManyCreateAssociationMixin,

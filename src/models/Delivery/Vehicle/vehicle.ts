@@ -1,17 +1,3 @@
-// Vehicle/vehicle.ts
-// 18. Vehicles:
-// id (PK)
-// type (e.g., 'truck', 'van')
-// make
-// model
-// year
-// maxVolume
-// gvw
-// size_restrictions (e.g., 'height', 'width', 'length')
-// created_at
-// updated_at
-
-// done: One-to-many relationship between Vehicles and TripRoutes.
 import {
   Association, CreationOptional, InferAttributes, InferCreationAttributes, Model, NonAttribute, Sequelize, DataTypes,
   HasManyCreateAssociationMixin,
@@ -25,7 +11,7 @@ import {
   HasManyRemoveAssociationMixin,
   HasManyRemoveAssociationsMixin,
 } from 'sequelize'
-import type { TripRoute } from '../TripRoute/tripRoute'
+import type { Trip } from '../Trip/Trip'
 
 type VehicleType = 'truck' | 'van'
 export class Vehicle extends Model<InferAttributes<Vehicle>, InferCreationAttributes<Vehicle>> {
@@ -64,34 +50,34 @@ export class Vehicle extends Model<InferAttributes<Vehicle>, InferCreationAttrib
   declare updatedAt: CreationOptional<Date>
 
   // associations
-  // fixme: Redo ALL ASSOCIATIONS
-  // declare tripRoutes?: NonAttribute<TripRoute[]>
+  declare trips?: NonAttribute<Trip[]>
 
-  // declare public static associations: {
-  //   tripRoutes: Association<Vehicle, TripRoute>,
-  // }
+  declare public static associations: {
+    trips: Association<Vehicle, Trip>,
+  }
 
   // MIXINS
-  // tripRoutes:
-  // declare createTripRoute: HasManyCreateAssociationMixin<TripRoute, 'vehicleId'>
+  // One-to-many relationship between Vehicle and Trips
+  // Trips:
+  declare createTrip: HasManyCreateAssociationMixin<Trip, 'vehicleId'>
 
-  // declare getTripRoutes: HasManyGetAssociationsMixin<TripRoute>
+  declare getTrips: HasManyGetAssociationsMixin<Trip>
 
-  // declare countTripRoutes: HasManyCountAssociationsMixin
+  declare countTrips: HasManyCountAssociationsMixin
 
-  // declare hasTripRoute: HasManyHasAssociationMixin<TripRoute, number>
+  declare hasTrip: HasManyHasAssociationMixin<Trip, number>
 
-  // declare hasTripRoutes: HasManyHasAssociationsMixin<TripRoute, number>
+  declare hasTrips: HasManyHasAssociationsMixin<Trip, number>
 
-  // declare setTripRoutes: HasManySetAssociationsMixin<TripRoute, number>
+  declare setTrips: HasManySetAssociationsMixin<Trip, number>
 
-  // declare addTripRoute: HasManyAddAssociationMixin<TripRoute, number>
+  declare addTrip: HasManyAddAssociationMixin<Trip, number>
 
-  // declare addTripRoutes: HasManyAddAssociationsMixin<TripRoute, number>
+  declare addTrips: HasManyAddAssociationsMixin<Trip, number>
 
-  // declare removeTripRoute: HasManyRemoveAssociationMixin<TripRoute, number>
+  declare removeTrip: HasManyRemoveAssociationMixin<Trip, number>
 
-  // declare removeTripRoutes: HasManyRemoveAssociationsMixin<TripRoute, number>
+  declare removeTrips: HasManyRemoveAssociationsMixin<Trip, number>
 }
 
 export function initVehicle(db: Sequelize) {
