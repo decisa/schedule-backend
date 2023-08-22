@@ -6,8 +6,8 @@
   "scripts": {
     "dev": "ts-node-dev --respawn src/server.ts",
     "migrate": "ts-node migrator.ts",
-    "migrate-up": "ts-node migrator.ts up",
-    "migrate-down": "ts-node migrator.ts down",
+    "migrate-up": "ts-node migrator.ts up --step 1",
+    "migrate-down": "ts-node migrator.ts down --step 1",
     "seeder": "ts-node seeder.ts",
     "seeder-up": "ts-node seeder.ts up",
     "seeder-down": "ts-node seeder.ts down",

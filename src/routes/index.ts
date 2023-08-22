@@ -13,6 +13,7 @@ import orderAddressRouter from './orderAddresses/orderAddressRoutes'
 import orderRouter from './orders/orderRoutes'
 import deliveryMethodRouter from './deliveryMethods/deliveryMethodRoutes'
 import purchaseOrderRouter from './purchaseOrders/purchaseOrderRoutes'
+import deliveryRouter from './deliveries/deliveryRoutes'
 
 const rootRouter = express.Router()
 
@@ -31,6 +32,7 @@ rootRouter.use('/orderaddress', orderAddressRouter)
 rootRouter.use('/order', orderRouter)
 rootRouter.use('/deliverymethod', deliveryMethodRouter)
 rootRouter.use('/purchaseorder', purchaseOrderRouter)
+rootRouter.use('/delivery', deliveryRouter)
 
 // create proxy to forward requests to magento:
 rootRouter.use('/2031360', (req, res, next) => {

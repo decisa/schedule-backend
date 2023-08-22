@@ -519,13 +519,6 @@ function createAssociations() {
     foreignKey: 'tripId',
   })
 
-  // User.belongsToMany(Profile, { through: Grant });
-  // Profile.belongsToMany(User, { through: Grant });
-  // User.hasMany(Grant);
-  // Grant.belongsTo(User);
-  // Profile.hasMany(Grant);
-  // Grant.belongsTo(Profile);
-
   // note: for "super M:N relationship" need to add:
   // note: one-to-many between RouteStops and RouteStopItems
   // note: one-to-many between ProductConfigurations and RouteStopItems"

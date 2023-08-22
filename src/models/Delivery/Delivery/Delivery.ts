@@ -20,9 +20,7 @@ import type { OrderAddress } from '../../Sales/OrderAddress/orderAddress'
 import type { Order } from '../../Sales/Order/order'
 import type { DeliveryStop } from '../DeliveryStop/DeliveryStop'
 import type { DeliveryItem } from '../DeliveryItem/DeliveryItem'
-
-export const deliveryStatuses = ['pending', 'scheduled', 'confirmed'] as const
-export type DeliveryStatus = typeof deliveryStatuses[number]
+import type { DeliveryStatus } from './DeliveryController'
 
 export class Delivery extends Model<InferAttributes<Delivery>, InferCreationAttributes<Delivery>> {
   declare id: CreationOptional<number>
