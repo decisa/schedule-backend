@@ -74,6 +74,22 @@ export const up: Migration = async ({ context: queryIterface }) => {
   })
 
   // add constraint on shippingAddressId and orderId to match
+  // note: sequelize is missing type declaration. need to modify file in node_modules/sequelize/types/dialects/abstract/query-interface.d.ts
+  /*
+  export interface AddForeignKeyConstraintOptions extends BaseConstraintOptions {
+    type: 'foreign key';
+    references?: {
+      table: TableName;
+      field: string;
+    } | {
+      table: TableName;
+      fields: string[];
+    };
+    onDelete: string;
+    onUpdate: string;
+    deferrable?: Deferrable;
+  }
+  */
   await queryIterface.addConstraint('Deliveries', {
     fields: ['shippingAddressId', 'orderId'],
     type: 'foreign key',
