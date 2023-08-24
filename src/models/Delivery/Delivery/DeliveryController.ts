@@ -166,7 +166,8 @@ export function validateDeliveryUpdate(object: unknown): DeliveryUpdate {
 }
 
 function deliveryToJson(deliveryRaw: Delivery): DeliveryRead {
-  const deliveryData: DeliveryRead = deliveryRaw.toJSON()
+  const { estimatedDurationString, ...deliveryData } = deliveryRaw.toJSON()
+  // delete deliveryData.estimatedDurationString
   // const result = {
   //   ...purchaseOrderData,
   //   products,
@@ -208,8 +209,22 @@ export default class DeliveryController {
    * @returns {Delivery} Delivery object or null
    */
   static async get(id: number | unknown, t?: Transaction): Promise<Delivery | null> {
-    const purchaseOrderId = isId.validateSync(id)
-    const final = await Delivery.findByPk(purchaseOrderId, {
+    const deliveryId = isId.validateSync(id)
+    const final = await Delivery.findByPk(deliveryId, {
+      include: [
+        {
+          association: 'order',
+        },
+        {
+          association: 'shippingAddress',
+        },
+        {
+          association: 'deliveryStop',
+        },
+      ],
+      attributes: {
+        exclude: ['orderId', 'shippingAddressId', 'deliveryStopId'],
+      },
       transaction: t,
     })
     return final
