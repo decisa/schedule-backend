@@ -2,7 +2,9 @@ import * as yup from 'yup'
 import { ForeignKeyConstraintError, Transaction } from 'sequelize'
 import { de } from 'date-fns/locale'
 import { Delivery } from './Delivery'
-import { isId, printYellowLine, useTransaction } from '../../../utils/utils'
+import { isId, useTransaction } from '../../../utils/utils'
+import OrderController, { OrderRead } from '../../Sales/Order/orderController'
+import OrderAddressController, { OrderAddressMagentoRead } from '../../Sales/OrderAddress/orderAddressContoller'
 
 export const deliveryStatuses = ['pending', 'scheduled', 'confirmed'] as const
 export type DeliveryStatus = typeof deliveryStatuses[number]
@@ -32,9 +34,12 @@ type DeliveryFK = {
   deliveryStopId: number | null
 }
 
-// type DeliveryAssociations = {
-// items?: NonAttribute<DeliveryItem[]>
-// }
+type DeliveryAssociations = {
+  order: OrderRead
+  shippingAddress: OrderAddressMagentoRead
+  // deliveryStop: DeliveryStopRead
+  // items: DeliveryItemRead[]
+}
 
 // Note: DATA TYPES
 export type DeliveryCreate =
@@ -50,6 +55,18 @@ export type DeliveryUpdate = Partial<DeliveryCreate>
 export type DeliveryRead = Omit<Required<DeliveryCreate>, 'estimatedDurationString'> & {
   // items?: DeliveryItem[],
   estimatedDuration: [number, number] | null
+} & Partial<DeliveryAssociations>
+
+const validateTupleString = (value: string) => {
+  const split = value.split(',')
+  if (split.length !== 2) {
+    throw new Error('Should be a tuple of 2 numbers')
+  }
+  const [min, max] = split.map((x) => parseInt(x, 10))
+  if (Number.isNaN(min) || Number.isNaN(max) || min === undefined || max === undefined) {
+    throw new Error('Should be a tuple of 2 numbers')
+  }
+  return true
 }
 
 const deliverySchemaCreate: yup.ObjectSchema<DeliveryCreate> = yup.object({
@@ -141,10 +158,7 @@ export function validateDeliveryCreate(object: unknown): Omit<DeliveryCreate, 'e
   // check validity of the estimatedDurationString:
   if (delivery.estimatedDurationString) {
     try {
-      const [min, max] = delivery.estimatedDurationString.split(',').map((x) => parseInt(x, 10))
-      if (Number.isNaN(min) || Number.isNaN(max)) {
-        throw new Error('Delivery malformed data: estimatedDurationString should be a tuple of 2 numbers')
-      }
+      validateTupleString(delivery.estimatedDurationString)
     } catch (error) {
       throw new Error('Delivery malformed data: estimatedDurationString should be a tuple of 2 numbers')
     }
@@ -157,16 +171,51 @@ export function validateDeliveryCreate(object: unknown): Omit<DeliveryCreate, 'e
   return result
 }
 
-export function validateDeliveryUpdate(object: unknown): DeliveryUpdate {
-  const delivery = deliverySchemaUpdate.validateSync(object, {
-    stripUnknown: true,
-    abortEarly: false,
-  }) satisfies DeliveryUpdate
+export function validateDeliveryUpdate(object: unknown): Omit<Partial<DeliveryCreate>, 'estimatedDuration'> {
+  const delivery = deliverySchemaUpdate
+    .omit(['createdAt', 'updatedAt', 'id'])
+    .validateSync(object, {
+      stripUnknown: true,
+      abortEarly: false,
+    }) satisfies Partial<DeliveryCreate>
+
+  // check if estimatedDuration was provided. if provided, then use it as a source of truth, convert to estimatedDurationString and delete the virtual field estimatedDuration
+  if (delivery.estimatedDuration) {
+    delivery.estimatedDurationString = delivery.estimatedDuration.join(',')
+    delete delivery.estimatedDuration
+  }
+  // check for null
+  if (delivery.estimatedDuration === null) {
+    delivery.estimatedDurationString = null
+    delete delivery.estimatedDuration
+  }
+
+  // check validity of the estimatedDurationString:
+  if (delivery.estimatedDurationString) {
+    try {
+      validateTupleString(delivery.estimatedDurationString)
+    } catch (error) {
+      throw new Error('Delivery malformed data: estimatedDurationString should be a tuple of 2 numbers')
+    }
+  }
   return delivery
 }
 
 function deliveryToJson(deliveryRaw: Delivery): DeliveryRead {
   const { estimatedDurationString, ...deliveryData } = deliveryRaw.toJSON()
+  const result: DeliveryRead = {
+    ...deliveryData,
+  }
+  // if address record is present in model instance, convert it to JSON using proper controller
+  // let shippingAddress: OrderAddressMagentoRead | null = null
+  if (deliveryRaw.shippingAddress) {
+    result.shippingAddress = OrderAddressController.toJSON(deliveryRaw.shippingAddress)
+  }
+
+  // if order record is present in model instance, convert it to JSON using proper controller
+  if (deliveryRaw.order) {
+    result.order = OrderController.toJSON(deliveryRaw.order)
+  }
   // delete deliveryData.estimatedDurationString
   // const result = {
   //   ...purchaseOrderData,
@@ -175,7 +224,7 @@ function deliveryToJson(deliveryRaw: Delivery): DeliveryRead {
   // }
   // return result
 
-  return deliveryData
+  return result
 }
 
 export default class DeliveryController {
@@ -357,33 +406,33 @@ export default class DeliveryController {
   //   }
   // }
 
-  // /**
-  //    * update purchaseOrder record in DB.
-  //    * @param {number | unknown} purchaseOrderId - id of the purchaseOrder record to update in DB
-  //    * @param {unknown} purchaseOrderData - update data for purchase order record
-  //    * @returns {address} complete Updated purchasde order object or throws error
-  //    */
-  // static async update(purchaseOrderId: number | unknown, purchaseOrderData: unknown, t?: Transaction): Promise<PurchaseOrder> {
-  //   const [transaction, commit, rollback] = await useTransaction(t)
-  //   try {
-  //     const parsedPurchaseOrderUpdate = validatePurchaseOrderUpdate(purchaseOrderData)
+  /**
+     * update Delivery record in DB.
+     * @param {number | unknown} deliveryId - id of the Delivery record to update in DB
+     * @param {unknown} deliveryData - update data for delivery record
+     * @returns {Delivery}  updated delivery object or throws error
+     */
+  static async update(deliveryId: number | unknown, deliveryData: unknown, t?: Transaction): Promise<Delivery> {
+    const [transaction, commit, rollback] = await useTransaction(t)
+    try {
+      const parsedDeliveryUpdate = validateDeliveryUpdate(deliveryData)
 
-  //     const id = isId.validateSync(purchaseOrderId)
-  //     const purchaseOrderRecord = await PurchaseOrder.findByPk(id, { transaction })
-  //     if (!purchaseOrderRecord) {
-  //       throw new Error('purchaseOrder does not exist')
-  //     }
+      const id = isId.validateSync(deliveryId)
+      const deliveryRecord = await Delivery.findByPk(id, { transaction })
+      if (!deliveryRecord) {
+        throw new Error('Delivery does not exist')
+      }
 
-  //     await purchaseOrderRecord.update(parsedPurchaseOrderUpdate, { transaction })
+      await deliveryRecord.update(parsedDeliveryUpdate, { transaction })
 
-  //     await commit()
-  //     return purchaseOrderRecord
-  //   } catch (error) {
-  //     await rollback()
-  //     // rethrow the error for further handling
-  //     throw error
-  //   }
-  // }
+      await commit()
+      return deliveryRecord
+    } catch (error) {
+      await rollback()
+      // rethrow the error for further handling
+      throw error
+    }
+  }
 
   // /**
   //  * upsert(insert or create) purchaseOrder record in DB. poNumber is required
@@ -417,29 +466,29 @@ export default class DeliveryController {
   //   }
   // }
 
-  // /**
-  //  * delete PurchaseOrder record with a given id from DB.
-  //  * @param {unknown} id - purchaseOrderId
-  //  * @returns {boolean} true if PurchaseOrder was deleted
-  //  */
-  // static async delete(id: number | unknown, t?: Transaction): Promise<boolean> {
-  //   const [transaction, commit, rollback] = await useTransaction(t)
-  //   try {
-  //     const purchaseOrderId = isId.validateSync(id)
-  //     const final = await PurchaseOrder.destroy({
-  //       where: {
-  //         id: purchaseOrderId,
-  //       },
-  //       transaction,
-  //     })
-  //     await commit()
-  //     return final === 1
-  //   } catch (error) {
-  //     await rollback()
-  //     // rethrow the error for further handling
-  //     throw error
-  //   }
-  // }
+  /**
+   * delete Delivery record with a given id from DB.
+   * @param {unknown} id - deliveryId
+   * @returns {boolean} true if Delivery was deleted
+   */
+  static async delete(id: number | unknown, t?: Transaction): Promise<boolean> {
+    const [transaction, commit, rollback] = await useTransaction(t)
+    try {
+      const deliveryId = isId.validateSync(id)
+      const final = await Delivery.destroy({
+        where: {
+          id: deliveryId,
+        },
+        transaction,
+      })
+      await commit()
+      return final === 1
+    } catch (error) {
+      await rollback()
+      // rethrow the error for further handling
+      throw error
+    }
+  }
 
   // static async searchPurchaseOrders(term: string, t?: Transaction) {
   //   const wildCardTerm = `%${term}%`
