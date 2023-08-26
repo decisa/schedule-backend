@@ -22,6 +22,23 @@ deliveryRouter.get('/:id', (req, res) => {
   }
 })
 
+// delete delivery record by id
+deliveryRouter.delete('/:id', (req, res) => {
+  try {
+    DeliveryController.delete(req.params.id)
+      .then((deleted) => {
+        if (!deleted) {
+          res.status(404).json({ message: 'Delivery id was not found' })
+          return
+        }
+        handleResponse(res, deleted)
+      })
+      .catch((err) => handleError(res, err))
+  } catch (error) {
+    handleError(res, error)
+  }
+})
+
 // create delivery record
 deliveryRouter.post('/', (req, res) => {
   try {
@@ -32,6 +49,23 @@ deliveryRouter.post('/', (req, res) => {
       .then((result) => {
         const customerResult = DeliveryController.toJSON(result)
         handleResponse(res, customerResult)
+      })
+      .catch((err) => handleError(res, err))
+  } catch (error) {
+    handleError(res, error)
+  }
+})
+
+// update delivery record
+deliveryRouter.patch('/:id', (req, res) => {
+  try {
+    // const id = 1
+    // console.log('params', req.params)
+    const deliveryData = req.body as unknown
+    DeliveryController.update(req.params.id, deliveryData)
+      .then((result) => {
+        const deliveryResult = DeliveryController.toJSON(result)
+        handleResponse(res, deliveryResult)
       })
       .catch((err) => handleError(res, err))
   } catch (error) {
