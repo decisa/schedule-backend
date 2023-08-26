@@ -4,7 +4,7 @@ import { Migration } from '../umzug'
 
 export const up: Migration = async ({ context: queryIterface }) => {
   // reference table for drivers on a trip
-  await queryIterface.createTable('DelilveryItems', {
+  await queryIterface.createTable('DeliveryItems', {
     id: {
       type: DataTypes.INTEGER,
       unique: true,
@@ -54,5 +54,5 @@ export const up: Migration = async ({ context: queryIterface }) => {
 }
 
 export const down: Migration = async ({ context: queryIterface }) => {
-  await queryIterface.dropTable('DelilveryItems')
+  await queryIterface.dropTable('DeliveryItems')
 }
