@@ -128,6 +128,7 @@ export function initDelivery(db: Sequelize) {
         defaultValue: '0,0',
         get() {
           const rawValue = this.getDataValue('estimatedDurationString') // as unknown as string
+          if (rawValue === null) { return null }
           const result = (rawValue || '0,0').split(',').map(Number)
           console.log('result', result)
           return result
