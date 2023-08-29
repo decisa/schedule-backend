@@ -5,6 +5,10 @@ import { Delivery } from './Delivery'
 import { isId, useTransaction } from '../../../utils/utils'
 import OrderController, { OrderRead } from '../../Sales/Order/orderController'
 import OrderAddressController, { OrderAddressMagentoRead } from '../../Sales/OrderAddress/orderAddressContoller'
+import DeliveryItemController, { DeliveryItemRead } from '../DeliveryItem/DeliveryItemController'
+import { ProductConfiguration } from '../../Sales/ProductConfiguration/productConfiguration'
+import { ProductOption } from '../../Sales/ProductOption/productOption'
+import { DeliveryItem } from '../DeliveryItem/DeliveryItem'
 
 export const deliveryStatuses = ['pending', 'scheduled', 'confirmed'] as const
 export type DeliveryStatus = typeof deliveryStatuses[number]
@@ -38,7 +42,7 @@ type DeliveryAssociations = {
   order: OrderRead
   shippingAddress: OrderAddressMagentoRead
   // deliveryStop: DeliveryStopRead
-  // items: DeliveryItemRead[]
+  items: DeliveryItemRead[]
 }
 
 // Note: DATA TYPES
@@ -216,6 +220,11 @@ function deliveryToJson(deliveryRaw: Delivery): DeliveryRead {
   if (deliveryRaw.order) {
     result.order = OrderController.toJSON(deliveryRaw.order)
   }
+
+  // if items are present in model instance, convert it to JSON using proper controller
+  if (deliveryRaw.items) {
+    result.items = DeliveryItemController.toJSON(deliveryRaw.items)
+  }
   // delete deliveryData.estimatedDurationString
   // const result = {
   //   ...purchaseOrderData,
@@ -270,6 +279,34 @@ export default class DeliveryController {
         {
           association: 'deliveryStop',
         },
+        {
+          association: 'items',
+          include: [
+            {
+              association: 'product',
+              include: [
+                {
+                  association: 'product',
+                  include: [{
+                    association: 'brand',
+                  }],
+                },
+                {
+                  model: ProductOption,
+                  as: 'options',
+                },
+              ],
+            },
+          ],
+        },
+      ],
+      order: [
+        [
+          { model: DeliveryItem, as: 'items' },
+          { model: ProductConfiguration, as: 'product' },
+          { model: ProductOption, as: 'options' },
+          'sortOrder', 'ASC',
+        ],
       ],
       attributes: {
         exclude: ['orderId', 'shippingAddressId', 'deliveryStopId'],

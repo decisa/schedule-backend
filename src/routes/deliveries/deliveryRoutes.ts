@@ -1,8 +1,44 @@
 import express from 'express'
 import { handleError, handleResponse } from '../routeUtils'
 import DeliveryController from '../../models/Delivery/Delivery/DeliveryController'
+import DeliveryItemController from '../../models/Delivery/DeliveryItem/DeliveryItemController'
 
 const deliveryRouter = express.Router()
+
+// create delivery item record
+deliveryRouter.post('/item', (req, res) => {
+  try {
+    // const id = 1
+    // console.log('params', req.params)
+    const deliveryItemData = req.body as unknown
+    DeliveryItemController.create(deliveryItemData)
+      .then((result) => {
+        const deliveryItemResult = DeliveryItemController.toJSON(result)
+        handleResponse(res, deliveryItemResult)
+      })
+      .catch((err) => handleError(res, err))
+  } catch (error) {
+    handleError(res, error)
+  }
+})
+
+// get deliveryItem record by id
+deliveryRouter.get('/item/:id', (req, res) => {
+  try {
+    DeliveryItemController.get(req.params.id)
+      .then((result) => {
+        const deliveryItemResult = DeliveryItemController.toJSON(result)
+        if (!deliveryItemResult) {
+          res.status(404).json({ message: 'DeliveryItem id was not found' })
+          return
+        }
+        handleResponse(res, deliveryItemResult)
+      })
+      .catch((err) => handleError(res, err))
+  } catch (error) {
+    handleError(res, error)
+  }
+})
 
 // get delivery record by id
 deliveryRouter.get('/:id', (req, res) => {
@@ -47,8 +83,8 @@ deliveryRouter.post('/', (req, res) => {
     const deliveryData = req.body as unknown
     DeliveryController.create(deliveryData)
       .then((result) => {
-        const customerResult = DeliveryController.toJSON(result)
-        handleResponse(res, customerResult)
+        const deliveryResult = DeliveryController.toJSON(result)
+        handleResponse(res, deliveryResult)
       })
       .catch((err) => handleError(res, err))
   } catch (error) {
