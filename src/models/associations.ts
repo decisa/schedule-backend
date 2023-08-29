@@ -450,7 +450,7 @@ function createAssociations() {
 
   // One-to-many relationship between Delivery and DeliveryItems
   Delivery.hasMany(DeliveryItem, {
-    as: 'deliveryItems',
+    as: 'items',
     foreignKey: 'deliveryId',
   })
   DeliveryItem.belongsTo(Delivery, {
