@@ -383,11 +383,22 @@ export default class DeliveryController {
   static async create(deliveryData: DeliveryCreate | unknown, t?: Transaction): Promise<Delivery> {
     const [transaction, commit, rollback] = await useTransaction(t)
     try {
+      // check if deliveryData is an object
+      if (typeof deliveryData !== 'object' || deliveryData === null) {
+        throw new Error('Delivery malformed data: data is missing or malformed')
+      }
       const parsedDelivery = validateDeliveryCreate(deliveryData)
 
       const result = await Delivery.create(parsedDelivery, {
         transaction,
       })
+
+      // check if delivery items were included:
+      if ('items' in deliveryData && Array.isArray(deliveryData.items)) {
+        // create delivery items
+        const items = await DeliveryItemController.bulkCreate(result.id, deliveryData.items, transaction)
+        result.items = items
+      }
 
       // refetch the record to get all fields (including virtuals)
       const final = await this.get(result.id, transaction)
