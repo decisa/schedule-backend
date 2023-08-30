@@ -272,9 +272,9 @@ export default class PurchaseOrderItemController {
   }
 
   /**
-   * insert PurchaseOrderItem record to DB. purchaseOrderId is required.
-   * @param {PurchaseOrderItemCreate | unknown} purchaseOrderItems - customer PurchaseOrderItem record to insert to DB
-   * @returns {PurchaseOrderItem} PurchaseOrderItem object or throws error
+   * insert PurchaseOrderItem records to DB. purchaseOrderId is required.
+   * @param {PurchaseOrderItemCreate[] | unknown} purchaseOrderItems - customer PurchaseOrderItem record to insert to DB
+   * @returns {PurchaseOrderItem[]} array of created purchaseOrderItems or throws error
    */
   static async bulkCreate(purchaseOrderId: number, purchaseOrderItems: PurchaseOrderItemCreate[] | unknown[], t?: Transaction): Promise<PurchaseOrderItem[]> {
     const [transaction, commit, rollback] = await useTransaction(t)
