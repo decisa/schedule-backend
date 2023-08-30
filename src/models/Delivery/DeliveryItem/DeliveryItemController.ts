@@ -311,6 +311,38 @@ export default class DeliveryItemController {
     }
   }
 
+  /**
+   * insert multiple deliveryItem records to DB. deliveryId is required.
+   * @param {number} deliveryId - id of delivery where to add the items
+   * @param {DeliveryItemCreate[] | unknown[]} deliveryItems - an array of deliveryItems to insert to DB
+   * @returns {DeliveryItem[]} array of created deliveryItems or throws error
+   */
+  static async bulkCreate(deliveryId: number, deliveryItems: DeliveryItemCreate[] | unknown[], t?: Transaction): Promise<DeliveryItem[]> {
+    const [transaction, commit, rollback] = await useTransaction(t)
+    try {
+      const result: DeliveryItem[] = []
+      for (let i = 0; i < deliveryItems.length; i += 1) {
+        const item = deliveryItems[i]
+        if (typeof item !== 'object' || item === null) {
+          throw new Error('DeliveryItem malformed data: every item should be an object')
+        }
+        // create method will take care of all validations:
+        const deliveryItem = await this.create({
+          ...item,
+          deliveryId,
+        }, transaction)
+        result.push(deliveryItem)
+      }
+
+      await commit()
+      return result
+    } catch (error) {
+      await rollback()
+      // rethrow the error for further handling
+      throw error
+    }
+  }
+
   // /**
   //  * create a PurchaseOrder with PurchaseOrderItems
   //  * @param {PurchaseOrderCreate | unknown} purchaseOrderData - purchaseOrder data along with purchaseOrderItems
