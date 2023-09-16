@@ -15,6 +15,7 @@ import { ProductOption } from '../../Sales/ProductOption/productOption'
 import ProductConfigurationController, { ConfigurationAsProductRead } from '../../Sales/ProductConfiguration/productConfigurationController'
 import { BrandRead } from '../../Brand/brandController'
 import { OrderRead } from '../../Sales/Order/orderController'
+import { OrderAddress } from '../../Sales/OrderAddress/orderAddress'
 
 // building elements of the PurchaseOrder type
 type PurchaseOrderCreational = {
@@ -304,7 +305,6 @@ function parseFullPOToJson(purchaseOrderRaw: PurchaseOrder): POInfoShape {
     console.log('Purchase Order: unable to parse brand')
     throw new Error('Purchase Order: unable to parse brand')
   }
-  console.log('threw error')
   purchaseOrderData.brand = purchaseOrderRaw.brand?.toJSON()
 
   let items: POItem[] = []
@@ -414,6 +414,68 @@ export default class PurchaseOrderController {
   static async get(id: number | unknown, t?: Transaction): Promise<PurchaseOrder | null> {
     const purchaseOrderId = isId.validateSync(id)
     const final = await PurchaseOrder.findByPk(purchaseOrderId, {
+      transaction: t,
+    })
+    return final
+  }
+
+  /**
+   * get all PurchaseOrder records from DB.
+   * @returns {PurchaseOrder[]} PurchaseOrder object or null
+   */
+  static async getAll(t?: Transaction): Promise<PurchaseOrder[]> {
+    // const purchaseOrderId = isId.validateSync(id)
+    const final = await PurchaseOrder.findAll({
+      attributes: ['id', 'poNumber', 'dateSubmitted', 'productionWeeks', 'status', 'createdAt', 'updatedAt'],
+      include: [
+        {
+          model: Brand,
+          as: 'brand',
+        },
+        {
+          model: PurchaseOrderItem,
+          as: 'items',
+          attributes: {
+            exclude: ['purchaseOrderId', 'createdAt', 'updatedAt'],
+          },
+          include: [
+            {
+              model: ProductConfiguration,
+              as: 'product',
+              attributes: ['qtyOrdered', 'qtyRefunded', 'qtyShippedExternal', 'sku'],
+              include: [
+                {
+                  model: Product,
+                  as: 'product',
+                  attributes: ['name', 'sku'],
+                },
+                {
+                  model: ProductOption,
+                  as: 'options',
+                  attributes: ['label', 'value'],
+                },
+              ],
+            },
+          ],
+        },
+        {
+          model: Order,
+          as: 'order',
+          attributes: ['orderNumber', 'id'],
+          include: [{
+            model: Customer,
+            as: 'customer',
+            attributes: {
+              exclude: ['defaultShippingId', 'createdAt', 'updatedAt'],
+            },
+          },
+          {
+            model: OrderAddress,
+            as: 'shippingAddress',
+            attributes: ['firstName', 'lastName', 'state'],
+          }],
+        },
+      ],
       transaction: t,
     })
     return final
