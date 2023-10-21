@@ -88,6 +88,21 @@ purchaseOrderRouter.get('/:id', (req, res) => {
   }
 })
 
+// update purchase order
+purchaseOrderRouter.put('/:id', (req, res) => {
+  try {
+    const purchaseOrder = req.body as unknown
+    PurchaseOrderController.update(req.params.id, purchaseOrder)
+      .then((result) => {
+        const purchaseOrderResult = PurchaseOrderController.toJSON(result)
+        handleResponse(res, purchaseOrderResult)
+      })
+      .catch((err) => handleError(res, err))
+  } catch (error) {
+    handleError(res, error)
+  }
+})
+
 purchaseOrderRouter.get('/number/:poNumber', (req, res) => {
   try {
     PurchaseOrderController.getByPoNumber(req.params.poNumber)
