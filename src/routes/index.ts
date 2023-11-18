@@ -14,6 +14,7 @@ import orderRouter from './orders/orderRoutes'
 import deliveryMethodRouter from './deliveryMethods/deliveryMethodRoutes'
 import purchaseOrderRouter from './purchaseOrders/purchaseOrderRoutes'
 import deliveryRouter from './deliveries/deliveryRoutes'
+import shipmentRouter from './shipments/shipmentRoutes'
 
 const rootRouter = express.Router()
 
@@ -33,6 +34,7 @@ rootRouter.use('/order', orderRouter)
 rootRouter.use('/deliverymethod', deliveryMethodRouter)
 rootRouter.use('/purchaseorder', purchaseOrderRouter)
 rootRouter.use('/delivery', deliveryRouter)
+rootRouter.use('/shipment', shipmentRouter)
 
 // create proxy to forward requests to magento:
 rootRouter.use('/2031360', (req, res, next) => {
@@ -68,7 +70,13 @@ rootRouter.use('/2031360', (req, res, next) => {
     res.json(data)
   }).catch((error) => {
     console.error('error:', error)
-    res.status(500).send('Proxy error')
+    if (error.response.status === 401) {
+      res.status(401).send({
+        status: error.response.status,
+        statusText: error.response.statusText,
+        ...error.response.data,
+      })
+    } else res.status(500).send('Proxy error')
   })
 })
 

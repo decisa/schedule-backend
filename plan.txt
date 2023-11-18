@@ -30,8 +30,8 @@ x21. recievedItems
 x22. Vehicles
 x23. Drivers
 x24. Trips 
-25. TripDrivers // reference table for drivers on a trip
-27. StopTypes
+x25. TripDrivers // reference table for drivers on a trip
+
 28. DeliveryStops // actual delivery on the schedule
 29. TripStops // reference table of all deliveries on a trip
 30. Deliveries // delivery work order of one sales order

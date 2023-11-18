@@ -36,10 +36,9 @@ export class Shipment extends Model<InferAttributes<Shipment>, InferCreationAttr
 
   declare trackingNumber: string | null
 
-  // fixme: - should it be date or string?
-  declare eta: string | null
+  declare eta: Date | null
 
-  declare dateShipped: string | null
+  declare dateShipped: Date
 
   declare createdAt: CreationOptional<Date>
 
@@ -53,12 +52,13 @@ export class Shipment extends Model<InferAttributes<Shipment>, InferCreationAttr
 
   declare shipmentItems?: NonAttribute<ShipmentItem[]>
 
-  declare receivedItems?: NonAttribute<ReceivedItem[]>
+  // fixme: receivedItems should be on the ShipmentItem model
+  // declare receivedItems?: NonAttribute<ReceivedItem[]>
 
   declare public static associations: {
     carrier: Association<Shipment, Carrier>,
     shipmentItems: Association<Shipment, ShipmentItem>,
-    receivedItems: Association<Shipment, ReceivedItem>,
+    // receivedItems: Association<Shipment, ReceivedItem>,
   }
 
   // MIXINS
@@ -91,25 +91,25 @@ export class Shipment extends Model<InferAttributes<Shipment>, InferCreationAttr
   declare removeShipmentItems: HasManyRemoveAssociationsMixin<ShipmentItem, number>
 
   // ReceivedItems:
-  declare createReceivedItem: HasManyCreateAssociationMixin<ReceivedItem, 'shipmentId'>
+  // declare createReceivedItem: HasManyCreateAssociationMixin<ReceivedItem, 'shipmentId'>
 
-  declare getReceivedItems: HasManyGetAssociationsMixin<ReceivedItem>
+  // declare getReceivedItems: HasManyGetAssociationsMixin<ReceivedItem>
 
-  declare countReceivedItems: HasManyCountAssociationsMixin
+  // declare countReceivedItems: HasManyCountAssociationsMixin
 
-  declare hasReceivedItem: HasManyHasAssociationMixin<ReceivedItem, number>
+  // declare hasReceivedItem: HasManyHasAssociationMixin<ReceivedItem, number>
 
-  declare hasReceivedItems: HasManyHasAssociationsMixin<ReceivedItem, number>
+  // declare hasReceivedItems: HasManyHasAssociationsMixin<ReceivedItem, number>
 
-  declare setReceivedItems: HasManySetAssociationsMixin<ReceivedItem, number>
+  // declare setReceivedItems: HasManySetAssociationsMixin<ReceivedItem, number>
 
-  declare addReceivedItem: HasManyAddAssociationMixin<ReceivedItem, number>
+  // declare addReceivedItem: HasManyAddAssociationMixin<ReceivedItem, number>
 
-  declare addReceivedItems: HasManyAddAssociationsMixin<ReceivedItem, number>
+  // declare addReceivedItems: HasManyAddAssociationsMixin<ReceivedItem, number>
 
-  declare removeReceivedItem: HasManyRemoveAssociationMixin<ReceivedItem, number>
+  // declare removeReceivedItem: HasManyRemoveAssociationMixin<ReceivedItem, number>
 
-  declare removeReceivedItems: HasManyRemoveAssociationsMixin<ReceivedItem, number>
+  // declare removeReceivedItems: HasManyRemoveAssociationsMixin<ReceivedItem, number>
 }
 
 export function initShipment(db: Sequelize) {
@@ -121,11 +121,22 @@ export function initShipment(db: Sequelize) {
         autoIncrement: true,
         primaryKey: true,
       },
+      // fixme: trackingNumber should be unique per carrier ID
       trackingNumber: DataTypes.STRING,
       eta: DataTypes.DATE,
-      dateShipped: DataTypes.DATE,
-      createdAt: DataTypes.DATE,
-      updatedAt: DataTypes.DATE,
+      dateShipped: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        defaultValue: DataTypes.NOW,
+      },
+      createdAt: {
+        type: DataTypes.DATE,
+        defaultValue: DataTypes.NOW,
+      },
+      updatedAt: {
+        type: DataTypes.DATE,
+        defaultValue: DataTypes.NOW,
+      },
     },
     {
       sequelize: db,
