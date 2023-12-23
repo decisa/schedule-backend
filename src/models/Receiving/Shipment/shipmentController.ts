@@ -298,20 +298,26 @@ export default class ShipmentController {
   /**
    * delete Shipment record with a given id from DB.
    * @param {unknown} id - shipmentId
-   * @returns {boolean} true if Shipment was deleted
+   * @returns {Shipment} deleted shipment record or throws error
    */
-  static async delete(id: number | unknown, t?: Transaction): Promise<boolean> {
+  static async delete(id: number | unknown, t?: Transaction): Promise<Shipment> {
     const [transaction, commit, rollback] = await useTransaction(t)
     try {
       const shipmentId = isId.validateSync(id)
-      const final = await Shipment.destroy({
+      // TODO: check if shipment has any items
+      const shipmentRecord = await this.get(shipmentId, transaction)
+
+      if (!shipmentRecord) {
+        throw DBError.notFound(new Error(`Shipment with id ${shipmentId} was not found`))
+      }
+      await Shipment.destroy({
         where: {
           id: shipmentId,
         },
         transaction,
       })
       await commit()
-      return final === 1
+      return shipmentRecord
     } catch (error) {
       await rollback()
       // rethrow the error for further handling

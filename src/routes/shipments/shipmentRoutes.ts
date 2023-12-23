@@ -51,4 +51,19 @@ shipmentRouter.patch('/:id', (req, res) => {
   }
 })
 
+// delete Shipment record
+shipmentRouter.delete('/:id', (req, res) => {
+  try {
+    const { id } = req.params
+    ShipmentController.delete(id)
+      .then((result) => {
+        const shipmentResult = ShipmentController.toJSON(result)
+        handleResponse(res, shipmentResult)
+      })
+      .catch((err) => handleError(res, err))
+  } catch (error) {
+    handleError(res, error)
+  }
+})
+
 export default shipmentRouter
