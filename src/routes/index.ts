@@ -51,6 +51,8 @@ rootRouter.use('/2031360', (req, res, next) => {
 
   const newHeaders = {
     ...req.headers,
+    // custom user agent
+    'user-agent': 'roomservice360/decarea',
   }
   delete newHeaders.host
   delete newHeaders.origin
@@ -66,7 +68,9 @@ rootRouter.use('/2031360', (req, res, next) => {
     },
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     data: req.body,
-  }).then(({ data }) => {
+  }).then((response) => {
+    const { data } = response
+    // console.log('response:', response)
     res.json(data)
   }).catch((error) => {
     console.error('error:', error)
