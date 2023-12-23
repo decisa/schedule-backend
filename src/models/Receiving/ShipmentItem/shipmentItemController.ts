@@ -1,10 +1,11 @@
 import * as yup from 'yup'
 import { Transaction } from 'sequelize'
 import {
-  isId, isString, useTransaction,
+  isId, useTransaction,
 } from '../../../utils/utils'
 
 import { DBError } from '../../../ErrorManagement/errors'
+import { ShipmentItem } from './shipmentItem'
 
 // building elements of the ShipmentItem type
 type ShipmentItemCreational = {
@@ -15,6 +16,7 @@ type ShipmentItemRequired = {
   qtyShipped: number
 }
 
+// no optional fields for shipment items
 // type ShipmentItemOptional = {
 // }
 
@@ -54,19 +56,22 @@ const shipmentItemSchemaCreate: yup.ObjectSchema<ShipmentItemCreate> = yup.objec
     .nonNullable()
     .required()
     .label('ShipmentItem malformed data: shipmentId'),
+  purchaseOrderItemId: yup.number()
+    .integer()
+    .positive()
+    .nonNullable()
+    .required()
+    .label('ShipmentItem malformed data: purchaseOrderItemId'),
   // ShipmentItemRequired
-  // none
+  // qtyShipped: number
+  qtyShipped: yup.number()
+    .integer()
+    .positive()
+    .nonNullable()
+    .required()
+    .label('ShipmentItem malformed data: qtyShipped'),
   // ShipmentItemOptional
-  // trackingNumber: string | null
-  // eta: Date | null
-  // dateShipped: Date | null
-  trackingNumber: yup.string()
-    .nullable()
-    .label('ShipmentItem malformed data: trackingNumber'),
-  eta: yup.date().nullable().label('ShipmentItem malformed data: eta'),
-  dateShipped: yup.date()
-    .default(() => new Date())
-    .label('ShipmentItem malformed data: dateShipped'),
+  // none
   // ShipmentItemCreational
   // id: number
   id: yup.number()
@@ -79,99 +84,48 @@ const shipmentItemSchemaCreate: yup.ObjectSchema<ShipmentItemCreate> = yup.objec
   updatedAt: yup.date().nonNullable().label('ShipmentItem malformed data: updatedAt'),
 })
 
-const shipmentSchemaUpdate = shipmentSchemaCreate.clone()
+const shipmentItemSchemaUpdate = shipmentItemSchemaCreate.clone()
   .shape({
-    carrierId: yup.number()
+    shipmentId: yup.number()
       .integer()
       .positive()
       .nonNullable()
-      .label('ShipmentItem malformed data: carrierId'),
-    dateShipped: yup.date()
+      .label('ShipmentItem malformed data: shipmentId'),
+    purchaseOrderItemId: yup.number()
+      .integer()
+      .positive()
       .nonNullable()
-      .label('ShipmentItem malformed data: dateShipped'),
+      .label('ShipmentItem malformed data: purchaseOrderItemId'),
+    // ShipmentItemRequired
+    // qtyShipped: number
+    qtyShipped: yup.number()
+      .integer()
+      .positive()
+      .nonNullable()
+      .label('ShipmentItem malformed data: qtyShipped'),
   })
 
 export function validateShipmentItemCreate(object: unknown): ShipmentItemCreate {
-  const shipment = shipmentSchemaCreate.validateSync(object, {
+  const shipmentItem = shipmentItemSchemaCreate.validateSync(object, {
     stripUnknown: true,
     abortEarly: false,
   }) satisfies ShipmentItemCreate
 
-  return shipment
+  return shipmentItem
 }
 
 export function validateShipmentItemUpdate(object: unknown): Partial<ShipmentItemCreate> {
   // restrict update of id, and creation or modification dates
-  const shipment = shipmentSchemaUpdate.omit(['createdAt', 'updatedAt', 'id']).validateSync(object, {
+  const shipmentItem = shipmentItemSchemaUpdate.omit(['createdAt', 'updatedAt', 'id']).validateSync(object, {
     stripUnknown: true,
     abortEarly: false,
   }) satisfies Partial<ShipmentItemCreate>
 
-  return shipment
+  return shipmentItem
 }
 
-// type ShipmentItemRequest = {
-//   orderId: number
-//   brandId: number
-//   status: POStatus
-//   dateSubmitted: Date
-//   poNumber: string
-//   items: unknown[]
-// }
-
-// const shipmentRequestCreate: yup.ObjectSchema<ShipmentItemRequest> = yup.object({
-//   orderId: yup.number()
-//     .integer()
-//     .positive()
-//     .nonNullable()
-//     .required()
-//     .label('Malformed data: purchase order orderId'),
-//   brandId: yup.number()
-//     .integer()
-//     .positive()
-//     .nonNullable()
-//     .required()
-//     .label('Malformed data: purchase order brandId'),
-//   status: yup.mixed<POStatus>()
-//     .oneOf(poStatuses)
-//     .nonNullable()
-//     .default('in production')
-//     .required()
-//     .label('Malformed data: purchase order status'),
-//   dateSubmitted: yup.date()
-//     .default(new Date())
-//     .nonNullable()
-//     .required()
-//     .label('Malformed data: purchase order dateSubmitted'),
-//   poNumber: yup.string()
-//     .required()
-//     .nonNullable()
-//     .label('Malformed data: purchase order poNumber'),
-//   items: yup.array(yup.mixed().required())
-//     .min(1)
-//     .required()
-//     .label('Malformed data: purchase order items'),
-// })
-
-function shipmentToJson(shipmentRaw: ShipmentItem): ShipmentItemRead {
-  const shipmentData: ShipmentItemRead = shipmentRaw.toJSON()
-  // const result = {
-  //   ...shipmentData,
-  //   products,
-  //   magento,
-  // }
-  // return result
-  // if (shipmentRaw.items) {
-  //   const poItems = shipmentRaw.items.map((item) => {
-  //     const itemData = item.toJSON()
-  //     const product = ProductConfigurationController.toJsonAsProduct(item.product || null)
-  //     return {
-  //       ...itemData, // will keep origninal po item data
-  //       product: product || undefined, // converted db product configuration to ConfigurationAsProduct or remove if null
-  //     }
-  //   })
-  //   shipmentData.items = poItems
-  // }
+function shipmentItemToJson(shipmentItemRaw: ShipmentItem): ShipmentItemRead {
+  const shipmentData: ShipmentItemRead = shipmentItemRaw.toJSON()
   return shipmentData
 }
 
@@ -189,10 +143,10 @@ export default class ShipmentItemController {
   static toJSON(data: ShipmentItem | ShipmentItem[] | null): ShipmentItemRead | ShipmentItemRead[] | null {
     try {
       if (data instanceof ShipmentItem) {
-        return shipmentToJson(data)
+        return shipmentItemToJson(data)
       }
       if (Array.isArray(data)) {
-        return data.map(shipmentToJson)
+        return data.map(shipmentItemToJson)
       }
       return null
     } catch (error) {
@@ -219,26 +173,6 @@ export default class ShipmentItemController {
   }
 
   /**
-   * get ShipmentItem record by trackingNumber.
-   * @param {string | unknown} trackingNumber - shipment tracking number
-   * @returns {ShipmentItem} ShipmentItem object or null
-   */
-  static async getByTracking(trackingNumber: string | unknown, t?: Transaction): Promise<ShipmentItem | null> {
-    const tracking = isString.validateSync(trackingNumber)
-    let final = await ShipmentItem.findOne({
-      where: {
-        trackingNumber: tracking,
-      },
-      transaction: t,
-    })
-    if (!final) {
-      return null
-    }
-    final = await ShipmentItemController.get(final.id, t)
-    return final
-  }
-
-  /**
    * insert ShipmentItem record to DB. carrierId is required.
    * @param {ShipmentItemCreate | unknown} shipmentData - ShipmentItem data to insert to DB
    * @returns {ShipmentItem} newly created ShipmentItem object or throws error
@@ -252,12 +186,16 @@ export default class ShipmentItemController {
         transaction,
       })
 
-      const final = await this.get(result.id, transaction)
-      if (!final) {
-        throw new Error('Internal Error: ShipmentItem was not created')
-      }
+      // code below is in case the get method needs to be customized, otherwise redundant
+      // const final = await this.get(result.id, transaction)
+      // if (!final) {
+      //   throw new Error('Internal Error: ShipmentItem was not created')
+      // }
+      // await commit()
+      // return final
+
       await commit()
-      return final
+      return result
     } catch (error) {
       await rollback()
       // rethrow the error for further handling
@@ -266,26 +204,26 @@ export default class ShipmentItemController {
   }
 
   /**
-     * update shipment record in DB.
-     * @param {number | unknown} shipmentId - id of the shipment record to update in DB
-     * @param {unknown} shipmentData - update data for purchase order record
-     * @returns {address} complete Updated purchasde order object or throws error
+     * update shipmentItem record in DB.
+     * @param {number | unknown} shipmentItemId - id of the shipmentItem record to update in DB
+     * @param {unknown} shipmentItemData - update data for shipmentItem record
+     * @returns {ShipmentItem} updated ShipmentItem record
      */
-  static async update(shipmentId: number | unknown, shipmentData: unknown, t?: Transaction): Promise<ShipmentItem> {
+  static async update(shipmentItemId: number | unknown, shipmentItemData: unknown, t?: Transaction): Promise<ShipmentItem> {
     const [transaction, commit, rollback] = await useTransaction(t)
     try {
-      const parsedShipmentItemUpdate = validateShipmentItemUpdate(shipmentData)
+      const parsedShipmentItemUpdate = validateShipmentItemUpdate(shipmentItemData)
 
-      const id = isId.validateSync(shipmentId)
-      const shipmentRecord = await ShipmentItem.findByPk(id, { transaction })
-      if (!shipmentRecord) {
-        throw DBError.notFound(new Error('shipment does not exist'))
+      const id = isId.validateSync(shipmentItemId)
+      const shipmentItemRecord = await ShipmentItem.findByPk(id, { transaction })
+      if (!shipmentItemRecord) {
+        throw DBError.notFound(new Error('shipment item does not exist'))
         // Error('shipment does not exist')
       }
 
-      await shipmentRecord.update(parsedShipmentItemUpdate, { transaction })
+      await shipmentItemRecord.update(parsedShipmentItemUpdate, { transaction })
       await commit()
-      return shipmentRecord
+      return shipmentItemRecord
     } catch (error) {
       await rollback()
       // rethrow the error for further handling
@@ -296,20 +234,24 @@ export default class ShipmentItemController {
   /**
    * delete ShipmentItem record with a given id from DB.
    * @param {unknown} id - shipmentId
-   * @returns {boolean} true if ShipmentItem was deleted
+   * @returns {ShipmentItemRead} returns  ShipmentItem was deleted or throws error
    */
-  static async delete(id: number | unknown, t?: Transaction): Promise<boolean> {
+  static async delete(id: number | unknown, t?: Transaction): Promise<ShipmentItemRead> {
     const [transaction, commit, rollback] = await useTransaction(t)
     try {
       const shipmentId = isId.validateSync(id)
-      const final = await ShipmentItem.destroy({
+      const shipmentRecord = await this.get(shipmentId, transaction)
+      if (!shipmentRecord) {
+        throw DBError.notFound(new Error(`ShipmentItem with id ${shipmentId} was not found`))
+      }
+      await ShipmentItem.destroy({
         where: {
           id: shipmentId,
         },
         transaction,
       })
       await commit()
-      return final === 1
+      return shipmentRecord.toJSON()
     } catch (error) {
       await rollback()
       // rethrow the error for further handling

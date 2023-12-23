@@ -27,7 +27,14 @@ import {
 } from 'sequelize'
 import type { Shipment } from '../Shipment/shipment'
 
-type CarrierType = 'container' | 'freight' | 'parcel' | 'auto'
+export const carrierTypes = [
+  'container',
+  'freight',
+  'parcel',
+  'auto',
+] as const
+
+export type CarrierType = typeof carrierTypes[number]
 export class Carrier extends Model<InferAttributes<Carrier>, InferCreationAttributes<Carrier>> {
   declare id: CreationOptional<number>
 
