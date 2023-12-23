@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import express from 'express'
-import axios from 'axios'
+import axios, { AxiosError } from 'axios'
 // import { createProxyMiddleware, responseInterceptor } from 'http-proxy-middleware'
 import commentRouter from './comments/commentRoutes'
 import customerRouter from './customers/customerRoutes'
@@ -15,6 +15,7 @@ import deliveryMethodRouter from './deliveryMethods/deliveryMethodRoutes'
 import purchaseOrderRouter from './purchaseOrders/purchaseOrderRoutes'
 import deliveryRouter from './deliveries/deliveryRoutes'
 import shipmentRouter from './shipments/shipmentRoutes'
+import carrierRouter from './carriers/carrierRoutes'
 
 const rootRouter = express.Router()
 
@@ -35,6 +36,7 @@ rootRouter.use('/deliverymethod', deliveryMethodRouter)
 rootRouter.use('/purchaseorder', purchaseOrderRouter)
 rootRouter.use('/delivery', deliveryRouter)
 rootRouter.use('/shipment', shipmentRouter)
+rootRouter.use('/carrier', carrierRouter)
 
 // create proxy to forward requests to magento:
 rootRouter.use('/2031360', (req, res, next) => {
@@ -74,7 +76,9 @@ rootRouter.use('/2031360', (req, res, next) => {
     res.json(data)
   }).catch((error) => {
     console.error('error:', error)
-    if (error.response.status === 401) {
+
+    // handle unauthorized error
+    if (error && error instanceof AxiosError && error.response && error.response.status === 401) {
       res.status(401).send({
         status: error.response.status,
         statusText: error.response.statusText,

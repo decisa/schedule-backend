@@ -1,7 +1,8 @@
 import * as yup from 'yup'
 import { Transaction } from 'sequelize'
 import { isId, useTransaction } from '../../../utils/utils'
-import { CarrierType, carrierTypes } from './carrier'
+import { Carrier, CarrierType, carrierTypes } from './carrier'
+import { DBError } from '../../../ErrorManagement/errors'
 
 type CarrierCreational = {
   id: number
@@ -62,6 +63,7 @@ const carrierSchemaCreate: yup.ObjectSchema<CarrierCreate> = yup.object({
     .nullable()
     .label('Carrier malformed data: altPhone'),
   email: yup.string()
+    .email()
     .nullable()
     .label('Carrier malformed data: email'),
   accountNumber: yup.string()
@@ -96,11 +98,7 @@ const carrierSchemaUpdate: yup.ObjectSchema<Partial<CarrierCreate>> = carrierSch
       .nonNullable(),
   })
 
-// FIXME: CONTINUE HERE
-
-// // type RequiredExceptFor<T, K extends keyof T> = Omit<T, K> & {
-// //   [P in K]+?: T[P]
-// // };
+// FIXM: CONTINUE HERE
 
 export function validateCarrierCreate(object: unknown): CarrierCreate {
   const carrier = carrierSchemaCreate.validateSync(object, {
@@ -156,25 +154,13 @@ export default class CarrierController {
   }
 
   /**
-   * get Carrier record by id from DB. Will include magento record if available
+   * get Carrier record by id from DB.
    * @param {unknown} id - carrierId
    * @returns {Carrier} Carrier object or null
    */
   static async get(id: number | unknown, t?: Transaction): Promise<Carrier | null> {
     const carrierId = isId.validateSync(id)
     const final = await Carrier.findByPk(carrierId, {
-      // include: 'magento',
-      transaction: t,
-    })
-    return final
-  }
-
-  static async getByExternalId(id: number | unknown, t?: Transaction): Promise<Carrier | null> {
-    const externalId = isId.validateSync(id)
-    const final = await Carrier.findOne({
-      where: {
-        externalId,
-      },
       transaction: t,
     })
     return final
@@ -182,7 +168,7 @@ export default class CarrierController {
 
   /**
    * get all carriers   *
-   * @returns {Address | Address[] | null} All carriers
+   * @returns {Carrier | Carrier[] | null} All carriers
    */
   static async getAll(t?: Transaction): Promise<Carrier[] | null> {
     const final = await Carrier.findAll({
@@ -214,15 +200,15 @@ export default class CarrierController {
   }
 
   /**
-   * update carrier record in DB. Will update magento record if provided.If magento record does not exist in DB, it will be created
+   * update carrier record in DB.
    * @param {number | unknown} carrierId - id of the carrier record to update in DB
-   * @param {unknown} carrier - update data for carrier record
+   * @param {unknown} carrierUpdateData - update data for carrier record
    * @returns {Carrier} updated Carrier object or throws error
    */
-  static async update(carrierId: number | unknown, carrier: unknown, t?: Transaction): Promise<Carrier> {
+  static async update(carrierId: number | unknown, carrierUpdateData: unknown, t?: Transaction): Promise<Carrier> {
     const [transaction, commit, rollback] = await useTransaction(t)
     try {
-      const parsedCarrierUpdate = validateCarrierUpdate(carrier)
+      const parsedCarrierUpdate = validateCarrierUpdate(carrierUpdateData)
 
       const id = isId.validateSync(carrierId)
       const carrierRecord = await Carrier.findByPk(id, { transaction })
@@ -242,57 +228,26 @@ export default class CarrierController {
   }
 
   /**
-   * upsert(insert or create) Carrier record in DB. magento Carrier externalId is required
-   * @param {unknown | CarrierCreate} carrierData - update data for Carrier record
-   * @returns {Carrier} updated or created Carrier object with Magento Record if available
-   */
-  static async upsert(carrierData: unknown, t?: Transaction): Promise<Carrier> {
-    const [transaction, commit, rollback] = await useTransaction(t)
-    try {
-      const parsedCarrier = validateCarrierPartial(carrierData)
-      if (!parsedCarrier.externalId) {
-        throw new Error('externalId is required for upsert')
-      }
-      const carrierRecord = await Carrier.findOne({
-        where: {
-          externalId: parsedCarrier.externalId,
-        },
-        transaction,
-      })
-
-      let result: Carrier
-      if (!carrierRecord) {
-        result = await this.create(carrierData, transaction)
-      } else {
-        result = await this.update(carrierRecord.id, carrierData, transaction)
-      }
-
-      await commit()
-      return result
-    } catch (error) {
-      await rollback()
-      // rethrow the error for further handling
-      throw error
-    }
-  }
-
-  /**
    * delete Carrier record with a given id from DB.
    * @param {unknown} id - carrierId
-   * @returns {boolean} true if object was deleted.
+   * @returns {Carrier} Carrier object that was deleted or throws error.
    */
-  static async delete(id: number | unknown, t?: Transaction): Promise<boolean> {
+  static async delete(id: number | unknown, t?: Transaction): Promise<Carrier> {
     const [transaction, commit, rollback] = await useTransaction(t)
     try {
       const carrierId = isId.validateSync(id)
-      const final = await Carrier.destroy({
+      const carrierRecord = await Carrier.findByPk(carrierId, { transaction })
+      if (!carrierRecord) {
+        throw DBError.notFound(new Error(`Carrier with id ${carrierId} was not found`))
+      }
+      await Carrier.destroy({
         where: {
           id: carrierId,
         },
         transaction,
       })
       await commit()
-      return final === 1
+      return carrierRecord
     } catch (error) {
       await rollback()
       // rethrow the error for further handling
@@ -300,11 +255,3 @@ export default class CarrierController {
     }
   }
 }
-// done: get carrier (by id)
-// done: get by magento id
-// done: get all
-// done: create carrier
-// done: update carrier
-// done: delete carrier
-
-// done: upsert carrier (externalID is required)
