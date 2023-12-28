@@ -1,7 +1,8 @@
 import * as yup from 'yup'
-import { Transaction } from 'sequelize'
+import { Transaction, ValidationError } from 'sequelize'
+import { th } from 'date-fns/locale'
 import {
-  isId, useTransaction,
+  isId, printYellowLine, useTransaction,
 } from '../../../utils/utils'
 
 import { DBError } from '../../../ErrorManagement/errors'
@@ -193,6 +194,75 @@ export default class ShipmentItemController {
       // }
       // await commit()
       // return final
+
+      await commit()
+      return result
+    } catch (error) {
+      await rollback()
+      // rethrow the error for further handling
+      throw error
+    }
+  }
+
+  /**
+   * insert ShipmentItem records to DB. shipmentId is required.
+   * @param {number} shipmentId - id of the shipment record for which items are created
+   * @param {ShipmentItemCreate[] | unknown[]} shipmentItems - array of ShipmentItem records to insert to DB
+   * @returns {ShipmentItem[]} array of created ShipmentItems or throws error
+   */
+  static async bulkCreate(shipmentId: number, shipmentItems: ShipmentItemCreate[] | unknown[], t?: Transaction): Promise<ShipmentItem[]> {
+    const [transaction, commit, rollback] = await useTransaction(t)
+    try {
+      const result: ShipmentItem[] = []
+      for (let i = 0; i < shipmentItems.length; i += 1) {
+        const parsedShipmentItem = shipmentItemSchemaCreate.omit(['shipmentId']).validateSync(shipmentItems[i], {
+          stripUnknown: true,
+          abortEarly: false,
+        })
+
+        // try to create the shipment item
+        try {
+          const shipmentItem = await this.create({
+            ...parsedShipmentItem,
+            shipmentId,
+          }, transaction)
+          result.push(shipmentItem)
+        } catch (error) {
+          printYellowLine()
+          console.log('error:', error instanceof ValidationError)
+          // if this is not a validation error, re-throw it
+          if (!(error instanceof ValidationError)) {
+            throw error
+          }
+
+          // if there are more than one errors, re-throw them
+          if (error.errors.length > 1) {
+            throw error
+          }
+
+          const {
+            path,
+            validatorKey,
+          } = error.errors[0]
+          if (path === 'shipmentId_purchaseOrderItemId_constraint' && validatorKey === 'not_unique') {
+            // if this is a duplicate entry error, find the existing shipment item and update it:
+            const {
+              purchaseOrderItemId,
+            } = parsedShipmentItem
+            const existingShipmentItem = result.find((item) => item.purchaseOrderItemId === purchaseOrderItemId)
+            if (!existingShipmentItem) {
+              // if the existing shipment item is not found in current bulk batch, re-throw the error
+              throw error
+            }
+            // update the existing shipment item
+            existingShipmentItem.qtyShipped += parsedShipmentItem.qtyShipped
+            await existingShipmentItem.save({ transaction })
+          } else {
+            // otherwise re-thow the error
+            throw error
+          }
+        }
+      }
 
       await commit()
       return result

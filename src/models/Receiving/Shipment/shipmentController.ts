@@ -6,6 +6,12 @@ import {
 
 import { Shipment } from './shipment'
 import { DBError } from '../../../ErrorManagement/errors'
+import ShipmentItemController from '../ShipmentItem/shipmentItemController'
+import { ShipmentItem } from '../ShipmentItem/shipmentItem'
+import { PurchaseOrderItem } from '../PurchaseOrderItem/purchaseOrderItem'
+import { ProductConfiguration } from '../../Sales/ProductConfiguration/productConfiguration'
+import { Product } from '../../Sales/Product/product'
+import { CarrierRead } from '../Carrier/carrierController'
 
 // building elements of the Shipment type
 type ShipmentCreational = {
@@ -32,7 +38,7 @@ type ShipmentFK = {
 
 // type ShipmentAssociations = {
 // carrier?: OrderRead
-// shipmentItems?: BrandRead
+// items?: ShipmentItem[]
 // receivedItems?: ShipmentItemRead[]
 // }
 
@@ -112,69 +118,160 @@ export function validateShipmentUpdate(object: unknown): Partial<ShipmentCreate>
   return shipment
 }
 
-// type ShipmentRequest = {
-//   orderId: number
-//   brandId: number
-//   status: POStatus
-//   dateSubmitted: Date
-//   poNumber: string
-//   items: unknown[]
-// }
-
-// const shipmentRequestCreate: yup.ObjectSchema<ShipmentRequest> = yup.object({
-//   orderId: yup.number()
-//     .integer()
-//     .positive()
-//     .nonNullable()
-//     .required()
-//     .label('Malformed data: purchase order orderId'),
-//   brandId: yup.number()
-//     .integer()
-//     .positive()
-//     .nonNullable()
-//     .required()
-//     .label('Malformed data: purchase order brandId'),
-//   status: yup.mixed<POStatus>()
-//     .oneOf(poStatuses)
-//     .nonNullable()
-//     .default('in production')
-//     .required()
-//     .label('Malformed data: purchase order status'),
-//   dateSubmitted: yup.date()
-//     .default(new Date())
-//     .nonNullable()
-//     .required()
-//     .label('Malformed data: purchase order dateSubmitted'),
-//   poNumber: yup.string()
-//     .required()
-//     .nonNullable()
-//     .label('Malformed data: purchase order poNumber'),
-//   items: yup.array(yup.mixed().required())
-//     .min(1)
-//     .required()
-//     .label('Malformed data: purchase order items'),
-// })
-
 function shipmentToJson(shipmentRaw: Shipment): ShipmentRead {
   const shipmentData: ShipmentRead = shipmentRaw.toJSON()
-  // const result = {
-  //   ...shipmentData,
-  //   products,
-  //   magento,
-  // }
-  // return result
-  // if (shipmentRaw.items) {
-  //   const poItems = shipmentRaw.items.map((item) => {
-  //     const itemData = item.toJSON()
-  //     const product = ProductConfigurationController.toJsonAsProduct(item.product || null)
-  //     return {
-  //       ...itemData, // will keep origninal po item data
-  //       product: product || undefined, // converted db product configuration to ConfigurationAsProduct or remove if null
-  //     }
-  //   })
-  //   shipmentData.items = poItems
-  // }
+
   return shipmentData
+}
+
+type ShipmentCreateRequest = ShipmentCreate & {
+  items: unknown[] // items must be an array, which will be validated later by ShipmentItemController
+}
+
+const shipmentCreateRequestSchema: yup.ObjectSchema<ShipmentCreateRequest> = shipmentSchemaCreate.clone()
+  .shape({
+    items: yup.array(yup.mixed().required())
+      .min(1)
+      .required()
+      .label('Shipment malformed data: shipment items'),
+  })
+
+type ShipmentItemResponse = {
+  id: number
+  qtyShipped: number
+  // qtyReceived: number
+  qtyPurchased?: number
+  qtyOrdered?: number
+  qtyRefunded?: number
+  qtyShippedExternal?: number | null
+  purchaseOrderItemId: number
+  productId?: number
+  configurationId?: number
+  orderId?: number
+  name?: string
+  url?: string | null
+  image?: string | null
+  sku?: string | null
+  brandId?: number | null
+  brand?: {
+    id?: number
+    name?: string
+  }
+  purchaseOrderId?: number
+  purchaseOrder?: {
+    id?: number
+    poNumber?: string
+  }
+}
+
+type FullShipmentResponse = {
+  id: number
+  trackingNumber: string | null
+  eta: Date | null
+  dateShipped: Date
+  carrierId: number
+  carrier?: CarrierRead
+  items: ShipmentItemResponse[]
+  createdAt: Date
+  updatedAt: Date
+}
+
+function fullShipmentToJson(shipmentRaw: Shipment): FullShipmentResponse {
+  const shipmentData: ShipmentRead = shipmentRaw.toJSON()
+
+  const {
+    id,
+    trackingNumber,
+    eta,
+    dateShipped,
+    carrierId,
+    createdAt,
+    updatedAt,
+  } = shipmentData
+
+  const shipmentItemsRaw = shipmentRaw.items || []
+
+  const items: ShipmentItemResponse[] = shipmentItemsRaw.map((item) => {
+    const {
+      id: shipmentItemId,
+      qtyShipped,
+      purchaseOrderItemId,
+    } = item.toJSON()
+
+    const purchaseOrderItem = item?.purchaseOrderItem?.toJSON()
+    const {
+      qtyPurchased,
+      purchaseOrderId,
+      configurationId,
+    } = purchaseOrderItem || {}
+
+    const productConfiguration = item?.purchaseOrderItem?.product?.toJSON()
+    const {
+      qtyOrdered,
+      qtyRefunded,
+      qtyShippedExternal,
+      orderId,
+      productId,
+    } = productConfiguration || {}
+
+    const mainProduct = item?.purchaseOrderItem?.product?.product?.toJSON()
+    const {
+      name,
+      url,
+      image,
+      sku,
+      brandId,
+    } = mainProduct || {}
+
+    const brand = item?.purchaseOrderItem?.product?.product?.brand?.toJSON()
+    const {
+      name: brandName,
+    } = brand || {}
+
+    const purchaseOrder = item.purchaseOrderItem?.purchaseOrder?.toJSON()
+    const {
+      poNumber,
+    } = purchaseOrder || {}
+
+    return {
+      id: shipmentItemId,
+      qtyShipped,
+      qtyPurchased,
+      qtyOrdered,
+      qtyRefunded,
+      qtyShippedExternal,
+      purchaseOrderItemId,
+      productId,
+      configurationId,
+      orderId,
+      name,
+      url,
+      image,
+      sku,
+      brandId,
+      brand: brandId && brandName ? {
+        id: brandId,
+        name: brandName,
+      } : undefined,
+      purchaseOrderId,
+      purchaseOrder: purchaseOrderId && poNumber ? {
+        id: purchaseOrderId,
+        poNumber,
+      } : undefined,
+    }
+  })
+
+  return {
+    id,
+    trackingNumber,
+    eta,
+    dateShipped,
+    carrierId,
+    carrier: shipmentRaw?.carrier?.toJSON(),
+    items,
+    createdAt,
+    updatedAt,
+  }
 }
 
 export default class ShipmentController {
@@ -203,7 +300,31 @@ export default class ShipmentController {
   }
 
   /**
-   * get Shipment record by id from DB.
+   * convert Full Shipment Instance or array of instances to a regular JSON object.
+   * @param {Shipment | Shipment[] | null} data - shipment, array of shipments or null
+   * @returns {FullShipmentResponse | FullShipmentResponse[] | null} JSON format nullable.
+   */
+  static toFullJSON(data: Shipment): FullShipmentResponse
+  static toFullJSON(data: Shipment | null): FullShipmentResponse | null
+  static toFullJSON(data: Shipment[]): FullShipmentResponse[]
+  static toFullJSON(data: Shipment[] | null): FullShipmentResponse[] | null
+  static toFullJSON(data: null): null
+  static toFullJSON(data: Shipment | Shipment[] | null): FullShipmentResponse | FullShipmentResponse[] | null {
+    try {
+      if (data instanceof Shipment) {
+        return fullShipmentToJson(data)
+      }
+      if (Array.isArray(data)) {
+        return data.map(fullShipmentToJson)
+      }
+      return null
+    } catch (error) {
+      return null
+    }
+  }
+
+  /**
+   * get plain Shipment record by id from DB.
    * @param {unknown} id - shipmentId
    * @returns {Shipment}
    * @throws {DBError} DBError - NotFoundError if no record found
@@ -212,6 +333,56 @@ export default class ShipmentController {
     const shipmentId = isId.validateSync(id)
     const final = await Shipment.findByPk(shipmentId, {
       transaction: t,
+    })
+
+    if (!final) {
+      throw DBError.notFound(new Error(`Shipment with id ${shipmentId} was not found`))
+    }
+    return final
+  }
+
+  /**
+   * get Shipment record by id from DB.
+   * @param {unknown} id - shipmentId
+   * @returns {Shipment}
+   * @throws {DBError} DBError - NotFoundError if no record found
+   */
+  static async getFullShipment(id: number | unknown, t?: Transaction): Promise<Shipment> {
+    const shipmentId = isId.validateSync(id)
+    const final = await Shipment.findByPk(shipmentId, {
+      transaction: t,
+      include: [
+        {
+          association: Shipment.associations.carrier,
+        },
+        {
+          association: Shipment.associations.items,
+          include: [
+            {
+              association: ShipmentItem.associations.purchaseOrderItem,
+              include: [
+                {
+                  association: PurchaseOrderItem.associations.product,
+                  include: [
+                    {
+                      association: ProductConfiguration.associations.product,
+                      include: [
+                        {
+                          association: Product.associations.brand,
+                        },
+                      ],
+                    },
+                  ],
+                },
+                {
+                  association: PurchaseOrderItem.associations.purchaseOrder,
+                  attributes: ['poNumber'],
+                },
+              ],
+            },
+          ],
+        },
+      ],
     })
 
     if (!final) {
@@ -260,6 +431,36 @@ export default class ShipmentController {
       }
       await commit()
       return final
+    } catch (error) {
+      await rollback()
+      // rethrow the error for further handling
+      throw error
+    }
+  }
+
+  /**
+ * create a Shipment with ShipmentItems
+ * @param {ShipmentCreate | unknown} shipmentData - shipment data along with shipmentItems
+ * @returns {Shipment} Shipment object or throws error
+ */
+  static async createShipment(shipmentData: ShipmentCreateRequest | unknown, t?: Transaction): Promise<Shipment> {
+    const [transaction, commit, rollback] = await useTransaction(t)
+    try {
+      const parsedShipment = shipmentCreateRequestSchema.validateSync(shipmentData, {
+        stripUnknown: true,
+        abortEarly: false,
+      }) satisfies ShipmentCreateRequest
+
+      const newShipmentRecord = await this.create(parsedShipment, transaction)
+      if (!newShipmentRecord) {
+        throw new Error('Internal Error: PurchaseOrder was not created')
+      }
+
+      const items = await ShipmentItemController.bulkCreate(newShipmentRecord.id, parsedShipment.items, transaction)
+
+      newShipmentRecord.items = items
+      await commit()
+      return newShipmentRecord
     } catch (error) {
       await rollback()
       // rethrow the error for further handling
