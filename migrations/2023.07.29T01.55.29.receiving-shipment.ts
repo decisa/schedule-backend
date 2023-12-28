@@ -40,12 +40,13 @@ export const up: Migration = async ({ context: queryInterface }) => {
       // timestamps:
       createdAt: DataTypes.DATE,
       updatedAt: DataTypes.DATE,
-    })
+    }, { transaction })
 
     await queryInterface.addConstraint('Shipments', {
       fields: ['trackingNumber', 'carrierId'],
       type: 'unique',
       name: 'trackingNumber_carrierId_constraint',
+      transaction,
     })
 
     await transaction.commit()
