@@ -11,7 +11,7 @@ type PurchaseOrderItemCreational = {
 }
 
 type PurchaseOrderItemRequired = {
-  qtyOrdered: number
+  qtyPurchased: number
 }
 
 // type PurchaseOrderItemOptional = {
@@ -61,13 +61,13 @@ const purchaseOrderItemSchemaCreate: yup.ObjectSchema<PurchaseOrderItemCreate> =
     .required()
     .label('Malformed data: purchase order item configurationId'),
   // PurchaseOrderItemRequired
-  // qtyOrdered: number
-  qtyOrdered: yup.number()
+  // qtyPurchased: number
+  qtyPurchased: yup.number()
     .integer()
     .positive()
     .nonNullable()
     .required()
-    .label('Malformed data: purchase order item qtyOrdered'),
+    .label('Malformed data: purchase order item qtyPurchased'),
   // PurchaseOrderItemCreational
   // id: number
   id: yup.number()
@@ -92,11 +92,11 @@ const purchaseOrderItemSchemaUpdate = purchaseOrderItemSchemaCreate.clone()
       .positive()
       .nonNullable()
       .label('Malformed data: purchase order item configurationId'),
-    qtyOrdered: yup.number()
+    qtyPurchased: yup.number()
       .integer()
       .positive()
       .nonNullable()
-      .label('Malformed data: purchase order item qtyOrdered'),
+      .label('Malformed data: purchase order item qtyPurchased'),
   })
 
 export function validatePurchaseOrderItemCreate(object: unknown): PurchaseOrderItemCreate {
@@ -273,7 +273,8 @@ export default class PurchaseOrderItemController {
 
   /**
    * insert PurchaseOrderItem records to DB. purchaseOrderId is required.
-   * @param {PurchaseOrderItemCreate[] | unknown} purchaseOrderItems - customer PurchaseOrderItem record to insert to DB
+   * @param {number} purchaseOrderId - purchaseOrderId
+   * @param {PurchaseOrderItemCreate[] | unknown[]} purchaseOrderItems - array of PurchaseOrderItem records to insert to DB
    * @returns {PurchaseOrderItem[]} array of created purchaseOrderItems or throws error
    */
   static async bulkCreate(purchaseOrderId: number, purchaseOrderItems: PurchaseOrderItemCreate[] | unknown[], t?: Transaction): Promise<PurchaseOrderItem[]> {

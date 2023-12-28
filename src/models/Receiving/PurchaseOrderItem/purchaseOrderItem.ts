@@ -36,7 +36,7 @@ import type { ReceivedItem } from '../ReceivedItems/receivedItems'
 export class PurchaseOrderItem extends Model<InferAttributes<PurchaseOrderItem>, InferCreationAttributes<PurchaseOrderItem>> {
   declare id: CreationOptional<number>
 
-  declare qtyOrdered: number
+  declare qtyPurchased: number
 
   // declare qtyReceived?: number
   // timestamps
@@ -132,7 +132,7 @@ export function initPurchaseOrderItem(db: Sequelize) {
         autoIncrement: true,
         primaryKey: true,
       },
-      qtyOrdered: {
+      qtyPurchased: {
         type: DataTypes.INTEGER,
         allowNull: false,
       },

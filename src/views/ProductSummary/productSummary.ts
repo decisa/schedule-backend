@@ -89,7 +89,7 @@ export async function createIfNotExistsProductSummaryView(db: Sequelize, tableVi
   // dyncamically create query parts for type safety
   const pId = `p.${ProductConfiguration.getAttributes().id.field || 'id'}`
   const poiId = `poi.${PurchaseOrderItem.getAttributes().id.field || 'id'}`
-  const poiQtyOrdered = `poi.${PurchaseOrderItem.getAttributes().qtyOrdered.field || 'qtyOrdered'}`
+  const poiQtyPurchased = `poi.${PurchaseOrderItem.getAttributes().qtyPurchased.field || 'qtyPurchased'}`
   const poiConfigurationId = `poi.${PurchaseOrderItem.getAttributes().configurationId.field || 'configurationId'}`
   const siPurchaseOrderItemId = `si.${ShipmentItem.getAttributes().purchaseOrderItemId.field || 'purchaseOrderItemId'}`
   const siQtyShipped = `si.${ShipmentItem.getAttributes().qtyShipped.field || 'qtyShipped'}`
@@ -101,7 +101,7 @@ export async function createIfNotExistsProductSummaryView(db: Sequelize, tableVi
   CREATE VIEW ${tableViewName} AS
   SELECT 
     ${pId} as configurationId,
-    SUM(${poiQtyOrdered}) as qtyPurchased,
+    SUM(${poiQtyPurchased}) as qtyPurchased,
     SUM(${siQtyShipped}) as qtyShipped,
     SUM(${riQtyReceived}) as qtyReceived
   FROM 

@@ -20,7 +20,7 @@ export const up: Migration = async ({ context: queryIterface }) => {
   // dyncamically create query parts for type safety
   const pId = `p.${ProductConfiguration.getAttributes().id.field || 'id'}`
   const poiId = `poi.${PurchaseOrderItem.getAttributes().id.field || 'id'}`
-  const poiQtyOrdered = `poi.${PurchaseOrderItem.getAttributes().qtyOrdered.field || 'qtyOrdered'}`
+  const poiQtyPurchased = `poi.${PurchaseOrderItem.getAttributes().qtyPurchased.field || 'qtyPurchased'}`
   const poiConfigurationId = `poi.${PurchaseOrderItem.getAttributes().configurationId.field || 'configurationId'}`
   const siPurchaseOrderItemId = `si.${ShipmentItem.getAttributes().purchaseOrderItemId.field || 'purchaseOrderItemId'}`
   const siQtyShipped = `si.${ShipmentItem.getAttributes().qtyShipped.field || 'qtyShipped'}`
@@ -32,7 +32,7 @@ export const up: Migration = async ({ context: queryIterface }) => {
   CREATE VIEW ${tableViewName} AS
   SELECT 
     ${pId} as configurationId,
-    SUM(${poiQtyOrdered}) as qtyPurchased,
+    SUM(${poiQtyPurchased}) as qtyPurchased,
     SUM(${siQtyShipped}) as qtyShipped,
     SUM(${riQtyReceived}) as qtyReceived
   FROM 
@@ -48,12 +48,16 @@ export const up: Migration = async ({ context: queryIterface }) => {
   const totalCount = results[0]['COUNT(*)']
   const viewExists = totalCount > 0
 
-  // do nothig if the view already exists
+  // if view exists - drop it
   if (viewExists) {
     console.log(`view ${tableViewName} already exists`)
+    const dropViewQuery = `DROP VIEW ${tableViewName}`
+    await queryIterface.sequelize.query(dropViewQuery)
+    console.log(`view ${tableViewName} was dropped.`)
   }
-  // otherwise create the view
+  // create the view
   if (!viewExists) {
+    console.log(`creating new ${tableViewName} view.`)
     await db.query(createViewSql)
   }
 }
