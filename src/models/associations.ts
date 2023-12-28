@@ -327,7 +327,7 @@ function createAssociations() {
 
   // One-to-many relationship between Shipments and ShipmentItems.
   Shipment.hasMany(ShipmentItem, {
-    as: 'shipmentItems',
+    as: 'items',
     foreignKey: 'shipmentId',
     onDelete: 'NO ACTION',
     onUpdate: 'CASCADE',

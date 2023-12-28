@@ -50,14 +50,14 @@ export class Shipment extends Model<InferAttributes<Shipment>, InferCreationAttr
 
   declare carrierId: ForeignKey<Carrier['id']>
 
-  declare shipmentItems?: NonAttribute<ShipmentItem[]>
+  declare items?: NonAttribute<ShipmentItem[]>
 
   // fixme: receivedItems should be on the ShipmentItem model
   // declare receivedItems?: NonAttribute<ReceivedItem[]>
 
   declare public static associations: {
     carrier: Association<Shipment, Carrier>,
-    shipmentItems: Association<Shipment, ShipmentItem>,
+    items: Association<Shipment, ShipmentItem>,
     // receivedItems: Association<Shipment, ReceivedItem>,
   }
 
@@ -69,7 +69,7 @@ export class Shipment extends Model<InferAttributes<Shipment>, InferCreationAttr
 
   declare createCarrier: BelongsToCreateAssociationMixin<Carrier>
 
-  // shipmentItems:
+  // items:
   declare createShipmentItem: HasManyCreateAssociationMixin<ShipmentItem, 'shipmentId'>
 
   declare getShipmentItems: HasManyGetAssociationsMixin<ShipmentItem>
