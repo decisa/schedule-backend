@@ -64,7 +64,7 @@ export type PurchaseOrderRead = Required<PurchaseOrderCreate> & PurchaseOrderAss
 type POProduct = Pick<ConfigurationAsProductRead, 'name' | 'sku' > & {
   configuration: Pick<ConfigurationAsProductRead['configuration'], 'qtyOrdered' | 'qtyRefunded' | 'qtyShippedExternal' | 'sku'>
 }
-type POItem = Pick<PurchaseOrderItemRead, 'id' | 'qtyOrdered' | 'configurationId'> & {
+type POItem = Pick<PurchaseOrderItemRead, 'id' | 'qtyPurchased' | 'configurationId'> & {
   product: POProduct
 }
 type FullPOInfo = Pick<PurchaseOrderRead, 'id' | 'poNumber' | 'status' | 'dateSubmitted' | 'productionWeeks' | 'createdAt' | 'updatedAt'> & {
@@ -90,7 +90,7 @@ export type POInfoShape = {
   },
   items: {
     id: number
-    qtyOrdered: number
+    qtyPurchased: number
     configurationId: number
     product: {
       name: string
@@ -312,7 +312,7 @@ function parseFullPOToJson(purchaseOrderRaw: PurchaseOrder): POInfoShape {
     const poItems = purchaseOrderRaw.items.map((item) => {
       const {
         id,
-        qtyOrdered,
+        qtyPurchased,
         configurationId,
       } = item.toJSON()
 
@@ -327,7 +327,7 @@ function parseFullPOToJson(purchaseOrderRaw: PurchaseOrder): POInfoShape {
 
       return {
         id,
-        qtyOrdered,
+        qtyPurchased,
         configurationId,
         product, // converted db product configuration to ConfigurationAsProduct
       }
