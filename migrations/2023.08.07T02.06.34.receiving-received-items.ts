@@ -14,32 +14,25 @@ export const up: Migration = async ({ context: queryIterface }) => {
       type: DataTypes.INTEGER,
       allowNull: false,
     },
+    notes: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
     receivedDate: {
       type: DataTypes.DATE,
       allowNull: false,
     },
     // foreign keys:
-    shipmentId: {
+    shipmentItemId: {
       type: DataTypes.INTEGER,
       references: {
-        model: 'Shipments',
+        model: 'ShipmentItems',
         key: 'id',
       },
-      // if items were received, don't allow to delete the shipment
+      // if items were received, don't allow to delete the shipment items
       onDelete: 'RESTRICT',
       onUpdate: 'CASCADE',
     },
-    purchaseOrderItemId: {
-      type: DataTypes.INTEGER,
-      references: {
-        model: 'PurchaseOrderItems',
-        key: 'id',
-      },
-      // if items were received, don't allow to delete the purchase order item
-      onDelete: 'RESTRICT',
-      onUpdate: 'CASCADE',
-    },
-
     // timestamps:
     createdAt: DataTypes.DATE,
     updatedAt: DataTypes.DATE,

@@ -13,9 +13,20 @@ import {
   BelongsToGetAssociationMixin,
   BelongsToSetAssociationMixin,
   BelongsToCreateAssociationMixin,
+  HasManyCreateAssociationMixin,
+  HasManyGetAssociationsMixin,
+  HasManyCountAssociationsMixin,
+  HasManyHasAssociationMixin,
+  HasManyHasAssociationsMixin,
+  HasManySetAssociationsMixin,
+  HasManyAddAssociationMixin,
+  HasManyAddAssociationsMixin,
+  HasManyRemoveAssociationMixin,
+  HasManyRemoveAssociationsMixin,
 } from 'sequelize'
 import type { Shipment } from '../Shipment/shipment'
 import type { PurchaseOrderItem } from '../PurchaseOrderItem/purchaseOrderItem'
+import type { ReceivedItem } from '../ReceivedItems/receivedItems'
 
 export class ShipmentItem extends Model<InferAttributes<ShipmentItem>, InferCreationAttributes<ShipmentItem>> {
   declare id: CreationOptional<number>
@@ -40,9 +51,12 @@ export class ShipmentItem extends Model<InferAttributes<ShipmentItem>, InferCrea
 
   declare purchaseOrderItemId: ForeignKey<PurchaseOrderItem['id']>
 
+  declare receivedItems?: NonAttribute<ReceivedItem[]>
+
   declare public static associations: {
     shipment: Association<ShipmentItem, Shipment>,
     purchaseOrderItem: Association<ShipmentItem, PurchaseOrderItem>,
+    receivedItems: Association<ShipmentItem, ReceivedItem>,
   }
 
   // MIXINS
@@ -59,6 +73,27 @@ export class ShipmentItem extends Model<InferAttributes<ShipmentItem>, InferCrea
   declare setPurchaseOrderItem: BelongsToSetAssociationMixin<PurchaseOrderItem, number>
 
   declare createPurchaseOrderItem: BelongsToCreateAssociationMixin<PurchaseOrderItem>
+
+  // receivedItems:
+  declare createReceivedItem: HasManyCreateAssociationMixin<ReceivedItem, 'shipmentItemId'>
+
+  declare getReceivedItems: HasManyGetAssociationsMixin<ReceivedItem>
+
+  declare countReceivedItems: HasManyCountAssociationsMixin
+
+  declare hasReceivedItem: HasManyHasAssociationMixin<ReceivedItem, number>
+
+  declare hasReceivedItems: HasManyHasAssociationsMixin<ReceivedItem, number>
+
+  declare setReceivedItems: HasManySetAssociationsMixin<ReceivedItem, number>
+
+  declare addReceivedItem: HasManyAddAssociationMixin<ReceivedItem, number>
+
+  declare addReceivedItems: HasManyAddAssociationsMixin<ReceivedItem, number>
+
+  declare removeReceivedItem: HasManyRemoveAssociationMixin<ReceivedItem, number>
+
+  declare removeReceivedItems: HasManyRemoveAssociationsMixin<ReceivedItem, number>
 }
 
 export function initShipmentItem(db: Sequelize) {

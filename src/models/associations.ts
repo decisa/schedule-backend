@@ -289,6 +289,17 @@ function createAssociations() {
     as: 'product',
     foreignKey: 'configurationId',
   })
+  // One-to-many relationship between ShipmentItem and ReceivedItems (nullable).
+  ShipmentItem.hasMany(ReceivedItem, {
+    as: 'receivedItems',
+    foreignKey: 'shipmentItemId',
+    onDelete: 'NO ACTION',
+    onUpdate: 'CASCADE',
+  })
+  ReceivedItem.belongsTo(ShipmentItem, {
+    as: 'shipmentItem',
+    foreignKey: 'shipmentItemId',
+  })
   // One-to-many relationship between PurchaseOrderItems and ShipmentItems.
   PurchaseOrderItem.hasMany(ShipmentItem, {
     as: 'shipmentItems',
@@ -300,30 +311,6 @@ function createAssociations() {
     as: 'purchaseOrderItem',
     foreignKey: 'purchaseOrderItemId',
   })
-  // One-to-many relationship between PurchaseOrderItems and ReceivedItems.
-  PurchaseOrderItem.hasMany(ReceivedItem, {
-    as: 'receivedItems',
-    foreignKey: 'purchaseOrderItemId',
-    onDelete: 'NO ACTION',
-    onUpdate: 'CASCADE',
-  })
-  ReceivedItem.belongsTo(PurchaseOrderItem, {
-    as: 'purchaseOrderItem',
-    foreignKey: 'purchaseOrderItemId',
-  })
-
-  // fixme: receivedItems should be on the ShipmentItem model
-  // One-to-many relationship between Shipments and ReceivedItems (nullable).
-  // Shipment.hasMany(ReceivedItem, {
-  //   as: 'receivedItems',
-  //   foreignKey: 'shipmentId',
-  //   onDelete: 'NO ACTION',
-  //   onUpdate: 'CASCADE',
-  // })
-  // ReceivedItem.belongsTo(Shipment, {
-  //   as: 'shipment',
-  //   foreignKey: 'shipmentId',
-  // })
 
   // One-to-many relationship between Shipments and ShipmentItems.
   Shipment.hasMany(ShipmentItem, {

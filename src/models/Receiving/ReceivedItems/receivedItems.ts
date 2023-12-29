@@ -8,8 +8,7 @@
 // created_at
 // updated_at
 
-// done - One-to-many relationship between PurchaseOrderItems and ReceivedItems.
-// done - One-to-many relationship between Shipments and ReceivedItems (nullable).
+// todo: - One-to-many relationship between ShipmentsItems and ReceivedItems (nullable).
 import {
   Association, CreationOptional, InferAttributes, InferCreationAttributes, Model, NonAttribute, Sequelize, DataTypes,
   BelongsToGetAssociationMixin,
@@ -19,6 +18,7 @@ import {
 } from 'sequelize'
 import type { PurchaseOrderItem } from '../PurchaseOrderItem/purchaseOrderItem'
 import type { Shipment } from '../Shipment/shipment'
+import { ShipmentItem } from '../ShipmentItem/shipmentItem'
 
 export class ReceivedItem extends Model<InferAttributes<ReceivedItem>, InferCreationAttributes<ReceivedItem>> {
   declare id: CreationOptional<number>
@@ -27,6 +27,8 @@ export class ReceivedItem extends Model<InferAttributes<ReceivedItem>, InferCrea
 
   declare receivedDate: Date
 
+  declare notes: string | null
+
   // timestamps
   declare createdAt: CreationOptional<Date>
 
@@ -34,33 +36,45 @@ export class ReceivedItem extends Model<InferAttributes<ReceivedItem>, InferCrea
 
   // associations
 
-  declare purchaseOrderItemId: ForeignKey<PurchaseOrderItem['id']>
+  declare shipmentItemId: ForeignKey<ShipmentItem['id']>
 
-  declare purchaseOrderItem?: NonAttribute<PurchaseOrderItem>
+  declare shipmentItem?: NonAttribute<ShipmentItem>
 
-  declare shipmentId: ForeignKey<Shipment['id']>
+  // declare purchaseOrderItemId: ForeignKey<PurchaseOrderItem['id']>
 
-  declare shipment?: NonAttribute<Shipment>
+  // declare purchaseOrderItem?: NonAttribute<PurchaseOrderItem>
+
+  // declare shipmentId: ForeignKey<Shipment['id']>
+
+  // declare shipment?: NonAttribute<Shipment>
 
   declare public static associations: {
-    purchaseOrderItem: Association<ReceivedItem, PurchaseOrderItem>,
-    shipment: Association<ReceivedItem, Shipment>,
+    shipmentItem: Association<ReceivedItem, ShipmentItem>,
+    // purchaseOrderItem: Association<ReceivedItem, PurchaseOrderItem>,
+    // shipment: Association<ReceivedItem, Shipment>,
   }
 
   // MIXINS
+  // shipmentItem:
+  declare getShipmentItem: BelongsToGetAssociationMixin<ShipmentItem>
+
+  declare setShipmentItem: BelongsToSetAssociationMixin<ShipmentItem, number>
+
+  declare createShipmentItem: BelongsToCreateAssociationMixin<ShipmentItem>
+
   // purchaseOrderItem:
-  declare getPurchaseOrderItem: BelongsToGetAssociationMixin<PurchaseOrderItem>
+  // declare getPurchaseOrderItem: BelongsToGetAssociationMixin<PurchaseOrderItem>
 
-  declare setPurchaseOrderItem: BelongsToSetAssociationMixin<PurchaseOrderItem, number>
+  // declare setPurchaseOrderItem: BelongsToSetAssociationMixin<PurchaseOrderItem, number>
 
-  declare createPurchaseOrderItem: BelongsToCreateAssociationMixin<PurchaseOrderItem>
+  // declare createPurchaseOrderItem: BelongsToCreateAssociationMixin<PurchaseOrderItem>
 
   // shipment:
-  declare getShipment: BelongsToGetAssociationMixin<Shipment>
+  // declare getShipment: BelongsToGetAssociationMixin<Shipment>
 
-  declare setShipment: BelongsToSetAssociationMixin<Shipment, number>
+  // declare setShipment: BelongsToSetAssociationMixin<Shipment, number>
 
-  declare createShipment: BelongsToCreateAssociationMixin<Shipment>
+  // declare createShipment: BelongsToCreateAssociationMixin<Shipment>
 }
 
 export function initReceivedItem(db: Sequelize) {
@@ -75,6 +89,10 @@ export function initReceivedItem(db: Sequelize) {
       qtyReceived: {
         type: DataTypes.INTEGER,
         allowNull: false,
+      },
+      notes: {
+        type: DataTypes.STRING,
+        allowNull: true,
       },
       receivedDate: {
         type: DataTypes.DATE,

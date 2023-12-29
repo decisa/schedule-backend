@@ -31,7 +31,7 @@ import {
 import type { ProductConfiguration } from '../../Sales/ProductConfiguration/productConfiguration'
 import type { PurchaseOrder } from '../PurchaseOrder/purchaseOrder'
 import type { ShipmentItem } from '../ShipmentItem/shipmentItem'
-import type { ReceivedItem } from '../ReceivedItems/receivedItems'
+// import type { ReceivedItem } from '../ReceivedItems/receivedItems'
 
 export class PurchaseOrderItem extends Model<InferAttributes<PurchaseOrderItem>, InferCreationAttributes<PurchaseOrderItem>> {
   declare id: CreationOptional<number>
@@ -56,13 +56,13 @@ export class PurchaseOrderItem extends Model<InferAttributes<PurchaseOrderItem>,
 
   declare shipmentItems?: NonAttribute<ShipmentItem[]>
 
-  declare receivedItems?: NonAttribute<ReceivedItem[]>
+  // declare receivedItems?: NonAttribute<ReceivedItem[]>
 
   declare public static associations: {
     purchaseOrder: Association<PurchaseOrderItem, PurchaseOrder>,
     product: Association<PurchaseOrderItem, ProductConfiguration>,
     shipmentItems: Association<PurchaseOrderItem, ShipmentItem>,
-    receivedItems: Association<PurchaseOrderItem, ReceivedItem>,
+    // receivedItems: Association<PurchaseOrderItem, ReceivedItem>,
   }
 
   // MIXINS
@@ -100,27 +100,6 @@ export class PurchaseOrderItem extends Model<InferAttributes<PurchaseOrderItem>,
   declare removeShipmentItem: HasManyRemoveAssociationMixin<ShipmentItem, number>
 
   declare removeShipmentItems: HasManyRemoveAssociationsMixin<ShipmentItem, number>
-
-  // ReceivedItems:
-  declare createReceivedItem: HasManyCreateAssociationMixin<ReceivedItem, 'purchaseOrderItemId'>
-
-  declare getReceivedItems: HasManyGetAssociationsMixin<ReceivedItem>
-
-  declare countReceivedItems: HasManyCountAssociationsMixin
-
-  declare hasReceivedItem: HasManyHasAssociationMixin<ReceivedItem, number>
-
-  declare hasReceivedItems: HasManyHasAssociationsMixin<ReceivedItem, number>
-
-  declare setReceivedItems: HasManySetAssociationsMixin<ReceivedItem, number>
-
-  declare addReceivedItem: HasManyAddAssociationMixin<ReceivedItem, number>
-
-  declare addReceivedItems: HasManyAddAssociationsMixin<ReceivedItem, number>
-
-  declare removeReceivedItem: HasManyRemoveAssociationMixin<ReceivedItem, number>
-
-  declare removeReceivedItems: HasManyRemoveAssociationsMixin<ReceivedItem, number>
 }
 
 export function initPurchaseOrderItem(db: Sequelize) {
