@@ -8,32 +8,9 @@ import ProductController, { ProductRead } from '../Product/productController'
 import ProductOptionController from '../ProductOption/productOptionController'
 import type { ProductOptionRead } from '../ProductOption/productOptionController'
 import { ProductOption } from '../ProductOption/productOption'
-import db from '../..'
-import { PurchaseOrderItem } from '../../Receiving/PurchaseOrderItem/purchaseOrderItem'
 import { ProductSummaryView } from '../../../views/ProductSummary/productSummary'
 import { Product } from '../Product/product'
 import { Brand } from '../../Brand/brand'
-
-// create sequleize literals to count quantities of products that were ordered, shipped, received, etc.
-const purchasedLiteral = () => {
-  printYellowLine()
-  const dbName = db.getDatabaseName()
-  console.log('dbName = ', dbName)
-  printYellowLine()
-  const { tableName: poTableName } = PurchaseOrderItem
-  // const poTableName = 'PurchaseOrderItem'
-  const qtyOrdered = PurchaseOrderItem.getAttributes().qtyOrdered.field || 'qtyOrdered'
-  const configurationId = PurchaseOrderItem.getAttributes().configurationId.field || 'configurationId'
-
-  // const { tableName: pcTableName } = ProductConfiguration
-  const pcTableName = 'ProductConfiguration'
-  const pcId = ProductConfiguration.getAttributes().id.field || 'id'
-  return db.literal(`(
-    SELECT SUM(${poTableName}.${qtyOrdered})
-    FROM ${poTableName}
-    WHERE ${poTableName}.${configurationId} = ${dbName}.${pcTableName}.${pcId}
-  )`)
-}
 
 type ProductConfigurationCreational = {
   id: number
