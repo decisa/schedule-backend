@@ -33,6 +33,7 @@ import { initTripDriver } from './Delivery/TripDriver/TripDriver'
 import { initDeliveryItem } from './Delivery/DeliveryItem/DeliveryItem'
 import { initDelivery } from './Delivery/Delivery/Delivery'
 import { initDeliveryStop } from './Delivery/DeliveryStop/DeliveryStop'
+import { initPurchasedSummaryView } from '../views/PurchasedSummary/purchasedSummary'
 
 function initModels(db: Sequelize) {
   initMagentoOrder(db)
@@ -75,6 +76,7 @@ function initModels(db: Sequelize) {
   initDeliveryStop(db)
 
   // Views:
+  initPurchasedSummaryView(db)
   initProductSummaryView(db)
 }
 
