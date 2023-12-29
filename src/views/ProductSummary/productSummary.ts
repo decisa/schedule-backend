@@ -93,7 +93,8 @@ export async function createIfNotExistsProductSummaryView(db: Sequelize, tableVi
   const poiConfigurationId = `poi.${PurchaseOrderItem.getAttributes().configurationId.field || 'configurationId'}`
   const siPurchaseOrderItemId = `si.${ShipmentItem.getAttributes().purchaseOrderItemId.field || 'purchaseOrderItemId'}`
   const siQtyShipped = `si.${ShipmentItem.getAttributes().qtyShipped.field || 'qtyShipped'}`
-  const riPurchaseOrderItemId = `ri.${ReceivedItem.getAttributes().purchaseOrderItemId.field || 'purchaseOrderItemId'}`
+  // fixme: this needs to be updated
+  // const riPurchaseOrderItemId = `ri.${ReceivedItem.getAttributes().purchaseOrderItemId.field || 'purchaseOrderItemId'}`
   const riQtyReceived = `ri.${ReceivedItem.getAttributes().qtyReceived.field || 'qtyReceived'}`
 
   // raw SQL query to create the view:
@@ -103,14 +104,28 @@ export async function createIfNotExistsProductSummaryView(db: Sequelize, tableVi
     ${pId} as configurationId,
     SUM(${poiQtyPurchased}) as qtyPurchased,
     SUM(${siQtyShipped}) as qtyShipped,
-    SUM(${riQtyReceived}) as qtyReceived
   FROM 
     ${ProductConfiguration.tableName} p
     LEFT JOIN ${PurchaseOrderItem.tableName} poi ON ${pId} = ${poiConfigurationId}
     LEFT JOIN ${ShipmentItem.tableName} si ON ${poiId} = ${siPurchaseOrderItemId}
-    LEFT JOIN ${ReceivedItem.tableName} ri ON ${poiId} = ${riPurchaseOrderItemId}
   GROUP BY p.id;
   `
+
+  // copy of previous sql query for reference
+  // const createViewSql = `
+  //   CREATE VIEW ${tableViewName} AS
+  //   SELECT
+  //     ${pId} as configurationId,
+  //     SUM(${poiQtyPurchased}) as qtyPurchased,
+  //     SUM(${siQtyShipped}) as qtyShipped,
+  //     SUM(${riQtyReceived}) as qtyReceived
+  //   FROM
+  //     ${ProductConfiguration.tableName} p
+  //     LEFT JOIN ${PurchaseOrderItem.tableName} poi ON ${pId} = ${poiConfigurationId}
+  //     LEFT JOIN ${ShipmentItem.tableName} si ON ${poiId} = ${siPurchaseOrderItemId}
+  //     LEFT JOIN ${ReceivedItem.tableName} ri ON ${poiId} = ${riPurchaseOrderItemId}
+  //   GROUP BY p.id;
+  //   `
 
   // search if the view with a given name already exists
   const results = await db.query<{ 'COUNT(*)': number }>(checkViewExistsSql, { type: QueryTypes.SELECT })
