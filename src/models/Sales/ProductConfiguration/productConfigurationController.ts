@@ -62,6 +62,7 @@ export type ProductConfigurationCreate =
 export type ProductConfigurationRead = Omit<Required<ProductConfigurationCreate>, 'productId'> & {
   product?: ProductRead,
   options?: ProductOptionRead[] | null,
+  summary?: ProductSummaryView
 }
 
 export type ConfigurationAsProductRead = Omit<ProductRead, 'id'> & {
@@ -232,6 +233,11 @@ function configurationToJson(configuration: ProductConfiguration): ProductConfig
     options: optionsJson,
   }
   delete result.productId
+
+  if (configuration.summary) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unnecessary-type-assertion, @typescript-eslint/no-explicit-any
+    result.summary = configuration.summary.toJSON() as any
+  }
 
   return result
 }

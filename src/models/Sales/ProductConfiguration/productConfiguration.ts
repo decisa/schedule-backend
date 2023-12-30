@@ -33,6 +33,7 @@ import type { ProductOption } from '../ProductOption/productOption'
 import type { RouteStop } from '../../Delivery/RouteStop/routeStop'
 import type { PurchaseOrderItem } from '../../Receiving/PurchaseOrderItem/purchaseOrderItem'
 import type { DeliveryItem } from '../../Delivery/DeliveryItem/DeliveryItem'
+import { ProductSummaryView } from '../../../views/ProductSummary/productSummary'
 
 export class ProductConfiguration extends Model<InferAttributes<ProductConfiguration>, InferCreationAttributes<ProductConfiguration>> {
   declare id: CreationOptional<number>
@@ -79,6 +80,8 @@ export class ProductConfiguration extends Model<InferAttributes<ProductConfigura
 
   declare deliveryItems?: NonAttribute<DeliveryItem[]>
 
+  declare summary?: NonAttribute<ProductSummaryView>
+
   declare public static associations: {
     product: Association<ProductConfiguration, Product>,
     order: Association<ProductConfiguration, Order>,
@@ -86,6 +89,7 @@ export class ProductConfiguration extends Model<InferAttributes<ProductConfigura
     routeStops: Association<ProductConfiguration, RouteStop>,
     purchaseOrderItems: Association<ProductConfiguration, PurchaseOrderItem>,
     deliveryItems: Association<ProductConfiguration, DeliveryItem>,
+    summary: Association<ProductConfiguration, ProductSummaryView>,
   }
 
   // MIXINS

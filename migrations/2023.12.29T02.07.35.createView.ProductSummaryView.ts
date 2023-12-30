@@ -38,9 +38,9 @@ export const up: Migration = async ({ context: queryIterface }) => {
   CREATE VIEW ${productSummaryView} AS
   SELECT 
     ${pcId} as configurationId,
-    COALESCE(${psvTotalQtyPurchased}, 0) as ${totalQtyPurchasedField},
-    COALESCE(${ssvTotalQtyShipped}, 0) as ${totalQtyShippedField},
-    COALESCE(${rsvTotalQtyReceived}, 0) as ${totalQtyReceivedField}
+    COALESCE(${psvTotalQtyPurchased}, 0) as qtyPurchased,
+    COALESCE(${ssvTotalQtyShipped}, 0) as qtyShipped,
+    COALESCE(${rsvTotalQtyReceived}, 0) as qtyReceived
   FROM 
     ${ProductConfiguration.tableName} pc
     LEFT JOIN ${purchasedSummaryView} psv ON ${pcId} = ${psvConfigId}
