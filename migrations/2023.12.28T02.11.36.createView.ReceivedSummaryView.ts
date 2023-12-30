@@ -16,11 +16,8 @@ export const up: Migration = async ({ context: queryIterface }) => {
   AND TABLE_NAME = '${receivedSummaryView}';
   `
   // dyncamically create query parts for type safety
-  console.log(ReceivedItem.getAttributes().qtyReceived)
   const riQtyReceived = `ri.${ReceivedItem.getAttributes().qtyReceived.field || 'qtyReceived'}`
-  console.log(ReceivedItem.getAttributes().shipmentItemId)
   const riShipmentItemId = `ri.${ReceivedItem.getAttributes().shipmentItemId.field || 'shipmentItemId'}`
-
   const poiId = `poi.${PurchaseOrderItem.getAttributes().id.field || 'id'}`
 
   const poiConfigurationId = `poi.${PurchaseOrderItem.getAttributes().configurationId.field || 'configurationId'}`
@@ -33,7 +30,7 @@ export const up: Migration = async ({ context: queryIterface }) => {
   CREATE VIEW ${receivedSummaryView} AS
   SELECT 
     ${poiConfigurationId} as configurationId,
-    SUM(${riQtyReceived}) as ${totalQtyReceivedField}
+    CAST(SUM(${riQtyReceived}) as SIGNED) as ${totalQtyReceivedField}
   FROM 
     ${PurchaseOrderItem.tableName} poi
     LEFT JOIN ${ShipmentItem.tableName} si ON ${poiId} = ${siPurchaseOrderItemId}

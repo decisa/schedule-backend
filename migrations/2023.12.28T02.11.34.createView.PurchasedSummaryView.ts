@@ -23,7 +23,7 @@ export const up: Migration = async ({ context: queryIterface }) => {
   CREATE VIEW ${purchasedSummaryView} AS
   SELECT 
     ${poiConfigurationId} as configurationId,
-    SUM(${poiQtyPurchased}) as ${totalQtyPurchasedField}
+    CAST(SUM(${poiQtyPurchased}) as SIGNED) as ${totalQtyPurchasedField}
   FROM 
     ${PurchaseOrderItem.tableName} poi
   GROUP BY ${poiConfigurationId};

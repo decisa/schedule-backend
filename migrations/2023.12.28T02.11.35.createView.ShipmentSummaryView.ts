@@ -25,7 +25,7 @@ export const up: Migration = async ({ context: queryIterface }) => {
   CREATE VIEW ${shippedSummaryView} AS
   SELECT 
     ${poiConfigurationId} as configurationId,
-    SUM(${siQtyShipped}) as ${totalQtyShippedField}
+    CAST(SUM(${siQtyShipped}) as SIGNED) as ${totalQtyShippedField}
   FROM 
     ${PurchaseOrderItem.tableName} poi
     LEFT JOIN ${ShipmentItem.tableName} si ON ${poiId} = ${siPurchaseOrderItemId}
