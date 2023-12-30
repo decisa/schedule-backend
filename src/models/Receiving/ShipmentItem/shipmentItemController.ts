@@ -1,6 +1,5 @@
 import * as yup from 'yup'
 import { Transaction, ValidationError } from 'sequelize'
-import { th } from 'date-fns/locale'
 import {
   isId, printYellowLine, useTransaction,
 } from '../../../utils/utils'
@@ -133,7 +132,7 @@ function shipmentItemToJson(shipmentItemRaw: ShipmentItem): ShipmentItemRead {
 export default class ShipmentItemController {
   /**
    * convert ShipmentItem Instance or array of instances to a regular JSON object.
-   * @param {ShipmentItem | ShipmentItem[] | null} data - shipment, array of shipments or null
+   * @param {ShipmentItem | ShipmentItem[] | null} data - shipment item, array of shipment items or null
    * @returns {ShipmentItemRead | ShipmentItemRead[] | null} JSON format nullable.
    */
   static toJSON(data: ShipmentItem): ShipmentItemRead
@@ -157,43 +156,35 @@ export default class ShipmentItemController {
 
   /**
    * get ShipmentItem record by id from DB.
-   * @param {unknown} id - shipmentId
+   * @param {number | unknown} id - shipmentItemId
    * @returns {ShipmentItem}
    * @throws {DBError} DBError - NotFoundError if no record found
    */
   static async get(id: number | unknown, t?: Transaction): Promise<ShipmentItem> {
-    const shipmentId = isId.validateSync(id)
-    const final = await ShipmentItem.findByPk(shipmentId, {
+    const shipmentItemId = isId.validateSync(id)
+    const final = await ShipmentItem.findByPk(shipmentItemId, {
       transaction: t,
     })
 
     if (!final) {
-      throw DBError.notFound(new Error(`ShipmentItem with id ${shipmentId} was not found`))
+      throw DBError.notFound(new Error(`ShipmentItem with id ${shipmentItemId} was not found`))
     }
     return final
   }
 
   /**
    * insert ShipmentItem record to DB. carrierId is required.
-   * @param {ShipmentItemCreate | unknown} shipmentData - ShipmentItem data to insert to DB
+   * @param {ShipmentItemCreate | unknown} shipmentItemData - ShipmentItem data to insert to DB
    * @returns {ShipmentItem} newly created ShipmentItem object or throws error
    */
-  static async create(shipmentData: ShipmentItemCreate | unknown, t?: Transaction): Promise<ShipmentItem> {
+  static async create(shipmentItemData: ShipmentItemCreate | unknown, t?: Transaction): Promise<ShipmentItem> {
     const [transaction, commit, rollback] = await useTransaction(t)
     try {
-      const parsedShipmentItem = validateShipmentItemCreate(shipmentData)
+      const parsedShipmentItem = validateShipmentItemCreate(shipmentItemData)
 
       const result = await ShipmentItem.create(parsedShipmentItem, {
         transaction,
       })
-
-      // code below is in case the get method needs to be customized, otherwise redundant
-      // const final = await this.get(result.id, transaction)
-      // if (!final) {
-      //   throw new Error('Internal Error: ShipmentItem was not created')
-      // }
-      // await commit()
-      // return final
 
       await commit()
       return result
@@ -205,7 +196,7 @@ export default class ShipmentItemController {
   }
 
   /**
-   * insert ShipmentItem records to DB. shipmentId is required.
+   * bulk insert ShipmentItem records to DB. shipmentId is required. will combine shipment items with the same purchaseOrderItemId.
    * @param {number} shipmentId - id of the shipment record for which items are created
    * @param {ShipmentItemCreate[] | unknown[]} shipmentItems - array of ShipmentItem records to insert to DB
    * @returns {ShipmentItem[]} array of created ShipmentItems or throws error
@@ -303,25 +294,26 @@ export default class ShipmentItemController {
 
   /**
    * delete ShipmentItem record with a given id from DB.
-   * @param {unknown} id - shipmentId
+   * @param {number | unknown} id - shipmentItemId
    * @returns {ShipmentItemRead} returns  ShipmentItem was deleted or throws error
+   * @throws {DBError} DBError - NotFoundError if no record found
    */
   static async delete(id: number | unknown, t?: Transaction): Promise<ShipmentItemRead> {
     const [transaction, commit, rollback] = await useTransaction(t)
     try {
-      const shipmentId = isId.validateSync(id)
-      const shipmentRecord = await this.get(shipmentId, transaction)
+      const shipmentItemId = isId.validateSync(id)
+      const shipmentRecord = await this.get(shipmentItemId, transaction)
       if (!shipmentRecord) {
-        throw DBError.notFound(new Error(`ShipmentItem with id ${shipmentId} was not found`))
+        throw DBError.notFound(new Error(`ShipmentItem with id ${shipmentItemId} was not found`))
       }
       await ShipmentItem.destroy({
         where: {
-          id: shipmentId,
+          id: shipmentItemId,
         },
         transaction,
       })
       await commit()
-      return shipmentRecord.toJSON()
+      return shipmentRecord
     } catch (error) {
       await rollback()
       // rethrow the error for further handling
