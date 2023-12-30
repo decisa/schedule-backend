@@ -252,9 +252,9 @@ export default class ReceivedItemController {
   /**
    * delete ReceivedItem record with a given id from DB.
    * @param {unknown} id - receivedItemId
-   * @returns {ReceivedItemRead} returns ReceivedItem that was deleted or throws not found error
+   * @returns {ReceivedItem} returns ReceivedItem that was deleted or throws not found error
    */
-  static async delete(id: number | unknown, t?: Transaction): Promise<ReceivedItemRead> {
+  static async delete(id: number | unknown, t?: Transaction): Promise<ReceivedItem> {
     const [transaction, commit, rollback] = await useTransaction(t)
     try {
       const receivedItemId = isId.validateSync(id)
