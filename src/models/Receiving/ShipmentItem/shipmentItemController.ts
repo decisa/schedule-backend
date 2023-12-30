@@ -295,10 +295,10 @@ export default class ShipmentItemController {
   /**
    * delete ShipmentItem record with a given id from DB.
    * @param {number | unknown} id - shipmentItemId
-   * @returns {ShipmentItemRead} returns  ShipmentItem was deleted or throws error
+   * @returns {ShipmentItem} returns  ShipmentItem that was deleted or throws error
    * @throws {DBError} DBError - NotFoundError if no record found
    */
-  static async delete(id: number | unknown, t?: Transaction): Promise<ShipmentItemRead> {
+  static async delete(id: number | unknown, t?: Transaction): Promise<ShipmentItem> {
     const [transaction, commit, rollback] = await useTransaction(t)
     try {
       const shipmentItemId = isId.validateSync(id)
