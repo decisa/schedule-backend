@@ -1,7 +1,7 @@
 import * as yup from 'yup'
 import { ForeignKeyConstraintError, Transaction } from 'sequelize'
-import { de } from 'date-fns/locale'
-import { Delivery } from './Delivery'
+// import { de } from 'date-fns/locale'
+import { Delivery, Period } from './Delivery'
 import { isId, useTransaction } from '../../../utils/utils'
 import OrderController, { OrderRead } from '../../Sales/Order/orderController'
 import OrderAddressController, { OrderAddressMagentoRead } from '../../Sales/OrderAddress/orderAddressContoller'
@@ -19,12 +19,23 @@ type DeliveryCreational = {
 
 type DeliveryRequired = {
   status: DeliveryStatus
+  title: string
+  coiRequired: boolean // in required, because has default value
+  coiReceived: boolean // in required, because has default value
+  daysAvailability: number // 7-bit integer (0-127) representing days of the week Sunday-Saturday. default 127
+  startTime: number // (in minutes) in required, because has default value
+  endTime: number // (in minutes) in required, because has default value
 }
 
 type DeliveryOptional = {
   estimatedDurationString?: string | null
   estimatedDuration?: [number, number] | null
   notes: string | null
+  coiNotes: string | null
+  amountDue: string | null
+  days:[boolean, boolean, boolean, boolean, boolean, boolean, boolean] // virtual
+
+  timePeriod: Period // virtual
 }
 
 type DeliveryTimeStamps = {
@@ -97,14 +108,21 @@ const deliverySchemaCreate: yup.ObjectSchema<DeliveryCreate> = yup.object({
     .default(null)
     .label('Delivery malformed data: deliveryStopId'),
   // required
+  // status: DeliveryStatus
+  // title: string
   status: yup.mixed<DeliveryStatus>()
     .oneOf(deliveryStatuses)
     .nonNullable()
     .default('pending')
     .required()
     .label('Malformed data: status'),
+  title: yup.string()
+    .default('')
+    .defined()
+    .label('Delivery malformed data: title'),
   // optional
   // estimatedDurationString: string | null
+  // estimatedDuration?: [number, number] | null
   // notes: string | null
   estimatedDurationString: yup.string()
     .nullable()
@@ -113,6 +131,89 @@ const deliverySchemaCreate: yup.ObjectSchema<DeliveryCreate> = yup.object({
     .nullable()
     .label('Delivery malformed data: estimatedDuration'),
   notes: yup.string().nullable().label('Delivery malformed data: notes'),
+  // new optional fields
+  // coiRequired: boolean
+  // coiReceived: boolean
+  // coiNotes: string | null
+  // amountDue: string | null
+  // daysAvailability: number // 7-bit integer (0-127) representing days of the week Sunday-Saturday
+  // days:[boolean, boolean, boolean, boolean, boolean, boolean, boolean] // virtual
+  // startTime: number // in minutes
+  // endTime: number // in minutes
+  // timePeriod: [number, number] // virtual
+  coiRequired: yup.boolean()
+    .default(false)
+    .nonNullable()
+    .required()
+    .label('Delivery malformed data: coiRequired'),
+  coiReceived: yup.boolean()
+    .default(false)
+    .nonNullable()
+    .label('Delivery malformed data: coiReceived'),
+  coiNotes: yup.string()
+    .nullable()
+    .label('Delivery malformed data: coiNotes'),
+  amountDue: yup.string()
+    .nullable()
+    .label('Delivery malformed data: amountDue'),
+  daysAvailability: yup.number()
+    .integer()
+    .min(0)
+    .max(127)
+    .default(127)
+    .nonNullable()
+    .label('Delivery malformed data: daysAvailability'),
+  // days: yup.array()
+  //   .of(yup.boolean().defined().default(true))
+  //   .min(7)
+  //   .max(7)
+  //   .default([true, true, true, true, true, true, true])
+  //   .label('Delivery malformed data: days'),
+  days: yup.tuple([
+    yup.boolean().default(true).label('Sunday'),
+    yup.boolean().default(true).label('Monday'),
+    yup.boolean().default(true).label('Tuesday'),
+    yup.boolean().default(true).label('Wednesday'),
+    yup.boolean().default(true).label('Thursday'),
+    yup.boolean().default(true).label('Friday'),
+    yup.boolean().default(true).label('Saturday'),
+  ])
+    .nonNullable()
+    .label('Delivery malformed data: days'),
+  startTime: yup.number()
+    .integer()
+    .min(0)
+    .max(1440)
+    .default(420)
+    .nonNullable()
+    .label('Delivery malformed data: startTime'),
+  endTime: yup.number()
+    .integer()
+    .min(0)
+    .max(1440)
+    .default(1080)
+    .nonNullable()
+    .label('Delivery malformed data: endTime'),
+  timePeriod: yup.object({
+    start: yup.number()
+      .integer()
+      .min(0)
+      .max(1440)
+      .default(420)
+      .nonNullable()
+      .required(),
+    end: yup.number()
+      .integer()
+      .min(0)
+      .max(1440)
+      .default(1080)
+      .nonNullable()
+      .required(),
+  })
+    .default({ start: 420, end: 1080 })
+    .nonNullable()
+    .required()
+    .label('Delivery malformed data: timePeriod'),
   // id: number
   id: yup
     .number()
@@ -120,6 +221,7 @@ const deliverySchemaCreate: yup.ObjectSchema<DeliveryCreate> = yup.object({
     .positive()
     .nonNullable()
     .label('Delivery malformed data: id'),
+  // timestamps
   // createdAt: Date
   // updatedAt: Date
   createdAt: yup.date().nonNullable().label('Delivery malformed data: createdAt'),

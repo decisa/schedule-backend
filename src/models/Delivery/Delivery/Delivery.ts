@@ -1,3 +1,4 @@
+/* eslint-disable no-bitwise */
 import {
   Association, CreationOptional, InferAttributes, InferCreationAttributes, Model, NonAttribute, Sequelize, DataTypes, ForeignKey,
   HasManyCreateAssociationMixin,
@@ -22,6 +23,10 @@ import type { DeliveryStop } from '../DeliveryStop/DeliveryStop'
 import type { DeliveryItem } from '../DeliveryItem/DeliveryItem'
 import type { DeliveryStatus } from './DeliveryController'
 
+export type Period = {
+  start: number
+  end: number
+}
 export class Delivery extends Model<InferAttributes<Delivery>, InferCreationAttributes<Delivery>> {
   declare id: CreationOptional<number>
 
@@ -32,6 +37,26 @@ export class Delivery extends Model<InferAttributes<Delivery>, InferCreationAttr
   declare estimatedDuration: CreationOptional<[number, number]>
 
   declare notes: string | null
+
+  declare title: string
+
+  declare coiRequired: boolean
+
+  declare coiReceived: boolean
+
+  declare coiNotes: string | null
+
+  declare amountDue: string | null
+
+  declare daysAvailability: number // 7-bit integer (0-127) representing days of the week Sunday-Saturday
+
+  declare days: CreationOptional<[boolean, boolean, boolean, boolean, boolean, boolean, boolean]>
+
+  declare startTime: number // in minutes
+
+  declare endTime: number // in minutes
+
+  declare timePeriod: CreationOptional<Period>
 
   // timestamps
   declare createdAt: CreationOptional<Date>
@@ -138,6 +163,52 @@ export function initDelivery(db: Sequelize) {
         },
       },
       notes: DataTypes.STRING,
+      title: DataTypes.STRING,
+      coiRequired: DataTypes.BOOLEAN,
+      coiReceived: DataTypes.BOOLEAN,
+      coiNotes: DataTypes.STRING,
+      amountDue: DataTypes.STRING,
+      daysAvailability: DataTypes.SMALLINT,
+      days: {
+        type: DataTypes.VIRTUAL,
+        defaultValue: [true, true, true, true, true, true, true],
+        get() {
+          const rawValue = this.getDataValue('daysAvailability') // as unknown as string
+          return [
+            rawValue & 64,
+            rawValue & 32,
+            rawValue & 16,
+            rawValue & 8,
+            rawValue & 4,
+            rawValue & 2,
+            rawValue & 1].map(Boolean)
+        },
+        set(val: [boolean, boolean, boolean, boolean, boolean, boolean, boolean]) {
+          const result = val.reduce((acc, cur) => (acc >> 1) + (cur ? 1 : 0), 0)
+          this.setDataValue('daysAvailability', result)
+        },
+      },
+      startTime: DataTypes.SMALLINT.UNSIGNED,
+      endTime: DataTypes.SMALLINT.UNSIGNED,
+      timePeriod: {
+        type: DataTypes.VIRTUAL,
+        defaultValue: {
+          start: 420,
+          end: 1200,
+        },
+        get() {
+          const start = this.getDataValue('startTime')
+          const end = this.getDataValue('endTime')
+          return {
+            start,
+            end,
+          }
+        },
+        set(val: Period) {
+          this.setDataValue('startTime', val.start)
+          this.setDataValue('endTime', val.end)
+        },
+      },
       createdAt: {
         type: DataTypes.DATE,
         defaultValue: DataTypes.NOW,
