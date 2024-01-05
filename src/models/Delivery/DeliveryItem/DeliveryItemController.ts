@@ -6,9 +6,7 @@ import type { ConfigurationAsProductRead } from '../../Sales/ProductConfiguratio
 import type { DeliveryRead } from '../Delivery/DeliveryController'
 import { DeliveryItem } from './DeliveryItem'
 import ProductConfigurationController from '../../Sales/ProductConfiguration/productConfigurationController'
-import DeliveryController from '../Delivery/DeliveryController'
 import { ProductOption } from '../../Sales/ProductOption/productOption'
-import { ProductSummaryView } from '../../../views/ProductSummary/productSummary'
 import { ProductConfiguration } from '../../Sales/ProductConfiguration/productConfiguration'
 
 export const deliveryStatuses = ['pending', 'scheduled', 'confirmed'] as const
@@ -141,11 +139,6 @@ function deliveryItemToJson(deliveryItemRaw: DeliveryItem): DeliveryItemRead {
   // if "configuration as product" record is present in model instance, convert it to JSON using proper controller
   if (deliveryItemRaw.product) {
     result.product = ProductConfigurationController.toJsonAsProduct(deliveryItemRaw.product)
-  }
-
-  // if delivery record is present in model instance, convert it to JSON using proper controller
-  if (deliveryItemRaw.delivery) {
-    result.delivery = DeliveryController.toJSON(deliveryItemRaw.delivery)
   }
 
   return result
