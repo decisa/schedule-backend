@@ -1,14 +1,16 @@
 import * as yup from 'yup'
 import { ForeignKeyConstraintError, Transaction } from 'sequelize'
 // import { de } from 'date-fns/locale'
-import { Delivery, Period } from './Delivery'
-import { isId, useTransaction } from '../../../utils/utils'
+import { de } from 'date-fns/locale'
+import { Delivery, Period, daysToNumber } from './Delivery'
+import { isId, printYellowLine, useTransaction } from '../../../utils/utils'
 import OrderController, { OrderRead } from '../../Sales/Order/orderController'
 import OrderAddressController, { OrderAddressMagentoRead } from '../../Sales/OrderAddress/orderAddressContoller'
 import DeliveryItemController, { DeliveryItemRead } from '../DeliveryItem/DeliveryItemController'
 import { ProductConfiguration } from '../../Sales/ProductConfiguration/productConfiguration'
 import { ProductOption } from '../../Sales/ProductOption/productOption'
 import { DeliveryItem } from '../DeliveryItem/DeliveryItem'
+import { DBError } from '../../../ErrorManagement/errors'
 
 export const deliveryStatuses = ['pending', 'scheduled', 'confirmed'] as const
 export type DeliveryStatus = typeof deliveryStatuses[number]
@@ -35,7 +37,7 @@ type DeliveryOptional = {
   amountDue: string | null
   days:[boolean, boolean, boolean, boolean, boolean, boolean, boolean] // virtual
 
-  timePeriod: Period // virtual
+  timePeriod?: Period // virtual
 }
 
 type DeliveryTimeStamps = {
@@ -67,9 +69,10 @@ export type DeliveryCreate =
 
 export type DeliveryUpdate = Partial<DeliveryCreate>
 
-export type DeliveryRead = Omit<Required<DeliveryCreate>, 'estimatedDurationString'> & {
+export type DeliveryRead = Omit<Required<DeliveryCreate>, 'estimatedDurationString' | 'startTime' | 'endTime' | 'daysAvailability'> & {
   // items?: DeliveryItem[],
-  estimatedDuration: [number, number] | null
+  estimatedDuration: [number, number] | null,
+  // timePeriod: Period,
 } & Partial<DeliveryAssociations>
 
 const validateTupleString = (value: string) => {
@@ -163,12 +166,6 @@ const deliverySchemaCreate: yup.ObjectSchema<DeliveryCreate> = yup.object({
     .default(127)
     .nonNullable()
     .label('Delivery malformed data: daysAvailability'),
-  // days: yup.array()
-  //   .of(yup.boolean().defined().default(true))
-  //   .min(7)
-  //   .max(7)
-  //   .default([true, true, true, true, true, true, true])
-  //   .label('Delivery malformed data: days'),
   days: yup.tuple([
     yup.boolean().default(true).label('Sunday'),
     yup.boolean().default(true).label('Monday'),
@@ -228,8 +225,24 @@ const deliverySchemaCreate: yup.ObjectSchema<DeliveryCreate> = yup.object({
   updatedAt: yup.date().nonNullable().label('Delivery malformed data: updatedAt'),
 })
 
+const periodSchema: yup.ObjectSchema<Period> = yup.object({
+  start: yup.number()
+    .integer()
+    .min(0)
+    .max(1440)
+    .nonNullable()
+    .required(),
+  end: yup.number()
+    .integer()
+    .min(0)
+    .max(1440)
+    .nonNullable()
+    .required(),
+})
+
 // create a copy and remove required fields for update operations.
-const deliverySchemaUpdate: yup.ObjectSchema<DeliveryUpdate> = deliverySchemaCreate.clone()
+const deliverySchemaUpdate: yup.ObjectSchema<Omit<DeliveryUpdate, 'timePeriod'>> = deliverySchemaCreate.clone()
+  .omit(['timePeriod'])
   .shape({
     orderId: yup.number()
       .integer()
@@ -245,6 +258,36 @@ const deliverySchemaUpdate: yup.ObjectSchema<DeliveryUpdate> = deliverySchemaCre
       .oneOf(deliveryStatuses)
       .nonNullable()
       .label('Malformed data: status'),
+    coiRequired: yup.boolean()
+      .nonNullable()
+      .label('Delivery malformed data: coiRequired'),
+    coiReceived: yup.boolean()
+      .nonNullable()
+      .label('Delivery malformed data: coiReceived'),
+    startTime: yup.number()
+      .integer()
+      .min(0)
+      .max(1440)
+      .nonNullable()
+      .label('Delivery malformed data: startTime'),
+    endTime: yup.number()
+      .integer()
+      .min(0)
+      .max(1440)
+      .nonNullable()
+      .label('Delivery malformed data: endTime'),
+    daysAvailability: yup.number()
+      .integer()
+      .min(0)
+      .max(127)
+      .nonNullable()
+      .label('Delivery malformed data: daysAvailability'),
+    deliveryStopId: yup.number()
+      .integer()
+      .positive()
+      .nullable()
+      .label('Delivery malformed data: deliveryStopId'),
+
   })
 
 export function validateDeliveryCreate(object: unknown): Omit<DeliveryCreate, 'estimatedDuration' | 'estimatedDurationString'> & {
@@ -277,14 +320,43 @@ export function validateDeliveryCreate(object: unknown): Omit<DeliveryCreate, 'e
   return result
 }
 
-export function validateDeliveryUpdate(object: unknown): Omit<Partial<DeliveryCreate>, 'estimatedDuration'> {
+export function validateDeliveryUpdate(object: unknown): Omit<Partial<DeliveryCreate>, 'estimatedDuration' | 'timePeriod' | 'days'> {
+  printYellowLine()
+  console.log('received object to check', object)
   const delivery = deliverySchemaUpdate
     .omit(['createdAt', 'updatedAt', 'id'])
     .validateSync(object, {
       stripUnknown: true,
       abortEarly: false,
     }) satisfies Partial<DeliveryCreate>
+  console.log('parsed delivery update:', delivery)
+  // note: take care of virtual field timePeriod and related fields startTime and endTime
+  // if timePeriod was provided, extract it separately and use it as source of truth:
+  if (object && typeof object === 'object' && 'timePeriod' in object && object.timePeriod) {
+    const timePeriod = periodSchema.validateSync(object.timePeriod, {
+      stripUnknown: true,
+      abortEarly: false,
+    }) satisfies Period
+    delivery.startTime = timePeriod.start
+    delivery.endTime = timePeriod.end
+  }
 
+  console.log('checking !! startTime', delivery.startTime, 'endTime', delivery.endTime)
+  // check if any of startTime or endTime were provided
+  if ((delivery.startTime !== undefined) || (delivery.endTime !== undefined)) {
+    // if only one was provided, then throw error
+    if ((delivery.startTime === undefined) || (delivery.endTime === undefined)) {
+      throw new Error('Delivery malformed data: startTime and endTime should be provided together')
+    }
+  }
+
+  // check if startTime < endTime
+  if (delivery.startTime && delivery.endTime && delivery.startTime > delivery.endTime) {
+    console.log('fixing the end time: startTime >= endTime')
+    delivery.endTime = delivery.startTime
+  }
+
+  // note: take care of virtual field estimatedDuration and its related field estimatedDurationString
   // check if estimatedDuration was provided. if provided, then use it as a source of truth, convert to estimatedDurationString and delete the virtual field estimatedDuration
   if (delivery.estimatedDuration) {
     delivery.estimatedDurationString = delivery.estimatedDuration.join(',')
@@ -304,11 +376,23 @@ export function validateDeliveryUpdate(object: unknown): Omit<Partial<DeliveryCr
       throw new Error('Delivery malformed data: estimatedDurationString should be a tuple of 2 numbers')
     }
   }
+
+  // note: take care of virtual field days and its related field daysAvailability
+  // if days were provided, convert them to daysAvailability and delete the virtual field days
+  if (delivery.days) {
+    console.log('days were provided', delivery.days)
+    delivery.daysAvailability = daysToNumber(delivery.days)
+    delete delivery.days
+  }
+
   return delivery
 }
 
 function deliveryToJson(deliveryRaw: Delivery): DeliveryRead {
-  const { estimatedDurationString, ...deliveryData } = deliveryRaw.toJSON()
+  // remove backend fields from JSON and keep only their virtual frontend counterparts in deliveryData
+  const {
+    estimatedDurationString, startTime, endTime, daysAvailability, ...deliveryData
+  } = deliveryRaw.toJSON()
   const result: DeliveryRead = {
     ...deliveryData,
   }
@@ -327,13 +411,6 @@ function deliveryToJson(deliveryRaw: Delivery): DeliveryRead {
   if (deliveryRaw.items) {
     result.items = DeliveryItemController.toJSON(deliveryRaw.items)
   }
-  // delete deliveryData.estimatedDurationString
-  // const result = {
-  //   ...purchaseOrderData,
-  //   products,
-  //   magento,
-  // }
-  // return result
 
   return result
 }
@@ -418,67 +495,8 @@ export default class DeliveryController {
     return final
   }
 
-  // /**
-  //  * get PurchaseOrder record by id from DB.
-  //  * @param {unknown} id - purchaseOrderId
-  //  * @returns {PurchaseOrder} PurchaseOrder object or null
-  //  */
-  // static async getFullPO(id: number | unknown, t?: Transaction): Promise<PurchaseOrder | null> {
-  //   const purchaseOrderId = isId.validateSync(id)
-  //   const final = await PurchaseOrder.findByPk(purchaseOrderId, {
-  //     attributes: ['id', 'poNumber', 'dateSubmitted', 'productionWeeks', 'status', 'createdAt', 'updatedAt'],
-  //     include: [
-  //       {
-  //         model: Brand,
-  //         as: 'brand',
-  //       },
-  //       {
-  //         model: PurchaseOrderItem,
-  //         as: 'items',
-  //         attributes: {
-  //           exclude: ['purchaseOrderId', 'createdAt', 'updatedAt'],
-  //         },
-  //         include: [
-  //           {
-  //             model: ProductConfiguration,
-  //             as: 'product',
-  //             attributes: ['qtyOrdered', 'qtyRefunded', 'qtyShippedExternal', 'sku'],
-  //             include: [
-  //               {
-  //                 model: Product,
-  //                 as: 'product',
-  //                 attributes: ['name', 'sku'],
-  //               },
-  //               {
-  //                 model: ProductOption,
-  //                 as: 'options',
-  //                 attributes: ['label', 'value'],
-  //               },
-  //             ],
-  //           },
-  //         ],
-  //       },
-  //       {
-  //         model: Order,
-  //         as: 'order',
-  //         attributes: ['orderNumber', 'id'],
-  //         include: [{
-  //           model: Customer,
-  //           as: 'customer',
-  //           attributes: {
-  //             exclude: ['defaultShippingId', 'createdAt', 'updatedAt'],
-  //           },
-  //         },
-  //         ],
-  //       },
-  //     ],
-  //     transaction: t,
-  //   })
-  //   return final
-  // }
-
   /**
-   * insert Delivery record to DB. orderId and orderId are required.
+   * insert Delivery record to DB. orderId is required.
    * @param {DeliveryCreate | unknown} deliveryData -  Delivery record to insert to DB
    * @returns {Delivery} Delivery object or throws error
    */
@@ -524,38 +542,6 @@ export default class DeliveryController {
     }
   }
 
-  // /**
-  //  * create a PurchaseOrder with PurchaseOrderItems
-  //  * @param {PurchaseOrderCreate | unknown} purchaseOrderData - purchaseOrder data along with purchaseOrderItems
-  //  * @returns {PurchaseOrder} PurchaseOrder object or throws error
-  //  */
-  // static async createPurchaseOrder(purchaseOrderData: PurchaseOrderCreate | unknown, t?: Transaction): Promise<PurchaseOrder> {
-  //   const [transaction, commit, rollback] = await useTransaction(t)
-  //   try {
-  //     const parsedPurchaseOrder = purchaseOrderRequestCreate.validateSync(purchaseOrderData, {
-  //       stripUnknown: true,
-  //       abortEarly: false,
-  //     }) satisfies PurchaseOrderRequest
-
-  //     const newPurchaseOrderRecord = await PurchaseOrder.create(parsedPurchaseOrder, {
-  //       transaction,
-  //     })
-
-  //     const items = await PurchaseOrderItemController.bulkCreate(newPurchaseOrderRecord.id, parsedPurchaseOrder.items, transaction)
-
-  //     newPurchaseOrderRecord.items = items
-  //     if (!newPurchaseOrderRecord) {
-  //       throw new Error('Internal Error: PurchaseOrder was not created')
-  //     }
-  //     await commit()
-  //     return newPurchaseOrderRecord
-  //   } catch (error) {
-  //     await rollback()
-  //     // rethrow the error for further handling
-  //     throw error
-  //   }
-  // }
-
   /**
      * update Delivery record in DB.
      * @param {number | unknown} deliveryId - id of the Delivery record to update in DB
@@ -573,6 +559,8 @@ export default class DeliveryController {
         throw new Error('Delivery does not exist')
       }
 
+      printYellowLine()
+      console.log('parsedDeliveryUpdate', parsedDeliveryUpdate)
       await deliveryRecord.update(parsedDeliveryUpdate, { transaction })
 
       await commit()
@@ -584,171 +572,32 @@ export default class DeliveryController {
     }
   }
 
-  // /**
-  //  * upsert(insert or create) purchaseOrder record in DB. poNumber is required
-  //  * @param {unknown} purchaseOrderData - update/create data for productConfiguration record
-  //  * @returns {productConfiguration} updated or created productConfiguration object with Brand Record if available
-  //  */
-  // static async upsert(purchaseOrderData: unknown, t?: Transaction): Promise<PurchaseOrder> {
-  //   const [transaction, commit, rollback] = await useTransaction(t)
-  //   try {
-  //     const parsedPurchaseOrder = validatePurchaseOrderCreate(purchaseOrderData)
-  //     const purchaseOrderRecord = await PurchaseOrder.findOne({
-  //       where: {
-  //         poNumber: parsedPurchaseOrder.poNumber,
-  //       },
-  //       transaction,
-  //     })
-
-  //     let result: PurchaseOrder
-  //     if (!purchaseOrderRecord) {
-  //       result = await this.create(purchaseOrderData, transaction)
-  //     } else {
-  //       result = await this.update(purchaseOrderRecord.id, purchaseOrderData, transaction)
-  //     }
-
-  //     await commit()
-  //     return result
-  //   } catch (error) {
-  //     await rollback()
-  //     // rethrow the error for further handling
-  //     throw error
-  //   }
-  // }
-
   /**
    * delete Delivery record with a given id from DB.
    * @param {unknown} id - deliveryId
-   * @returns {boolean} true if Delivery was deleted
+   * @returns {Delivery} Delivery object that was deleted or throws not found error
    */
-  static async delete(id: number | unknown, t?: Transaction): Promise<boolean> {
+  static async delete(id: number | unknown, t?: Transaction): Promise<Delivery> {
     const [transaction, commit, rollback] = await useTransaction(t)
     try {
       const deliveryId = isId.validateSync(id)
-      const final = await Delivery.destroy({
+      const deliveryRecord = await Delivery.findByPk(deliveryId, { transaction })
+      if (!deliveryRecord) {
+        throw DBError.notFound(new Error(`Delivery with id ${deliveryId} was not found`))
+      }
+
+      await Delivery.destroy({
         where: {
           id: deliveryId,
         },
         transaction,
       })
       await commit()
-      return final === 1
+      return deliveryRecord
     } catch (error) {
       await rollback()
       // rethrow the error for further handling
       throw error
     }
   }
-
-  // static async searchPurchaseOrders(term: string, t?: Transaction) {
-  //   const wildCardTerm = `%${term}%`
-  //   const purchaseOrders = await PurchaseOrder.findAll({
-  //     include: [
-  //       {
-  //         association: 'customer',
-  //         attributes: ['email', 'firstName', 'lastName'],
-  //       },
-  //       {
-  //         association: 'shippingAddress',
-  //         attributes: ['firstName', 'lastName'],
-  //       },
-  //       {
-  //         association: 'billingAddress',
-  //         attributes: ['firstName', 'lastName'],
-  //       },
-  //       {
-  //         model: ProductConfiguration,
-  //         as: 'products',
-  //         attributes: ['qtyPurchaseOrdered', 'qtyRefunded', 'qtyShippedExternal'],
-  //         include: [
-  //           {
-  //             model: Product,
-  //             as: 'product',
-  //             attributes: ['name'],
-  //             include: [
-  //               {
-  //                 model: Brand,
-  //                 as: 'brand',
-  //                 attributes: ['name'],
-  //               },
-  //             ],
-  //           },
-  //         ],
-
-  //         // include: [
-  //         //   {
-  //         //     association: 'product',
-  //         //     attributes: ['name'],
-  //         //     include: [
-  //         //       {
-  //         //         association: 'brand',
-  //         //         attributes: ['name'],
-  //         //       },
-  //         //     ],
-  //         //   },
-  //         // ],
-  //       },
-  //     ],
-  //     where: {
-  //       [Op.or]: [
-  //         {
-  //           '$customer.firstName$': {
-  //             [Op.like]: wildCardTerm,
-  //           },
-  //         },
-  //         {
-  //           '$customer.lastName$': {
-  //             [Op.like]: wildCardTerm,
-  //           },
-  //         },
-  //         {
-  //           '$shippingAddress.firstName$': {
-  //             [Op.like]: wildCardTerm,
-  //           },
-  //         },
-  //         {
-  //           '$shippingAddress.lastName$': {
-  //             [Op.like]: wildCardTerm,
-  //           },
-  //         },
-  //         {
-  //           '$billingAddress.firstName$': {
-  //             [Op.like]: wildCardTerm,
-  //           },
-  //         },
-  //         {
-  //           '$billingAddress.lastName$': {
-  //             [Op.like]: wildCardTerm,
-  //           },
-  //         },
-  //         Sequelize.where(
-  //           Sequelize.fn('concat', Sequelize.col('customer.firstName'), ' ', Sequelize.col('customer.lastName')),
-  //           {
-  //             [Op.like]: wildCardTerm,
-  //           },
-  //         ),
-  //         Sequelize.where(
-  //           Sequelize.fn('concat', Sequelize.col('billingAddress.firstName'), ' ', Sequelize.col('billingAddress.lastName')),
-  //           {
-  //             [Op.like]: wildCardTerm,
-  //           },
-  //         ),
-  //         Sequelize.where(
-  //           Sequelize.fn('concat', Sequelize.col('shippingAddress.firstName'), ' ', Sequelize.col('shippingAddress.lastName')),
-  //           {
-  //             [Op.like]: wildCardTerm,
-  //           },
-  //         ),
-  //         {
-  //           purchaseOrderNumber: {
-  //             [Op.like]: wildCardTerm,
-  //           },
-  //         },
-  //       ],
-  //     },
-  //     attributes: ['id', 'purchaseOrderNumber'],
-  //     transaction: t,
-  //   })
-  //   return purchaseOrders.map((purchaseOrder) => this.toJSON(purchaseOrder)).filter((x) => x)
-  // }
 }
