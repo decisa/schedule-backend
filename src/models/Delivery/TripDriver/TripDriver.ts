@@ -4,7 +4,7 @@ import {
   DataTypes,
 } from 'sequelize'
 import { Trip } from '../Trip/Trip'
-import { Driver } from '../Driver/Driver'
+import { Driver } from '../Driver/driver'
 
 export class TripDriver extends Model<InferAttributes<TripDriver>, InferCreationAttributes<TripDriver>> {
   declare createdAt: CreationOptional<Date>

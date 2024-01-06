@@ -28,8 +28,9 @@ import {
   DataTypes,
 } from 'sequelize'
 import type { Vehicle } from '../Vehicle/vehicle'
-import type { Driver } from '../Driver/Driver'
+
 import type { DeliveryStop } from '../DeliveryStop/DeliveryStop'
+import type { Driver } from '../Driver/driver'
 
 // done: One-to-many relationship between Vehicle and Trips
 // done: many-to-many relationship between Trip and Drivers
@@ -48,7 +49,7 @@ export class Trip extends Model<InferAttributes<Trip>, InferCreationAttributes<T
   declare updatedAt: CreationOptional<Date>
 
   // associations
-  declare vehicleId: ForeignKey<Vehicle['id']>
+  declare vehicleId: ForeignKey<Vehicle['id']> | null
 
   declare vehicle?: NonAttribute<Vehicle>
 

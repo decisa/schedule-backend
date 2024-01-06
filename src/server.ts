@@ -4,7 +4,7 @@ import {
 // import app from './app'
 import db from './models'
 import { printYellowLine } from './utils/utils'
-import { Driver } from './models/Delivery/Driver/Driver'
+import { Driver } from './models/Delivery/Driver/driver'
 import app from './app'
 import { Vehicle } from './models/Delivery/Vehicle/vehicle'
 import { Trip } from './models/Delivery/Trip/Trip'

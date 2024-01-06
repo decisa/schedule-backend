@@ -18,13 +18,12 @@ import { initPurchaseOrderItem } from './Receiving/PurchaseOrderItem/purchaseOrd
 import { initReceivedItem } from './Receiving/ReceivedItems/receivedItems'
 import { initShipment } from './Receiving/Shipment/shipment'
 import { initShipmentItem } from './Receiving/ShipmentItem/shipmentItem'
-import { initTripRoute } from './Delivery/TripRoute/tripRoute'
-import { initDriver } from './Delivery/Driver/Driver'
-import { initRouteDriver } from './Delivery/RouteDriver/routeDrivers'
+import { initDriver } from './Delivery/Driver/driver'
+// import { initRouteDriver } from './Delivery/RouteDriver/routeDrivers'
 import { initDriverDowntime } from './Delivery/DriverDowntime/driverDowntime'
 import { initOrderAvailability } from './Delivery/OrderAvailability/orderAvailability'
-import { initRouteStop } from './Delivery/RouteStop/routeStop'
-import { initRouteStopItem } from './Delivery/RouteStopItem/routeStopItem'
+// import { initRouteStop } from './Delivery/RouteStop/routeStop'
+// import { initRouteStopItem } from './Delivery/RouteStopItem/routeStopItem'
 import { initVehicle } from './Delivery/Vehicle/vehicle'
 import { initDeliveryMethod } from './Sales/DeliveryMethod/deliveryMethod'
 import { initProductSummaryView } from '../views/ProductSummary/productSummary'
@@ -64,10 +63,9 @@ function initModels(db: Sequelize) {
   // Shipping:
   initDriverDowntime(db)
   initOrderAvailability(db)
-  initRouteDriver(db)
-  initRouteStop(db)
-  initRouteStopItem(db)
-  initTripRoute(db)
+  // initRouteDriver(db)
+  // initRouteStop(db)
+  // initRouteStopItem(db)
 
   initVehicle(db)
   initDriver(db)

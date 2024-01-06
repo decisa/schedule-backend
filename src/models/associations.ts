@@ -17,14 +17,14 @@ import { PurchaseOrder } from './Receiving/PurchaseOrder/purchaseOrder'
 import { PurchaseOrderItem } from './Receiving/PurchaseOrderItem/purchaseOrderItem'
 import { ShipmentItem } from './Receiving/ShipmentItem/shipmentItem'
 import { ReceivedItem } from './Receiving/ReceivedItems/receivedItems'
-import { TripRoute } from './Delivery/TripRoute/tripRoute'
-import { Driver } from './Delivery/Driver/Driver'
-import { RouteDriver } from './Delivery/RouteDriver/routeDrivers'
+// import { TripRoute } from './Delivery/TripRoute/tripRoute'
+import { Driver } from './Delivery/Driver/driver'
+// import { RouteDriver } from './Delivery/RouteDriver/routeDrivers'
 import { DriverDowntime } from './Delivery/DriverDowntime/driverDowntime'
 import { OrderAvailability } from './Delivery/OrderAvailability/orderAvailability'
-import { RouteStop } from './Delivery/RouteStop/routeStop'
+// import { RouteStop } from './Delivery/RouteStop/routeStop'
 import { Vehicle } from './Delivery/Vehicle/vehicle'
-import { RouteStopItem } from './Delivery/RouteStopItem/routeStopItem'
+// import { RouteStopItem } from './Delivery/RouteStopItem/routeStopItem'
 import { DeliveryMethod } from './Sales/DeliveryMethod/deliveryMethod'
 import { ProductSummaryView } from '../views/ProductSummary/productSummary'
 import { Trip } from './Delivery/Trip/Trip'
@@ -349,60 +349,60 @@ function createAssociations() {
     foreignKey: 'orderId',
   })
   // One-to-many relationship between TripRoute and RouteStops.
-  TripRoute.hasMany(RouteStop, {
-    as: 'routeStops',
-    foreignKey: 'tripRouteId',
-    onDelete: 'NO ACTION',
-    onUpdate: 'CASCADE',
-  })
-  RouteStop.belongsTo(TripRoute, {
-    as: 'tripRoute',
-    foreignKey: 'tripRouteId',
-  })
+  // TripRoute.hasMany(RouteStop, {
+  //   as: 'routeStops',
+  //   foreignKey: 'tripRouteId',
+  //   onDelete: 'NO ACTION',
+  //   onUpdate: 'CASCADE',
+  // })
+  // RouteStop.belongsTo(TripRoute, {
+  //   as: 'tripRoute',
+  //   foreignKey: 'tripRouteId',
+  // })
   // One-to-many relationship between Orders and RouteStops.
-  Order.hasMany(RouteStop, {
-    as: 'routeStops',
-    foreignKey: 'orderId',
-    onDelete: 'NO ACTION',
-    onUpdate: 'CASCADE',
-  })
-  RouteStop.belongsTo(Order, {
-    as: 'order',
-    foreignKey: 'orderId',
-  })
+  // Order.hasMany(RouteStop, {
+  //   as: 'routeStops',
+  //   foreignKey: 'orderId',
+  //   onDelete: 'NO ACTION',
+  //   onUpdate: 'CASCADE',
+  // })
+  // RouteStop.belongsTo(Order, {
+  //   as: 'order',
+  //   foreignKey: 'orderId',
+  // })
   // One-to-many relationship between OrderAddresses and RouteStops. (nullable)
-  OrderAddress.hasMany(RouteStop, {
-    as: 'routeStops',
-    foreignKey: 'orderAddressId',
-    onDelete: 'NO ACTION',
-    onUpdate: 'CASCADE',
-  })
-  RouteStop.belongsTo(OrderAddress, {
-    as: 'orderAddress',
-    foreignKey: 'orderAddressId',
-  })
+  // OrderAddress.hasMany(RouteStop, {
+  //   as: 'routeStops',
+  //   foreignKey: 'orderAddressId',
+  //   onDelete: 'NO ACTION',
+  //   onUpdate: 'CASCADE',
+  // })
+  // RouteStop.belongsTo(OrderAddress, {
+  //   as: 'orderAddress',
+  //   foreignKey: 'orderAddressId',
+  // })
   // Many-to-many relationship between RouteStops and ProductConfigurations through RouteStopItems
-  RouteStop.belongsToMany(ProductConfiguration, {
-    through: RouteStopItem,
-    foreignKey: 'routeStopId',
-    otherKey: 'productConfigurationId',
-  })
-  ProductConfiguration.belongsToMany(RouteStop, {
-    through: RouteStopItem,
-    foreignKey: 'productConfigurationId',
-    otherKey: 'routeStopId',
-  })
+  // RouteStop.belongsToMany(ProductConfiguration, {
+  //   through: RouteStopItem,
+  //   foreignKey: 'routeStopId',
+  //   otherKey: 'productConfigurationId',
+  // })
+  // ProductConfiguration.belongsToMany(RouteStop, {
+  //   through: RouteStopItem,
+  //   foreignKey: 'productConfigurationId',
+  //   otherKey: 'routeStopId',
+  // })
   // One-to-many relationship between Vehicles and TripRoutes.
-  Vehicle.hasMany(TripRoute, {
-    as: 'tripRoutes',
-    foreignKey: 'vehicleId',
-    onDelete: 'NO ACTION',
-    onUpdate: 'CASCADE',
-  })
-  TripRoute.belongsTo(Vehicle, {
-    as: 'vehicle',
-    foreignKey: 'vehicleId',
-  })
+  // Vehicle.hasMany(TripRoute, {
+  //   as: 'tripRoutes',
+  //   foreignKey: 'vehicleId',
+  //   onDelete: 'NO ACTION',
+  //   onUpdate: 'CASCADE',
+  // })
+  // TripRoute.belongsTo(Vehicle, {
+  //   as: 'vehicle',
+  //   foreignKey: 'vehicleId',
+  // })
 
   // associations for the Product Summary View:
   ProductConfiguration.hasOne(ProductSummaryView, {

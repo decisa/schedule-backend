@@ -18,7 +18,7 @@ import {
   BelongsToSetAssociationMixin,
   BelongsToCreateAssociationMixin,
 } from 'sequelize'
-import type { Driver } from '../Driver/Driver'
+import type { Driver } from '../Driver/driver'
 
 export class DriverDowntime extends Model<InferAttributes<DriverDowntime>, InferCreationAttributes<DriverDowntime>> {
   declare id: CreationOptional<number>
