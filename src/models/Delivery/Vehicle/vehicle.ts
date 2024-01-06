@@ -13,7 +13,8 @@ import {
 } from 'sequelize'
 import type { Trip } from '../Trip/Trip'
 
-type VehicleType = 'truck' | 'van'
+export const vehicleTypes = ['truck', 'van', 'car'] as const
+export type VehicleType = typeof vehicleTypes[number]
 export class Vehicle extends Model<InferAttributes<Vehicle>, InferCreationAttributes<Vehicle>> {
   declare id: CreationOptional<number>
 
