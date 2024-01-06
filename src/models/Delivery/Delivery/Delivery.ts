@@ -17,6 +17,7 @@ import {
 
 } from 'sequelize'
 
+import { da, de } from 'date-fns/locale'
 import type { OrderAddress } from '../../Sales/OrderAddress/orderAddress'
 import type { Order } from '../../Sales/Order/order'
 import type { DeliveryStop } from '../DeliveryStop/DeliveryStop'
@@ -27,6 +28,24 @@ export type Period = {
   start: number
   end: number
 }
+
+export function daysToNumber(days: [boolean, boolean, boolean, boolean, boolean, boolean, boolean]) {
+  const dayNumber = days.reduce((acc, day) => (acc << 1) + (day ? 1 : 0), 0)
+  return dayNumber
+}
+
+export function numberToDays(num: number) {
+  return [
+    num & 64, // Sunday
+    num & 32, // Monday
+    num & 16, // Tuesday
+    num & 8, // Wednesday
+    num & 4, // Thursday
+    num & 2, // Friday
+    num & 1, // Saturday
+  ].map(Boolean)
+}
+
 export class Delivery extends Model<InferAttributes<Delivery>, InferCreationAttributes<Delivery>> {
   declare id: CreationOptional<number>
 
@@ -174,17 +193,10 @@ export function initDelivery(db: Sequelize) {
         defaultValue: [true, true, true, true, true, true, true],
         get() {
           const rawValue = this.getDataValue('daysAvailability') // as unknown as string
-          return [
-            rawValue & 64,
-            rawValue & 32,
-            rawValue & 16,
-            rawValue & 8,
-            rawValue & 4,
-            rawValue & 2,
-            rawValue & 1].map(Boolean)
+          return numberToDays(rawValue)
         },
         set(val: [boolean, boolean, boolean, boolean, boolean, boolean, boolean]) {
-          const result = val.reduce((acc, cur) => (acc >> 1) + (cur ? 1 : 0), 0)
+          const result = daysToNumber(val)
           this.setDataValue('daysAvailability', result)
         },
       },
