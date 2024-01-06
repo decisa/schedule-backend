@@ -24,10 +24,12 @@ import {
   BelongsToManySetAssociationsMixin
   ,
 } from 'sequelize'
-import type { DriverDowntime } from '../DriverDowntime/driverDowntime'
+// import type { DriverDowntime } from '../DriverDowntime/driverDowntime'
 import type { Trip } from '../Trip/Trip'
 
-type DriverRole = 'Helper' | 'Master Installer'
+export const driverRoles = ['Helper', 'Master Installer'] as const
+export type DriverRole = typeof driverRoles[number]
+
 export class Driver extends Model<InferAttributes<Driver>, InferCreationAttributes<Driver>> {
   declare id: CreationOptional<number>
 
@@ -35,11 +37,11 @@ export class Driver extends Model<InferAttributes<Driver>, InferCreationAttribut
 
   declare lastName: string
 
-  declare phoneNumber: string | null
+  declare phoneNumber: CreationOptional<string | null>
 
-  declare email: string | null
+  declare email: CreationOptional<string | null>
 
-  declare licenceNumber: string | null
+  declare licenceNumber: CreationOptional<string | null>
 
   declare driverRole: DriverRole
 

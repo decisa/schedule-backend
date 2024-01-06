@@ -18,6 +18,7 @@ import shipmentRouter from './shipments/shipmentRoutes'
 import carrierRouter from './carriers/carrierRoutes'
 import receivingRouter from './receiving/receivingRoutes'
 import vehicleRouter from './vehicles/vehicleRoutes'
+import driverRouter from './driver/driverRoutes'
 
 const rootRouter = express.Router()
 
@@ -41,6 +42,7 @@ rootRouter.use('/shipment', shipmentRouter)
 rootRouter.use('/carrier', carrierRouter)
 rootRouter.use('/receiving', receivingRouter)
 rootRouter.use('/vehicle', vehicleRouter)
+rootRouter.use('/driver', driverRouter)
 
 // create proxy to forward requests to magento:
 rootRouter.use('/2031360', (req, res, next) => {
