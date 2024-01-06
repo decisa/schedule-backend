@@ -12,6 +12,8 @@ import { ProductOption } from '../../Sales/ProductOption/productOption'
 import { DeliveryItem } from '../DeliveryItem/DeliveryItem'
 import { DBError } from '../../../ErrorManagement/errors'
 
+// TODO: allow to update and create delivery, when availability is nested, same like when reading json. ie. update validateDeliveryCreate and validateDeliveryUpdate
+
 export const deliveryStatuses = ['pending', 'scheduled', 'confirmed'] as const
 export type DeliveryStatus = typeof deliveryStatuses[number]
 
@@ -69,9 +71,13 @@ export type DeliveryCreate =
 
 export type DeliveryUpdate = Partial<DeliveryCreate>
 
-export type DeliveryRead = Omit<Required<DeliveryCreate>, 'estimatedDurationString' | 'startTime' | 'endTime' | 'daysAvailability'> & {
+export type DeliveryRead = Omit<Required<DeliveryCreate>, 'estimatedDurationString' | 'startTime' | 'endTime' | 'daysAvailability' | 'days' | 'timePeriod'> & {
   // items?: DeliveryItem[],
   estimatedDuration: [number, number] | null,
+  availability: {
+    days: [boolean, boolean, boolean, boolean, boolean, boolean, boolean],
+    timePeriod: Period,
+  }
   // timePeriod: Period,
 } & Partial<DeliveryAssociations>
 
@@ -391,10 +397,14 @@ export function validateDeliveryUpdate(object: unknown): Omit<Partial<DeliveryCr
 function deliveryToJson(deliveryRaw: Delivery): DeliveryRead {
   // remove backend fields from JSON and keep only their virtual frontend counterparts in deliveryData
   const {
-    estimatedDurationString, startTime, endTime, daysAvailability, ...deliveryData
+    estimatedDurationString, startTime, endTime, daysAvailability, days, timePeriod, ...deliveryData
   } = deliveryRaw.toJSON()
   const result: DeliveryRead = {
     ...deliveryData,
+    availability: {
+      days,
+      timePeriod,
+    },
   }
   // if address record is present in model instance, convert it to JSON using proper controller
   // let shippingAddress: OrderAddressMagentoRead | null = null
