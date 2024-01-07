@@ -19,9 +19,11 @@ import {
 } from 'sequelize'
 import type { Order } from '../Order/order'
 import type { MagentoOrderAddress } from '../MagentoOrderAddress/magentoOrderAddress'
-import type { RouteStop } from '../../Delivery/RouteStop/routeStop'
+// import type { RouteStop } from '../../Delivery/RouteStop/routeStop'
 import type { Delivery } from '../../Delivery/Delivery/Delivery'
 import type { DeliveryStop } from '../../Delivery/DeliveryStop/DeliveryStop'
+
+// todo: one-to-many relationship between OrderAddress and DeliveryStops
 
 export class OrderAddress extends Model<InferAttributes<OrderAddress>, InferCreationAttributes<OrderAddress>> {
   declare id: CreationOptional<number>
@@ -74,7 +76,7 @@ export class OrderAddress extends Model<InferAttributes<OrderAddress>, InferCrea
 
   declare magento?: NonAttribute<MagentoOrderAddress>
 
-  declare routeStops?: NonAttribute<RouteStop[]>
+  // declare routeStops?: NonAttribute<RouteStop[]>
 
   declare deliveries?: NonAttribute<Delivery[]>
 
@@ -83,7 +85,7 @@ export class OrderAddress extends Model<InferAttributes<OrderAddress>, InferCrea
   declare public static associations: {
     order: Association<OrderAddress, Order>,
     magento: Association<OrderAddress, MagentoOrderAddress>,
-    routeStops: Association<OrderAddress, RouteStop>,
+    // routeStops: Association<OrderAddress, RouteStop>,
     deliveries: Association<OrderAddress, Delivery>,
     deliveryStops: Association<OrderAddress, DeliveryStop>,
   }
@@ -148,25 +150,25 @@ export class OrderAddress extends Model<InferAttributes<OrderAddress>, InferCrea
   declare setMagento: HasOneSetAssociationMixin<MagentoOrderAddress, number>
 
   // routeStops:
-  declare createRouteStop: HasManyCreateAssociationMixin<RouteStop, 'orderAddressId'>
+  // declare createRouteStop: HasManyCreateAssociationMixin<RouteStop, 'orderAddressId'>
 
-  declare getRouteStops: HasManyGetAssociationsMixin<RouteStop>
+  // declare getRouteStops: HasManyGetAssociationsMixin<RouteStop>
 
-  declare countRouteStops: HasManyCountAssociationsMixin
+  // declare countRouteStops: HasManyCountAssociationsMixin
 
-  declare hasRouteStop: HasManyHasAssociationMixin<RouteStop, number>
+  // declare hasRouteStop: HasManyHasAssociationMixin<RouteStop, number>
 
-  declare hasRouteStops: HasManyHasAssociationsMixin<RouteStop, number>
+  // declare hasRouteStops: HasManyHasAssociationsMixin<RouteStop, number>
 
-  declare setRouteStops: HasManySetAssociationsMixin<RouteStop, number>
+  // declare setRouteStops: HasManySetAssociationsMixin<RouteStop, number>
 
-  declare addRouteStop: HasManyAddAssociationMixin<RouteStop, number>
+  // declare addRouteStop: HasManyAddAssociationMixin<RouteStop, number>
 
-  declare addRouteStops: HasManyAddAssociationsMixin<RouteStop, number>
+  // declare addRouteStops: HasManyAddAssociationsMixin<RouteStop, number>
 
-  declare removeRouteStop: HasManyRemoveAssociationMixin<RouteStop, number>
+  // declare removeRouteStop: HasManyRemoveAssociationMixin<RouteStop, number>
 
-  declare removeRouteStops: HasManyRemoveAssociationsMixin<RouteStop, number>
+  // declare removeRouteStops: HasManyRemoveAssociationsMixin<RouteStop, number>
 }
 
 export function initOrderAddress(db: Sequelize) {

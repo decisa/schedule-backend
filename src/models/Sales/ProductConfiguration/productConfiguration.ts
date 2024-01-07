@@ -30,10 +30,10 @@ import {
 import type { Product } from '../Product/product'
 import type { Order } from '../Order/order'
 import type { ProductOption } from '../ProductOption/productOption'
-import type { RouteStop } from '../../Delivery/RouteStop/routeStop'
+// import type { RouteStop } from '../../Delivery/RouteStop/routeStop'
 import type { PurchaseOrderItem } from '../../Receiving/PurchaseOrderItem/purchaseOrderItem'
 import type { DeliveryItem } from '../../Delivery/DeliveryItem/DeliveryItem'
-import { ProductSummaryView } from '../../../views/ProductSummary/productSummary'
+import type { ProductSummaryView } from '../../../views/ProductSummary/productSummary'
 
 export class ProductConfiguration extends Model<InferAttributes<ProductConfiguration>, InferCreationAttributes<ProductConfiguration>> {
   declare id: CreationOptional<number>
@@ -74,7 +74,7 @@ export class ProductConfiguration extends Model<InferAttributes<ProductConfigura
 
   declare options?: NonAttribute<ProductOption[]>
 
-  declare routeStops?: NonAttribute<RouteStop[]>
+  // declare routeStops?: NonAttribute<RouteStop[]>
 
   declare purchaseOrderItems?: NonAttribute<PurchaseOrderItem[]>
 
@@ -86,7 +86,7 @@ export class ProductConfiguration extends Model<InferAttributes<ProductConfigura
     product: Association<ProductConfiguration, Product>,
     order: Association<ProductConfiguration, Order>,
     options: Association<ProductConfiguration, ProductOption>,
-    routeStops: Association<ProductConfiguration, RouteStop>,
+    // routeStops: Association<ProductConfiguration, RouteStop>,
     purchaseOrderItems: Association<ProductConfiguration, PurchaseOrderItem>,
     deliveryItems: Association<ProductConfiguration, DeliveryItem>,
     summary: Association<ProductConfiguration, ProductSummaryView>,
@@ -129,25 +129,25 @@ export class ProductConfiguration extends Model<InferAttributes<ProductConfigura
   declare removeProductOptions: HasManyRemoveAssociationsMixin<ProductOption, number>
 
   // routeStops:
-  declare createRouteStop: BelongsToManyCreateAssociationMixin<RouteStop>
+  // declare createRouteStop: BelongsToManyCreateAssociationMixin<RouteStop>
 
-  declare setRouteStops: BelongsToManySetAssociationsMixin<RouteStop, number>
+  // declare setRouteStops: BelongsToManySetAssociationsMixin<RouteStop, number>
 
-  declare removeRouteStop: BelongsToManyRemoveAssociationMixin<RouteStop, number>
+  // declare removeRouteStop: BelongsToManyRemoveAssociationMixin<RouteStop, number>
 
-  declare removeRouteStops: BelongsToManyRemoveAssociationsMixin<RouteStop, number>
+  // declare removeRouteStops: BelongsToManyRemoveAssociationsMixin<RouteStop, number>
 
-  declare hasRouteStops: BelongsToManyHasAssociationsMixin<RouteStop, number>
+  // declare hasRouteStops: BelongsToManyHasAssociationsMixin<RouteStop, number>
 
-  declare hasRouteStop: BelongsToManyHasAssociationMixin<RouteStop, number>
+  // declare hasRouteStop: BelongsToManyHasAssociationMixin<RouteStop, number>
 
-  declare getRouteStops: BelongsToManyGetAssociationsMixin<RouteStop>
+  // declare getRouteStops: BelongsToManyGetAssociationsMixin<RouteStop>
 
-  declare countRouteStops: BelongsToManyCountAssociationsMixin
+  // declare countRouteStops: BelongsToManyCountAssociationsMixin
 
-  declare addRouteStops: BelongsToManyAddAssociationsMixin<RouteStop, number>
+  // declare addRouteStops: BelongsToManyAddAssociationsMixin<RouteStop, number>
 
-  declare addRouteStop: BelongsToManyAddAssociationMixin<RouteStop, number>
+  // declare addRouteStop: BelongsToManyAddAssociationMixin<RouteStop, number>
 
   // purchaseOrderItems:
   declare createPurchaseOrderItem: HasManyCreateAssociationMixin<PurchaseOrderItem, 'configurationId'>
