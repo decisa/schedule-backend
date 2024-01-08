@@ -200,6 +200,19 @@ export default class DeliveryStopController {
   static async get(id: number | unknown, t?: Transaction): Promise<DeliveryStop | null> {
     const deliveryStopId = isId.validateSync(id)
     const final = await DeliveryStop.findByPk(deliveryStopId, {
+      transaction: t,
+    })
+    return final
+  }
+
+  /**
+   * get full DeliveryStop record by id from DB.
+   * @param {unknown} id - deliveryStopId
+   * @returns {DeliveryStop} DeliveryStop object or null
+   */
+  static async getFull(id: number | unknown, t?: Transaction): Promise<DeliveryStop | null> {
+    const deliveryStopId = isId.validateSync(id)
+    const final = await DeliveryStop.findByPk(deliveryStopId, {
       include: [
         {
           model: Delivery,
