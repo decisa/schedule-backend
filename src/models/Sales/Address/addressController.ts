@@ -7,7 +7,7 @@ import { MagentoAddressType, magentoAddressTypes } from '../MagentoOrderAddress/
 import { Address } from './address'
 import { MagentoAddress } from '../MagentoAddress/magentoAddress'
 import { OrderAddress } from '../OrderAddress/orderAddress'
-import OrderAddressController, { OrderAddressMagentoRecord, validateOrderAddressCreate, validateOrderAddressMagento } from '../OrderAddress/orderAddressContoller'
+import OrderAddressController from '../OrderAddress/orderAddressContoller'
 
 type AddressCreational = {
   id: number
