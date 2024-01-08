@@ -22,7 +22,7 @@ deliveryStopRouter.post('/', (req, res) => {
 // get deliveryStop by id
 deliveryStopRouter.get('/:id', (req, res) => {
   try {
-    DeliveryStopController.get(req.params.id)
+    DeliveryStopController.getFull(req.params.id)
       .then((result) => {
         const deliveryStopResult = DeliveryStopController.toJSON(result)
         handleResponse(res, deliveryStopResult)
