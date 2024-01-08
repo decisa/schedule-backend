@@ -19,7 +19,8 @@ import type { OrderAddress } from '../../Sales/OrderAddress/orderAddress'
 import type { Trip } from '../Trip/Trip'
 import type { Delivery } from '../Delivery/Delivery'
 
-type StopType = 'break' | 'hotel' | 'delivery'
+export const stopTypes = ['break', 'hotel', 'delivery'] as const
+export type StopType = typeof stopTypes[number]
 
 export class DeliveryStop extends Model<InferAttributes<DeliveryStop>, InferCreationAttributes<DeliveryStop>> {
   declare id: CreationOptional<number>
@@ -28,11 +29,11 @@ export class DeliveryStop extends Model<InferAttributes<DeliveryStop>, InferCrea
 
   declare stopNumber: number
 
-  declare estimatedDurationString: string | null
+  declare estimatedDurationString: CreationOptional<string | null>
 
-  declare estimatedDuration: CreationOptional<[number, number]>
+  declare estimatedDuration: CreationOptional<[number, number] | null>
 
-  declare notes: string | null
+  declare notes: CreationOptional<string | null>
 
   // timestamps
   declare createdAt: CreationOptional<Date>
@@ -45,6 +46,7 @@ export class DeliveryStop extends Model<InferAttributes<DeliveryStop>, InferCrea
 
   declare trip?: NonAttribute<Trip>
 
+  // shippingAddressId can be null
   declare shippingAddressId: ForeignKey<OrderAddress['id']> | null
 
   declare shippingAddress?: NonAttribute<OrderAddress>
