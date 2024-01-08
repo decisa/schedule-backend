@@ -14,7 +14,6 @@ import {
   BelongsToSetAssociationMixin,
   BelongsToCreateAssociationMixin,
 } from 'sequelize'
-
 import type { OrderAddress } from '../../Sales/OrderAddress/orderAddress'
 import type { Trip } from '../Trip/Trip'
 import type { Delivery } from '../Delivery/Delivery'
@@ -122,8 +121,9 @@ export function initDeliveryStop(db: Sequelize) {
         type: DataTypes.VIRTUAL,
         defaultValue: '0,0',
         get() {
+          console.log('get estimatedDuration:', this.getDataValue('estimatedDurationString'))
           const rawValue = this.getDataValue('estimatedDurationString') // as unknown as string
-          const result = (rawValue || '0.0').split(',').map(parseInt)
+          const result = (rawValue || '0,0').split(',').map(Number)
           return result
         },
         set(val: [number, number]) {
