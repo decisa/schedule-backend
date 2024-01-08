@@ -1,6 +1,7 @@
 import express from 'express'
 import { handleError, handleResponse } from '../routeUtils'
 import TripController from '../../models/Delivery/Trip/tripController'
+import DriverController from '../../models/Delivery/Driver/driverController'
 
 const tripRouter = express.Router()
 
@@ -79,4 +80,63 @@ tripRouter.delete('/:id', (req, res) => {
   }
 })
 
+// note: manage drivers on the trip:
+// add driver to the trip
+tripRouter.post('/:tripId/drivers/:driverId', (req, res) => {
+  try {
+    const { tripId, driverId } = req.params
+    TripController.addDriver(tripId, driverId)
+      .then((result) => {
+        const tripResult = DriverController.toJSON(result)
+        handleResponse(res, tripResult)
+      })
+      .catch((err) => handleError(res, err))
+  } catch (error) {
+    handleError(res, error)
+  }
+})
+// remove driver from the trip
+tripRouter.delete('/:tripId/drivers/:driverId', (req, res) => {
+  try {
+    const { tripId, driverId } = req.params
+    TripController.removeDriver(tripId, driverId)
+      .then((result) => {
+        const tripResult = DriverController.toJSON(result)
+        handleResponse(res, tripResult)
+      })
+      .catch((err) => handleError(res, err))
+  } catch (error) {
+    handleError(res, error)
+  }
+})
+
+// set/replace drivers on the trip
+tripRouter.patch('/:tripId/drivers', (req, res) => {
+  try {
+    const { tripId } = req.params
+    TripController.setDrivers(tripId, req.body)
+      .then((result) => {
+        const tripResult = DriverController.toJSON(result)
+        handleResponse(res, tripResult)
+      })
+      .catch((err) => handleError(res, err))
+  } catch (error) {
+    handleError(res, error)
+  }
+})
+
+// get all drivers on the trip
+tripRouter.get('/:tripId/drivers', (req, res) => {
+  try {
+    const { tripId } = req.params
+    TripController.getDrivers(tripId)
+      .then((result) => {
+        const tripResult = DriverController.toJSON(result)
+        handleResponse(res, tripResult)
+      })
+      .catch((err) => handleError(res, err))
+  } catch (error) {
+    handleError(res, error)
+  }
+})
 export default tripRouter
