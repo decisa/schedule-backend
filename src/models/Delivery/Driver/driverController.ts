@@ -3,6 +3,9 @@ import { Transaction } from 'sequelize'
 import { isId, useTransaction } from '../../../utils/utils'
 import { DBError } from '../../../ErrorManagement/errors'
 import { Driver, DriverRole, driverRoles } from './driver'
+import { Trip } from '../Trip/Trip'
+import { Delivery } from '../Delivery/Delivery'
+import { DeliveryStop } from '../DeliveryStop/DeliveryStop'
 
 type DriverCreational = {
   id: number
@@ -166,6 +169,43 @@ export default class DriverController {
       transaction: t,
     })
     return final
+  }
+
+  /**
+   * get all drivers for a given Delivery ID  *
+   * @param {unknown} deliveryId - deliveryId
+   * @returns {Driver[] | null} All drivers
+   */
+  static async getDeliveryDrivers(deliveryId: number | unknown, t?: Transaction): Promise<Driver[] | null> {
+    // find trip of the delivery
+    const id = isId.validateSync(deliveryId)
+    const res = await Trip.findOne({
+      transaction: t,
+      attributes: [],
+      include: [{
+        model: DeliveryStop,
+        as: 'deliveryStops',
+        attributes: ['id'],
+
+        include: [{
+          attributes: ['id'],
+          model: Delivery,
+          as: 'deliveries',
+          where: { id },
+        }],
+      },
+      {
+        model: Driver,
+        as: 'drivers',
+        through: {
+          attributes: [],
+        },
+      }],
+    })
+    if (!res) {
+      throw DBError.notFound(new Error(`Delivery with id ${id} was not found or does not belong to any trips`))
+    }
+    return res.drivers || []
   }
 
   /**

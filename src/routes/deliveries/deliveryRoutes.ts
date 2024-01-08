@@ -2,9 +2,12 @@ import express from 'express'
 import { handleError, handleResponse } from '../routeUtils'
 import DeliveryController from '../../models/Delivery/Delivery/DeliveryController'
 import DeliveryItemController from '../../models/Delivery/DeliveryItem/DeliveryItemController'
+import DriverController from '../../models/Delivery/Driver/driverController'
 
 const deliveryRouter = express.Router()
 
+// note: DeliveryItems:
+// fixme: why is delivery item not linked to 'id' of delivery?
 // create delivery item record
 deliveryRouter.post('/item', (req, res) => {
   try {
@@ -75,13 +78,13 @@ deliveryRouter.delete('/:id', (req, res) => {
   }
 })
 
-// create delivery record
-deliveryRouter.post('/', (req, res) => {
+// update delivery record
+deliveryRouter.patch('/:id', (req, res) => {
   try {
     // const id = 1
     // console.log('params', req.params)
     const deliveryData = req.body as unknown
-    DeliveryController.create(deliveryData)
+    DeliveryController.update(req.params.id, deliveryData)
       .then((result) => {
         const deliveryResult = DeliveryController.toJSON(result)
         handleResponse(res, deliveryResult)
@@ -92,13 +95,29 @@ deliveryRouter.post('/', (req, res) => {
   }
 })
 
-// update delivery record
-deliveryRouter.patch('/:id', (req, res) => {
+// note: manage Drivers
+// get all drivers for the delivery
+deliveryRouter.get('/:deliveryId/drivers', (req, res) => {
+  console.log('get drivers')
+  try {
+    DriverController.getDeliveryDrivers(req.params.deliveryId)
+      .then((result) => {
+        const deliveryResult = DriverController.toJSON(result)
+        handleResponse(res, deliveryResult)
+      })
+      .catch((err) => handleError(res, err))
+  } catch (error) {
+    handleError(res, error)
+  }
+})
+
+// create delivery record
+deliveryRouter.post('/', (req, res) => {
   try {
     // const id = 1
     // console.log('params', req.params)
     const deliveryData = req.body as unknown
-    DeliveryController.update(req.params.id, deliveryData)
+    DeliveryController.create(deliveryData)
       .then((result) => {
         const deliveryResult = DeliveryController.toJSON(result)
         handleResponse(res, deliveryResult)
