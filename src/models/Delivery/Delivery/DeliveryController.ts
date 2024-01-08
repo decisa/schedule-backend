@@ -1,7 +1,6 @@
 import * as yup from 'yup'
 import { ForeignKeyConstraintError, Transaction } from 'sequelize'
 // import { de } from 'date-fns/locale'
-import { de } from 'date-fns/locale'
 import { Delivery, Period, daysToNumber } from './Delivery'
 import { isId, printYellowLine, useTransaction } from '../../../utils/utils'
 import OrderController, { OrderRead } from '../../Sales/Order/orderController'
