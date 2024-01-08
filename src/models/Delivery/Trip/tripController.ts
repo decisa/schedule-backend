@@ -110,6 +110,21 @@ const tripSchemaUpdate: yup.ObjectSchema<Partial<TripCreate>> = tripSchemaCreate
       .label('Trip malformed data: name'),
   })
 
+const driversSchema = yup.object({
+  drivers: yup.array()
+    .of(yup.number().integer().positive().required())
+    .required()
+    .label('Trip malformed data: drivers'),
+})
+
+function validateDrivers(object: unknown): number[] {
+  const drivers = driversSchema.validateSync(object, {
+    stripUnknown: true,
+    abortEarly: false,
+  }) satisfies { drivers: number[] }
+  return drivers.drivers
+}
+
 export function validateTripCreate(object: unknown): TripCreate {
   const trip = tripSchemaCreate.validateSync(object, {
     stripUnknown: true,
@@ -295,7 +310,7 @@ export default class TripController {
     }
   }
 
-  // manage drivers on the trip:
+  // note: manage drivers on the trip:
   // add driver to the trip
   // remove driver from the trip
   // get all drivers on the trip
@@ -305,9 +320,9 @@ export default class TripController {
    * add driver to the trip
    * @param {number | unknown} tripId - id of the trip record to update in DB
    * @param {number | unknown} driverId - id of the driver to add to the trip
-   * @returns {Trip}  Trip
+   * @returns {Driver[]}  current Drivers on trip
    */
-  static async addDriver(tripId: number | unknown, driverId: number | unknown, t?: Transaction): Promise<Trip> {
+  static async addDriver(tripId: number | unknown, driverId: number | unknown, t?: Transaction): Promise<Driver[]> {
     const [transaction, commit, rollback] = await useTransaction(t)
     try {
       const id = isId.validateSync(tripId)
@@ -318,12 +333,85 @@ export default class TripController {
 
       const driverIdParsed = isId.validateSync(driverId)
       await tripRecord.addDriver(driverIdParsed, { transaction })
+
+      const tripDrivers = await tripRecord.getDrivers({ transaction, joinTableAttributes: [] })
       await commit()
-      return tripRecord
+      return tripDrivers
     } catch (error) {
       await rollback()
       // rethrow the error for further handling
       throw error
     }
+  }
+
+  /**
+   * remove driver from the trip
+   * @param {number | unknown} tripId - id of the trip record to update in DB
+   * @param {number | unknown} driverId - id of the driver to be removed from the trip
+   * @returns {Driver[]}  current Drivers on trip
+   */
+  static async removeDriver(tripId: number | unknown, driverId: number | unknown, t?: Transaction): Promise<Driver[]> {
+    const [transaction, commit, rollback] = await useTransaction(t)
+    try {
+      const id = isId.validateSync(tripId)
+      const tripRecord = await Trip.findByPk(id, { transaction })
+      if (!tripRecord) {
+        throw DBError.notFound(new Error(`Trip with id ${id} was not found`))
+      }
+
+      const driverIdParsed = isId.validateSync(driverId)
+      await tripRecord.removeDriver(driverIdParsed, { transaction })
+
+      const tripDrivers = await tripRecord.getDrivers({ transaction, joinTableAttributes: [] })
+      await commit()
+      return tripDrivers
+    } catch (error) {
+      await rollback()
+      // rethrow the error for further handling
+      throw error
+    }
+  }
+
+  /**
+   * set drivers for the trip
+   * @param {number | unknown} tripId - id of the trip record to update in DB
+   * @param {number[] | unknown} driverIds - id of the driver to be removed from the trip
+   * @returns {Driver[]}  current Drivers on trip
+   */
+  static async setDrivers(tripId: number | unknown, driverIds: number[] | unknown, t?: Transaction): Promise<Driver[]> {
+    const [transaction, commit, rollback] = await useTransaction(t)
+    try {
+      const id = isId.validateSync(tripId)
+      const tripRecord = await Trip.findByPk(id, { transaction })
+      if (!tripRecord) {
+        throw DBError.notFound(new Error(`Trip with id ${id} was not found`))
+      }
+
+      const drivers = validateDrivers(driverIds)
+      await tripRecord.setDrivers(drivers, { transaction })
+
+      const tripDrivers = await tripRecord.getDrivers({ transaction, joinTableAttributes: [] })
+      await commit()
+      return tripDrivers
+    } catch (error) {
+      await rollback()
+      // rethrow the error for further handling
+      throw error
+    }
+  }
+
+  /**
+   * get all drivers for the trip
+   * @param {number | unknown} tripId - id of the trip record to update in DB
+   * @returns {Driver[]}  current Drivers on trip
+   */
+  static async getDrivers(tripId: number | unknown, t?: Transaction): Promise<Driver[]> {
+    const id = isId.validateSync(tripId)
+    const tripRecord = await Trip.findByPk(id, { transaction: t })
+    if (!tripRecord) {
+      throw DBError.notFound(new Error(`Trip with id ${id} was not found`))
+    }
+    const tripDrivers = await tripRecord.getDrivers({ transaction: t, joinTableAttributes: [] })
+    return tripDrivers
   }
 }
