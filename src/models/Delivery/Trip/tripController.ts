@@ -4,6 +4,10 @@ import { isId, useTransaction } from '../../../utils/utils'
 import { DBError } from '../../../ErrorManagement/errors'
 import { VehicleRead } from '../Vehicle/vehicleController'
 import { Trip } from './Trip'
+import { Vehicle } from '../Vehicle/vehicle'
+import { Driver } from '../Driver/driver'
+import { DeliveryStop } from '../DeliveryStop/DeliveryStop'
+import DeliveryStopController, { DeliveryStopRead } from '../DeliveryStop/deliveryStopController'
 
 // todo: how and when to update start and end times for the trip?
 // todo: trip creation should support adding drivers and delivery stops
@@ -29,7 +33,7 @@ type TripAssociations = {
   vehicle?: VehicleRead | null
   // fixme: drivers and deliveryStops are not defined yet
   // drivers?: DriverRead[] | null
-  // deliveryStops: DeliveryStopRead[] | null
+  deliveryStops: DeliveryStopRead[] | null
 }
 
 type TripFK = {
@@ -125,7 +129,10 @@ export function validateTripUpdate(object: unknown): Omit<Partial<TripCreate>, '
 }
 
 function tripToJson(trip: Trip): TripRead {
-  const result = trip.toJSON()
+  const result: TripRead = trip.toJSON()
+  if (trip.deliveryStops) {
+    result.deliveryStops = trip.deliveryStops.map((stop) => DeliveryStopController.toJSON(stop))
+  }
   return result
 }
 
@@ -156,10 +163,46 @@ export default class TripController {
    */
   static async get(id: number | unknown, t?: Transaction): Promise<Trip | null> {
     const tripId = isId.validateSync(id)
-    const final = await Trip.findByPk(tripId, {
+    const tripRecord = await Trip.findByPk(tripId, {
       transaction: t,
     })
-    return final
+    if (!tripRecord) {
+      throw DBError.notFound(new Error(`Trip with id ${tripId} was not found`))
+    }
+    return tripRecord
+  }
+
+  /**
+   * get full Trip record by id from DB
+   * @param {unknown} id - tripId
+   * @returns {Trip} Trip object or null
+   */
+  static async getFull(id: number | unknown, t?: Transaction): Promise<Trip | null> {
+    const tripId = isId.validateSync(id)
+    const tripRecord = await Trip.findByPk(tripId, {
+      transaction: t,
+      include: [
+        {
+          model: Vehicle,
+          as: 'vehicle',
+        },
+        {
+          model: Driver,
+          as: 'drivers',
+          through: {
+            attributes: [],
+          },
+        },
+        {
+          model: DeliveryStop,
+          as: 'deliveryStops',
+        },
+      ],
+    })
+    if (!tripRecord) {
+      throw DBError.notFound(new Error(`Trip with id ${tripId} was not found`))
+    }
+    return tripRecord
   }
 
   /**
@@ -243,6 +286,38 @@ export default class TripController {
         },
         transaction,
       })
+      await commit()
+      return tripRecord
+    } catch (error) {
+      await rollback()
+      // rethrow the error for further handling
+      throw error
+    }
+  }
+
+  // manage drivers on the trip:
+  // add driver to the trip
+  // remove driver from the trip
+  // get all drivers on the trip
+  // set drivers on the trip
+
+  /**
+   * add driver to the trip
+   * @param {number | unknown} tripId - id of the trip record to update in DB
+   * @param {number | unknown} driverId - id of the driver to add to the trip
+   * @returns {Trip}  Trip
+   */
+  static async addDriver(tripId: number | unknown, driverId: number | unknown, t?: Transaction): Promise<Trip> {
+    const [transaction, commit, rollback] = await useTransaction(t)
+    try {
+      const id = isId.validateSync(tripId)
+      const tripRecord = await Trip.findByPk(id, { transaction })
+      if (!tripRecord) {
+        throw DBError.notFound(new Error(`Trip with id ${id} was not found`))
+      }
+
+      const driverIdParsed = isId.validateSync(driverId)
+      await tripRecord.addDriver(driverIdParsed, { transaction })
       await commit()
       return tripRecord
     } catch (error) {
