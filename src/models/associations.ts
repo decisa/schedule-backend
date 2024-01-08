@@ -431,11 +431,13 @@ function createAssociations() {
     through: TripDriver,
     foreignKey: 'tripId',
     otherKey: 'driverId',
+    as: 'drivers',
   })
   Driver.belongsToMany(Trip, {
     through: TripDriver,
     foreignKey: 'driverId',
     otherKey: 'tripId',
+    as: 'trips',
   })
 
   // One-to-many relationship between Delivery and DeliveryItems

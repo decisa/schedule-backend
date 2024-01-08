@@ -107,6 +107,7 @@ db
       include: [
         {
           model: Trip,
+          as: 'trips',
           // required: true,
         },
 
