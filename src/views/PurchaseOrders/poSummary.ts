@@ -10,6 +10,13 @@ export const poSummaryViewName = 'POSummaryView'
 // intentionally skipping declaration of all mixins and association fields, so that typescript will complain if we try to use them
 // the table view MUST be created AFTER the database is SYNC'ed (migrated), so that the table view is not accidentally created as a table
 
+export type POSummaryRead = {
+  purchaseOrderItemId: number
+  qtyPurchased: number
+  qtyShipped: number
+  qtyReceived: number
+}
+
 export class POSummaryView extends Model<InferAttributes<POSummaryView>, InferCreationAttributes<POSummaryView>> {
   declare purchaseOrderItemId: number
 
