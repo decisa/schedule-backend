@@ -20,6 +20,7 @@ export const up: Migration = async ({ context: queryIterface }) => {
   // dyncamically create query parts for type safety
   const pcId = `pc.${ProductConfiguration.getAttributes().id.field || 'id'}`
   console.log('psvConfigId')
+  const pcQtyOrdered = `pc.${ProductConfiguration.getAttributes().qtyOrdered.field || 'qtyOrdered'}`
   const psvConfigId = `psv.${PurchasedSummaryView.getAttributes().configurationId.field || 'configurationId'}`
   const psvTotalQtyPurchased = `psv.${PurchasedSummaryView.getAttributes()[totalQtyPurchasedField].field || totalQtyPurchasedField}`
 
@@ -38,6 +39,7 @@ export const up: Migration = async ({ context: queryIterface }) => {
   CREATE VIEW ${productSummaryView} AS
   SELECT 
     ${pcId} as configurationId,
+    ${pcQtyOrdered} as qtyOrdered,
     COALESCE(${psvTotalQtyPurchased}, 0) as qtyPurchased,
     COALESCE(${ssvTotalQtyShipped}, 0) as qtyShipped,
     COALESCE(${rsvTotalQtyReceived}, 0) as qtyReceived
