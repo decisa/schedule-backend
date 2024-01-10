@@ -2,6 +2,7 @@ import express from 'express'
 import { handleError, handleResponse } from '../routeUtils'
 import TripController from '../../models/Delivery/Trip/tripController'
 import DriverController from '../../models/Delivery/Driver/driverController'
+import DeliveryStopController from '../../models/Delivery/DeliveryStop/deliveryStopController'
 
 const tripRouter = express.Router()
 
@@ -132,6 +133,37 @@ tripRouter.get('/:tripId/drivers', (req, res) => {
     TripController.getDrivers(tripId)
       .then((result) => {
         const tripResult = DriverController.toJSON(result)
+        handleResponse(res, tripResult)
+      })
+      .catch((err) => handleError(res, err))
+  } catch (error) {
+    handleError(res, error)
+  }
+})
+
+// note: manage deliveryStops on the trip:
+// add deliveryStop to the trip
+tripRouter.post('/:tripId/deliveryStop/:stopId', (req, res) => {
+  try {
+    const { tripId, stopId } = req.params
+    TripController.addDeliveryStop(tripId, stopId)
+      .then((result) => {
+        const tripResult = DeliveryStopController.toJSON(result)
+        handleResponse(res, tripResult)
+      })
+      .catch((err) => handleError(res, err))
+  } catch (error) {
+    handleError(res, error)
+  }
+})
+
+// remove deliveryStop from the trip
+tripRouter.delete('/:tripId/deliveryStop/:stopId', (req, res) => {
+  try {
+    const { tripId, stopId } = req.params
+    TripController.removeDeliveryStop(tripId, stopId)
+      .then((result) => {
+        const tripResult = DeliveryStopController.toJSON(result)
         handleResponse(res, tripResult)
       })
       .catch((err) => handleError(res, err))

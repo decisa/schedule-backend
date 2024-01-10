@@ -8,9 +8,10 @@ import { Vehicle } from '../Vehicle/vehicle'
 import { Driver } from '../Driver/driver'
 import { DeliveryStop } from '../DeliveryStop/DeliveryStop'
 import DeliveryStopController, { DeliveryStopRead } from '../DeliveryStop/deliveryStopController'
+import { DriverRead } from '../Driver/driverController'
 
 // todo: how and when to update start and end times for the trip?
-// todo: trip creation should support adding drivers and delivery stops
+// todo: trip creation should support adding delivery stops
 
 type TripCreational = {
   id: number
@@ -32,7 +33,7 @@ type TripTimeStamps = {
 type TripAssociations = {
   vehicle?: VehicleRead | null
   // fixme: drivers and deliveryStops are not defined yet
-  // drivers?: DriverRead[] | null
+  drivers?: DriverRead[] | null
   deliveryStops: DeliveryStopRead[] | null
 }
 
@@ -413,5 +414,66 @@ export default class TripController {
     }
     const tripDrivers = await tripRecord.getDrivers({ transaction: t, joinTableAttributes: [] })
     return tripDrivers
+  }
+
+  // todo: add same methods for managing deliveryStops
+  // add deliveryStop to the trip
+  // remove deliveryStop from the trip
+  // get all deliveryStops on the trip
+  // set deliveryStops on the trip
+  /**
+   * add deliveryStop to the trip
+   * @param {number | unknown} tripId - id of the trip record to update in DB
+   * @param {number | unknown} deliveryStopId - id of the deliveryStop to add to the trip
+   * @returns {DeliveryStop[]}  current DeliveryStops on trip
+   */
+  static async addDeliveryStop(tripId: number | unknown, deliveryStopId: number | unknown, t?: Transaction): Promise<DeliveryStop[]> {
+    const [transaction, commit, rollback] = await useTransaction(t)
+    try {
+      const id = isId.validateSync(tripId)
+      const tripRecord = await Trip.findByPk(id, { transaction })
+      if (!tripRecord) {
+        throw DBError.notFound(new Error(`Trip with id ${id} was not found`))
+      }
+
+      const deliveryStopIdParsed = isId.validateSync(deliveryStopId)
+      await tripRecord.addDeliveryStop(deliveryStopIdParsed, { transaction })
+
+      const tripDeliveryStops = await tripRecord.getDeliveryStops({ transaction })
+      await commit()
+      return tripDeliveryStops
+    } catch (error) {
+      await rollback()
+      // rethrow the error for further handling
+      throw error
+    }
+  }
+
+  /**
+   * remove deliveryStop from the trip
+   * @param {number | unknown} tripId - id of the trip record to update in DB
+   * @param {number | unknown} deliveryStopId - id of the deliveryStop to remove from the trip
+   * @returns {DeliveryStop[]}  current DeliveryStops on trip
+   */
+  static async removeDeliveryStop(tripId: number | unknown, deliveryStopId: number | unknown, t?: Transaction): Promise<DeliveryStop[]> {
+    const [transaction, commit, rollback] = await useTransaction(t)
+    try {
+      const id = isId.validateSync(tripId)
+      const tripRecord = await Trip.findByPk(id, { transaction })
+      if (!tripRecord) {
+        throw DBError.notFound(new Error(`Trip with id ${id} was not found`))
+      }
+
+      const deliveryStopIdParsed = isId.validateSync(deliveryStopId)
+      await tripRecord.removeDeliveryStop(deliveryStopIdParsed, { transaction })
+
+      const tripDeliveryStops = await tripRecord.getDeliveryStops({ transaction })
+      await commit()
+      return tripDeliveryStops
+    } catch (error) {
+      await rollback()
+      // rethrow the error for further handling
+      throw error
+    }
   }
 }
