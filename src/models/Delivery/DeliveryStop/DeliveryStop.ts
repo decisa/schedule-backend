@@ -41,7 +41,7 @@ export class DeliveryStop extends Model<InferAttributes<DeliveryStop>, InferCrea
 
   // associations
 
-  declare tripId: ForeignKey<Trip['id']>
+  declare tripId: ForeignKey<Trip['id']> | null
 
   declare trip?: NonAttribute<Trip>
 

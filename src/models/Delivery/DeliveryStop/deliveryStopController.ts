@@ -29,7 +29,7 @@ type DeliveryStopTimeStamps = {
 }
 
 type DeliveryStopFK = {
-  tripId: number
+  tripId: number | null
   shippingAddressId: number | null
 }
 
@@ -62,8 +62,7 @@ const deliveryStopSchemaCreate: yup.ObjectSchema<DeliveryStopCreate> = yup.objec
   tripId: yup.number()
     .integer()
     .positive()
-    .nonNullable()
-    .required()
+    .default(null)
     .label('DeliveryStop malformed data: tripId'),
   shippingAddressId: yup.number()
     .integer()
@@ -114,7 +113,6 @@ const deliveryStopSchemaUpdate: yup.ObjectSchema<DeliveryStopUpdate> = deliveryS
     tripId: yup.number()
       .integer()
       .positive()
-      .nonNullable()
       .label('DeliveryStop malformed data: tripId'),
     shippingAddressId: yup.number()
       .integer()
