@@ -35,6 +35,7 @@ import { initDeliveryStop } from './Delivery/DeliveryStop/DeliveryStop'
 import { initPurchasedSummaryView } from '../views/PurchasedSummary/purchasedSummary'
 import { initShippedSummaryView } from '../views/ShippedSummary/shippedSummary'
 import { initReceivedSummaryView } from '../views/ReceivedSummary/receivedSummary'
+import { initPOItemsSummaryView } from '../views/POItemsSummary/poItemsSummary'
 
 function initModels(db: Sequelize) {
   initMagentoOrder(db)
@@ -80,6 +81,7 @@ function initModels(db: Sequelize) {
   initShippedSummaryView(db)
   initReceivedSummaryView(db)
   initProductSummaryView(db)
+  initPOItemsSummaryView(db)
 }
 
 export default initModels
