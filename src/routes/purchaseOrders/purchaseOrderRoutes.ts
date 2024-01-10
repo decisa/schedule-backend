@@ -80,7 +80,9 @@ purchaseOrderRouter.get('/:id', (req, res) => {
           handleError(res, DBError.notFound(new Error(`Purchase Order with id ${req.params.id} was not found`)))
           return
         }
-        handleResponse(res, result)
+        const purchaseOrderResult = PurchaseOrderController.fullPOtoJSON(result)
+        handleResponse(res, purchaseOrderResult)
+        // handleResponse(res, result)
       })
       .catch((err) => handleError(res, err))
   } catch (error) {
