@@ -1,7 +1,5 @@
 import type { Seeder } from '../umzug'
-import { PurchaseOrder } from '../src/models/Receiving/PurchaseOrder/purchaseOrder'
 import { readJsonFromFile } from '../src/utils/utils'
-import { PurchaseOrderItem } from '../src/models/Receiving/PurchaseOrderItem/purchaseOrderItem'
 import { Brand } from '../src/models/Brand/brand'
 
 const brands = readJsonFromFile<Brand[]>('./seeds/json/brands.json')
