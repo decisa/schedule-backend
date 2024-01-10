@@ -32,6 +32,8 @@ import { TripDriver } from './Delivery/TripDriver/TripDriver'
 import { Delivery } from './Delivery/Delivery/Delivery'
 import { DeliveryItem } from './Delivery/DeliveryItem/DeliveryItem'
 import { DeliveryStop } from './Delivery/DeliveryStop/DeliveryStop'
+import { POShippedView } from '../views/PurchaseOrders/poShipped'
+import { POSummaryView } from '../views/PurchaseOrders/poSummary'
 
 function createAssociations() {
   // some orders have a magento record
@@ -308,6 +310,18 @@ function createAssociations() {
     onUpdate: 'CASCADE',
   })
   ShipmentItem.belongsTo(PurchaseOrderItem, {
+    as: 'purchaseOrderItem',
+    foreignKey: 'purchaseOrderItemId',
+  })
+
+  // One-to-one relationship between PurchaseOrderItems and POSummaryView.
+  PurchaseOrderItem.hasOne(POSummaryView, {
+    as: 'summary',
+    foreignKey: 'purchaseOrderItemId',
+    onDelete: 'NO ACTION',
+    onUpdate: 'CASCADE',
+  })
+  POSummaryView.belongsTo(PurchaseOrderItem, {
     as: 'purchaseOrderItem',
     foreignKey: 'purchaseOrderItemId',
   })

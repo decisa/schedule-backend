@@ -31,6 +31,7 @@ import {
 import type { ProductConfiguration } from '../../Sales/ProductConfiguration/productConfiguration'
 import type { PurchaseOrder } from '../PurchaseOrder/purchaseOrder'
 import type { ShipmentItem } from '../ShipmentItem/shipmentItem'
+import type { POSummaryView } from '../../../views/PurchaseOrders/poSummary'
 // import type { ReceivedItem } from '../ReceivedItems/receivedItems'
 
 export class PurchaseOrderItem extends Model<InferAttributes<PurchaseOrderItem>, InferCreationAttributes<PurchaseOrderItem>> {
@@ -57,11 +58,13 @@ export class PurchaseOrderItem extends Model<InferAttributes<PurchaseOrderItem>,
   declare shipmentItems?: NonAttribute<ShipmentItem[]>
 
   // declare receivedItems?: NonAttribute<ReceivedItem[]>
+  declare summary?: NonAttribute<POSummaryView>
 
   declare public static associations: {
     purchaseOrder: Association<PurchaseOrderItem, PurchaseOrder>,
     product: Association<PurchaseOrderItem, ProductConfiguration>,
     shipmentItems: Association<PurchaseOrderItem, ShipmentItem>,
+    summary: Association<PurchaseOrderItem, POSummaryView>,
     // receivedItems: Association<PurchaseOrderItem, ReceivedItem>,
   }
 
