@@ -2,8 +2,9 @@
 import { QueryTypes } from 'sequelize'
 import { Migration } from '../umzug'
 import { ShipmentItem } from '../src/models/Receiving/ShipmentItem/shipmentItem'
-import { ReceivedItem } from '../src/models/Receiving/ReceivedItems/receivedItems'
-import { poReceivedViewName } from '../src/views/PurchaseOrders/poReceived'
+import { totalQtyShippedField } from '../src/views/ShippedSummary/shippedSummary'
+import { PurchaseOrderItem } from '../src/models/Receiving/PurchaseOrderItem/purchaseOrderItem'
+import { poShippedViewName } from '../src/views/PurchaseOrders/poShipped'
 
 export const up: Migration = async ({ context: queryIterface }) => {
   const db = queryIterface.sequelize
@@ -12,23 +13,22 @@ export const up: Migration = async ({ context: queryIterface }) => {
   SELECT COUNT(*)
   FROM INFORMATION_SCHEMA.VIEWS 
   WHERE TABLE_SCHEMA = '${db.getDatabaseName()}'
-  AND TABLE_NAME = '${poReceivedViewName}';
+  AND TABLE_NAME = '${poShippedViewName}';
   `
   // dyncamically create query parts for type safety
-  const siId = `si.${ShipmentItem.getAttributes().id.field || 'id'}`
-  const siPOId = `si.${ShipmentItem.getAttributes().purchaseOrderItemId.field || 'purchaseOrderItemId'}`
-  const riQtyReceived = `ri.${ReceivedItem.getAttributes().qtyReceived.field || 'qtyReceived'}`
-  const riShipmentItemId = `ri.${ReceivedItem.getAttributes().shipmentItemId.field || 'shipmentItemId'}`
+  const poiId = `poi.${PurchaseOrderItem.getAttributes().id.field || 'id'}`
+  const siQtyShipped = `si.${ShipmentItem.getAttributes().qtyShipped.field || 'qtyShipped'}`
+  const siPurchaseOrderItemId = `si.${ShipmentItem.getAttributes().purchaseOrderItemId.field || 'purchaseOrderItemId'}`
   // raw SQL query to create the view:
   const createViewSql = `
-  CREATE VIEW ${poReceivedViewName} AS
+  CREATE VIEW ${poShippedViewName} AS
   SELECT 
-    ${siPOId} as purchaseOrderItemId,
-    SUM(${riQtyReceived}) as totalQtyReceived
+    ${poiId} as purchaseOrderItemId,
+    CAST(SUM(${siQtyShipped}) as SIGNED) as ${totalQtyShippedField}
   FROM
-    ${ReceivedItem.tableName} ri
-    LEFT JOIN ${ShipmentItem.tableName} si ON ${riShipmentItemId}=${siId}
-  GROUP BY ${siPOId};
+    ${PurchaseOrderItem.tableName} poi
+    LEFT JOIN ${ShipmentItem.tableName} si ON ${siPurchaseOrderItemId}=${poiId}
+    GROUP BY ${poiId}, ${siPurchaseOrderItemId};
   `
 
   // search if the view with a given name already exists
@@ -38,20 +38,20 @@ export const up: Migration = async ({ context: queryIterface }) => {
 
   // if view exists - drop it
   if (viewExists) {
-    console.log(`view ${poReceivedViewName} already exists`)
-    const dropViewQuery = `DROP VIEW ${poReceivedViewName}`
+    console.log(`view ${poShippedViewName} already exists`)
+    const dropViewQuery = `DROP VIEW ${poShippedViewName}`
     await queryIterface.sequelize.query(dropViewQuery)
-    console.log(`view ${poReceivedViewName} was dropped.`)
+    console.log(`view ${poShippedViewName} was dropped.`)
   }
   // create the view
 
-  console.log(`creating new ${poReceivedViewName} view.`)
+  console.log(`creating new ${poShippedViewName} view.`)
   await db.query(createViewSql)
 }
 
 export const down: Migration = async ({ context: queryIterface }) => {
-  const dropViewQuery = `DROP VIEW ${poReceivedViewName}`
+  const dropViewQuery = `DROP VIEW ${poShippedViewName}`
   await queryIterface.sequelize.query(dropViewQuery)
-  console.log(`view ${poReceivedViewName} was dropped.`)
+  console.log(`view ${poShippedViewName} was dropped.`)
   // await queryIterface.dropTable('ReceivedItems')
 }

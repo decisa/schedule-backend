@@ -30,9 +30,9 @@ export const up: Migration = async ({ context: queryIterface }) => {
   CREATE VIEW ${poSummaryViewName} AS
   SELECT 
     ${poiId} as purchaseOrderItemId,
-    ${poiQtyPurchased} as qtyPurchased,
-    ${porvTotalQtyReceived} as qtyReceived,
-    ${posvTotalQtyShipped} as qtyShipped
+    COALESCE(${poiQtyPurchased}, 0) as qtyPurchased,
+    COALESCE(${porvTotalQtyReceived}, 0) as qtyReceived,
+    COALESCE(${posvTotalQtyShipped}, 0) as qtyShipped
   FROM
     ${PurchaseOrderItem.tableName} poi
     LEFT JOIN ${POReceivedView.tableName} porv ON ${porvPurchaseOrderItemId}=${poiId}
