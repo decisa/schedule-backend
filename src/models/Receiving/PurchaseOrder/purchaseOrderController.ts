@@ -16,6 +16,7 @@ import ProductConfigurationController, { ConfigurationAsProductRead } from '../.
 import { BrandRead } from '../../Brand/brandController'
 import { OrderRead } from '../../Sales/Order/orderController'
 import { OrderAddress } from '../../Sales/OrderAddress/orderAddress'
+import { POSummaryRead, POSummaryView } from '../../../views/PurchaseOrders/poSummary'
 
 // building elements of the PurchaseOrder type
 type PurchaseOrderCreational = {
@@ -45,6 +46,7 @@ type PurchaseOrderAssociations = {
   order?: OrderRead
   brand?: BrandRead
   items?: PurchaseOrderItemRead[]
+  summary?: POSummaryRead
 }
 
 // Note: DATA TYPES
@@ -92,6 +94,7 @@ export type POInfoShape = {
     id: number
     qtyPurchased: number
     configurationId: number
+    summary?: POSummaryRead
     product: {
       name: string
       sku: string | null
@@ -325,10 +328,17 @@ function parseFullPOToJson(purchaseOrderRaw: PurchaseOrder): POInfoShape {
         throw new Error('Purchase Order: unable to parse product configuration options')
       }
 
+      // check if summary is available
+      let summary: POSummaryRead | undefined
+      if (item.summary) {
+        summary = item.summary.toJSON()
+      }
+
       return {
         id,
         qtyPurchased,
         configurationId,
+        summary,
         product, // converted db product configuration to ConfigurationAsProduct
       }
     })
@@ -440,6 +450,10 @@ export default class PurchaseOrderController {
           },
           include: [
             {
+              model: POSummaryView,
+              as: 'summary',
+            },
+            {
               model: ProductConfiguration,
               as: 'product',
               attributes: ['qtyOrdered', 'qtyRefunded', 'qtyShippedExternal', 'sku'],
@@ -462,18 +476,20 @@ export default class PurchaseOrderController {
           model: Order,
           as: 'order',
           attributes: ['orderNumber', 'id'],
-          include: [{
-            model: Customer,
-            as: 'customer',
-            attributes: {
-              exclude: ['defaultShippingId', 'createdAt', 'updatedAt'],
+          include: [
+            {
+              model: Customer,
+              as: 'customer',
+              attributes: {
+                exclude: ['defaultShippingId', 'createdAt', 'updatedAt'],
+              },
             },
-          },
-          {
-            model: OrderAddress,
-            as: 'shippingAddress',
-            attributes: ['firstName', 'lastName', 'state'],
-          }],
+            {
+              model: OrderAddress,
+              as: 'shippingAddress',
+              attributes: ['firstName', 'lastName', 'state'],
+            },
+          ],
         },
       ],
       transaction: t,
@@ -502,6 +518,10 @@ export default class PurchaseOrderController {
             exclude: ['purchaseOrderId', 'createdAt', 'updatedAt'],
           },
           include: [
+            {
+              model: POSummaryView,
+              as: 'summary',
+            },
             {
               model: ProductConfiguration,
               as: 'product',
