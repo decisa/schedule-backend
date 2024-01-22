@@ -22,7 +22,7 @@ export const up: Migration = async ({ context: queryIterface }) => {
   // raw SQL query to create the view:
 
   // SELECT
-  //   si.id as purchaseOrderItemId,
+  //   si.id as shipmentItemId,
   //   CAST(SUM(qtyReceived) as SIGNED) as totalQtyReceived
   // FROM
   //   shipmentitems si
@@ -32,7 +32,7 @@ export const up: Migration = async ({ context: queryIterface }) => {
   const createViewSql = `
   CREATE VIEW ${shipmentItemReceivedSummaryView} AS
   SELECT 
-    ${siId} as purchaseOrderItemId,
+    ${siId} as shipmentItemId,
     CAST(SUM(${riQtyReceived}) as SIGNED) as ${totalQtyReceivedField}
 
   FROM
