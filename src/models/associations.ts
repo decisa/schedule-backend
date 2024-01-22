@@ -32,8 +32,8 @@ import { TripDriver } from './Delivery/TripDriver/TripDriver'
 import { Delivery } from './Delivery/Delivery/Delivery'
 import { DeliveryItem } from './Delivery/DeliveryItem/DeliveryItem'
 import { DeliveryStop } from './Delivery/DeliveryStop/DeliveryStop'
-import { POShippedView } from '../views/PurchaseOrders/poShipped'
 import { POSummaryView } from '../views/PurchaseOrders/poSummary'
+import { ShipmentItemReceivedSummaryView } from '../views/ShipmentItemReceivedSummary/shipmentItemReceivedSummary'
 
 function createAssociations() {
   // some orders have a magento record
@@ -291,6 +291,7 @@ function createAssociations() {
     as: 'product',
     foreignKey: 'configurationId',
   })
+
   // One-to-many relationship between ShipmentItem and ReceivedItems (nullable).
   ShipmentItem.hasMany(ReceivedItem, {
     as: 'receivedItems',
@@ -302,6 +303,19 @@ function createAssociations() {
     as: 'shipmentItem',
     foreignKey: 'shipmentItemId',
   })
+
+  // One-to-one relationship between ShipmentItem and ShipmentItemReceivedSummaryView (nullable).
+  ShipmentItem.hasOne(ShipmentItemReceivedSummaryView, {
+    as: 'receivedSummary',
+    foreignKey: 'shipmentItemId',
+    onDelete: 'NO ACTION',
+    onUpdate: 'CASCADE',
+  })
+  ShipmentItemReceivedSummaryView.belongsTo(ShipmentItem, {
+    as: 'shipmentItem',
+    foreignKey: 'shipmentItemId',
+  })
+
   // One-to-many relationship between PurchaseOrderItems and ShipmentItems.
   PurchaseOrderItem.hasMany(ShipmentItem, {
     as: 'shipmentItems',

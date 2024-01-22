@@ -38,6 +38,7 @@ import { initReceivedSummaryView } from '../views/ReceivedSummary/receivedSummar
 import { initPOReceivedView } from '../views/PurchaseOrders/poReceived'
 import { initPOShippedView } from '../views/PurchaseOrders/poShipped'
 import { initPOSummaryView } from '../views/PurchaseOrders/poSummary'
+import { initShipmentItemReceivedSummaryView } from '../views/ShipmentItemReceivedSummary/shipmentItemReceivedSummary'
 
 function initModels(db: Sequelize) {
   initMagentoOrder(db)
@@ -86,6 +87,7 @@ function initModels(db: Sequelize) {
   initPOReceivedView(db)
   initPOShippedView(db)
   initPOSummaryView(db)
+  initShipmentItemReceivedSummaryView(db)
 }
 
 export default initModels
