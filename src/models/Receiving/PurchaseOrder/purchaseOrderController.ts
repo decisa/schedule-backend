@@ -17,6 +17,7 @@ import { BrandRead } from '../../Brand/brandController'
 import { OrderRead } from '../../Sales/Order/orderController'
 import { OrderAddress } from '../../Sales/OrderAddress/orderAddress'
 import { POSummaryRead, POSummaryView } from '../../../views/PurchaseOrders/poSummary'
+import { ShipmentItem } from '../ShipmentItem/shipmentItem'
 
 // building elements of the PurchaseOrder type
 type PurchaseOrderCreational = {
@@ -768,6 +769,52 @@ export default class PurchaseOrderController {
       // rethrow the error for further handling
       throw error
     }
+  }
+
+  // get purchase order related shipments info
+  static async getPOShipments(id: number | unknown, t?: Transaction): Promise<PurchaseOrder | null> {
+    const purchaseOrderId = isId.validateSync(id)
+    const final = await PurchaseOrder.findByPk(purchaseOrderId, {
+      attributes: ['id', 'poNumber', 'dateSubmitted', 'productionWeeks', 'status', 'createdAt', 'updatedAt'],
+      include: [
+        {
+          model: Brand,
+          as: 'brand',
+        },
+        {
+          model: PurchaseOrderItem,
+          as: 'items',
+          attributes: {
+            exclude: ['purchaseOrderId', 'createdAt', 'updatedAt'],
+          },
+          include: [
+            {
+              model: ShipmentItem,
+              as: 'shipmentItems',
+            },
+            {
+              model: ProductConfiguration,
+              as: 'product',
+              attributes: ['qtyOrdered', 'qtyRefunded', 'qtyShippedExternal', 'sku'],
+              include: [
+                {
+                  model: Product,
+                  as: 'product',
+                  attributes: ['name', 'sku'],
+                },
+                {
+                  model: ProductOption,
+                  as: 'options',
+                  attributes: ['label', 'value'],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+      transaction: t,
+    })
+    return final
   }
 
   // static async searchPurchaseOrders(term: string, t?: Transaction) {

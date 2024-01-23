@@ -1,8 +1,25 @@
 import express from 'express'
 import { handleError, handleResponse } from '../routeUtils'
 import ShipmentController from '../../models/Receiving/Shipment/shipmentController'
+import ShipmentItemController from '../../models/Receiving/ShipmentItem/shipmentItemController'
 
 const shipmentRouter = express.Router()
+
+// get Shipment Item record
+shipmentRouter.get('/item/:itemId', (req, res) => {
+  try {
+    const { itemId } = req.params
+    ShipmentItemController.get(itemId)
+      .then((result) => {
+        // const shipmentResult = ShipmentController.toJSON(result)
+        const shipmentResult = ShipmentItemController.toJSON(result)
+        handleResponse(res, shipmentResult)
+      })
+      .catch((err) => handleError(res, err))
+  } catch (error) {
+    handleError(res, error)
+  }
+})
 
 // create Shipment record
 shipmentRouter.post('/', (req, res) => {
