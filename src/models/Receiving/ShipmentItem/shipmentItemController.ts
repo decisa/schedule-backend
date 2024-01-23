@@ -6,6 +6,7 @@ import {
 
 import { DBError } from '../../../ErrorManagement/errors'
 import { ShipmentItem } from './shipmentItem'
+import { ShipmentItemReceivedSummaryView } from '../../../views/ShipmentItemReceivedSummary/shipmentItemReceivedSummary'
 
 // building elements of the ShipmentItem type
 type ShipmentItemCreational = {
@@ -164,6 +165,13 @@ export default class ShipmentItemController {
     const shipmentItemId = isId.validateSync(id)
     const final = await ShipmentItem.findByPk(shipmentItemId, {
       transaction: t,
+      include: [
+        {
+          model: ShipmentItemReceivedSummaryView,
+          as: 'receivedSummary',
+          attributes: ['totalQtyReceived'],
+        },
+      ],
     })
 
     if (!final) {
