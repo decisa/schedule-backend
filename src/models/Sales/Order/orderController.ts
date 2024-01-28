@@ -919,6 +919,61 @@ export default class OrderController {
     })
     return orders.map((order) => this.toJSON(order)).filter((x) => x)
   }
+
+  static async getAll(options?: { limit?: number }, t?: Transaction) {
+    const { limit } = options || {}
+    const { rows: orders, count: totalCount } = await Order.findAndCountAll({
+      include: [
+        {
+          association: 'customer',
+          attributes: ['email', 'firstName', 'lastName'],
+        },
+        {
+          association: 'shippingAddress',
+          attributes: ['firstName', 'lastName'],
+        },
+        {
+          association: 'billingAddress',
+          attributes: ['firstName', 'lastName'],
+        },
+        {
+          model: ProductConfiguration,
+          as: 'products',
+          attributes: ['qtyOrdered', 'qtyRefunded', 'qtyShippedExternal'],
+          include: [
+            {
+              model: ProductSummaryView,
+              as: 'summary',
+            },
+            {
+              model: Product,
+              as: 'product',
+              attributes: ['name'],
+              include: [
+                {
+                  model: Brand,
+                  as: 'brand',
+                  attributes: ['name', 'id'],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+      limit,
+      attributes: ['id', 'orderNumber'],
+      transaction: t,
+    })
+
+    printYellowLine('orders')
+    console.log(orders)
+    // return orders.map((order) => this.toJSON(order)).filter((x) => x)
+    return {
+      count: orders.length,
+      results: orders,
+      total: totalCount,
+    }
+  }
 }
 
 // todo: review toJSON to incljude all associations

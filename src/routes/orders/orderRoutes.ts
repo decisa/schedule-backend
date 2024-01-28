@@ -24,6 +24,24 @@ orderRouter.get('/', (req, res) => {
   }
 })
 
+// get all Order records (hard limit 1000)
+orderRouter.get('/all', (req, res) => {
+  try {
+    OrderController.getAll({ limit: 1000 })
+      .then((result) => {
+        const parsedResult = {
+          ...result,
+          results: OrderController.toJSON(result.results),
+        }
+        // handleResponse(res, { count: result.length, results: result })
+        handleResponse(res, parsedResult)
+      })
+      .catch((err) => handleError(res, err))
+  } catch (error) {
+    handleError(res, error)
+  }
+})
+
 // import magento Order record
 orderRouter.put('/magento', (req, res) => {
   try {
