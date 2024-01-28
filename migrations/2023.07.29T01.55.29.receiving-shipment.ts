@@ -17,7 +17,7 @@ export const up: Migration = async ({ context: queryInterface }) => {
         allowNull: true,
       },
       eta: {
-        type: DataTypes.STRING,
+        type: DataTypes.DATE,
         allowNull: true,
       },
       dateShipped: {
