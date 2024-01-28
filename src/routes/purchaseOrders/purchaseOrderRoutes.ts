@@ -4,6 +4,8 @@ import PurchaseOrderController from '../../models/Receiving/PurchaseOrder/purcha
 import PurchaseOrderItemController from '../../models/Receiving/PurchaseOrderItem/purchaseOrderItemController'
 import { printYellowLine } from '../../utils/utils'
 import { DBError } from '../../ErrorManagement/errors'
+import { Shipment } from '../../models/Receiving/Shipment/shipment'
+import ShipmentController from '../../models/Receiving/Shipment/shipmentController'
 
 const purchaseOrderRouter = express.Router()
 
@@ -54,14 +56,14 @@ purchaseOrderRouter.post('/item', (req, res) => {
   }
 })
 
-// add new purchase order item:
+// delete purchase order:
 purchaseOrderRouter.delete('/:id', (req, res) => {
   try {
     // const purchaseOrderItem = req.body as unknown
     PurchaseOrderController.delete(req.params.id)
       .then((result) => {
-        // const purchaseOrderItemResult = PurchaseOrderItemController.toJSON(result)
-        handleResponse(res, result)
+        const deletedPurchaseOrder = PurchaseOrderController.toJSON(result)
+        handleResponse(res, deletedPurchaseOrder)
       })
       .catch((err) => handleError(res, err))
   } catch (error) {
@@ -109,9 +111,9 @@ purchaseOrderRouter.put('/:id', (req, res) => {
 purchaseOrderRouter.get('/:poId/shipments', (req, res) => {
   try {
     PurchaseOrderController.getPOShipments(req.params.poId)
-      .then((result) => {
-        const purchaseOrderResult = PurchaseOrderController.toJSON(result)
-        handleResponse(res, purchaseOrderResult)
+      .then((shipments) => {
+        const purchaseOrderShipments = ShipmentController.toJSON(shipments)
+        handleResponse(res, shipments)
       })
       .catch((err) => handleError(res, err))
   } catch (error) {

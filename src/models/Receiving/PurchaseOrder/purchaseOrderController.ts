@@ -18,6 +18,10 @@ import { OrderRead } from '../../Sales/Order/orderController'
 import { OrderAddress } from '../../Sales/OrderAddress/orderAddress'
 import { POSummaryRead, POSummaryView } from '../../../views/PurchaseOrders/poSummary'
 import { ShipmentItem } from '../ShipmentItem/shipmentItem'
+import { Shipment } from '../Shipment/shipment'
+import { ShipmentItemReceivedSummaryView } from '../../../views/ShipmentItemReceivedSummary/shipmentItemReceivedSummary'
+import { Carrier } from '../Carrier/carrier'
+import { DBError } from '../../../ErrorManagement/errors'
 
 // building elements of the PurchaseOrder type
 type PurchaseOrderCreational = {
@@ -752,18 +756,22 @@ export default class PurchaseOrderController {
    * @param {unknown} id - purchaseOrderId
    * @returns {boolean} true if PurchaseOrder was deleted
    */
-  static async delete(id: number | unknown, t?: Transaction): Promise<boolean> {
+  static async delete(id: number | unknown, t?: Transaction): Promise<PurchaseOrder> {
     const [transaction, commit, rollback] = await useTransaction(t)
     try {
       const purchaseOrderId = isId.validateSync(id)
-      const final = await PurchaseOrder.destroy({
+      const poRecord = await PurchaseOrder.findByPk(purchaseOrderId, { transaction })
+      if (!poRecord) {
+        throw DBError.notFound(new Error(`Purchase order with id ${purchaseOrderId} was not found`))
+      }
+      await PurchaseOrder.destroy({
         where: {
           id: purchaseOrderId,
         },
         transaction,
       })
       await commit()
-      return final === 1
+      return poRecord
     } catch (error) {
       await rollback()
       // rethrow the error for further handling
@@ -772,49 +780,62 @@ export default class PurchaseOrderController {
   }
 
   // get purchase order related shipments info
-  static async getPOShipments(id: number | unknown, t?: Transaction): Promise<PurchaseOrder | null> {
+  static async getPOShipments(id: number | unknown, t?: Transaction): Promise<Shipment[] | null> {
     const purchaseOrderId = isId.validateSync(id)
-    const final = await PurchaseOrder.findByPk(purchaseOrderId, {
-      attributes: ['id', 'poNumber', 'dateSubmitted', 'productionWeeks', 'status', 'createdAt', 'updatedAt'],
+
+    // need to get a typesafe path to the purchaseOrderItem level:
+    // $items.purchaseOrderItem.purchaseOrderId$
+    const itemsPoiPoId = `$${Shipment.associations.items.as}.${ShipmentItem.associations.purchaseOrderItem.as}.${PurchaseOrderItem.getAttributes().purchaseOrderId.field || 'purchaseOrderId'}$`
+
+    const shipments = await Shipment.findAll({
+      transaction: t,
+      where: {
+        [itemsPoiPoId]: purchaseOrderId,
+      },
       include: [
         {
-          model: Brand,
-          as: 'brand',
-        },
-        {
-          model: PurchaseOrderItem,
+          model: ShipmentItem,
           as: 'items',
-          attributes: {
-            exclude: ['purchaseOrderId', 'createdAt', 'updatedAt'],
-          },
+          attributes: ['id', 'purchaseOrderItemId', 'qtyShipped'],
           include: [
             {
-              model: ShipmentItem,
-              as: 'shipmentItems',
+              model: ShipmentItemReceivedSummaryView,
+              as: 'receivedSummary',
+              attributes: ['totalQtyReceived'],
             },
             {
-              model: ProductConfiguration,
-              as: 'product',
-              attributes: ['qtyOrdered', 'qtyRefunded', 'qtyShippedExternal', 'sku'],
+              model: PurchaseOrderItem,
+              as: 'purchaseOrderItem',
+              where: {
+                purchaseOrderId,
+              },
               include: [
                 {
-                  model: Product,
+                  model: ProductConfiguration,
                   as: 'product',
-                  attributes: ['name', 'sku'],
-                },
-                {
-                  model: ProductOption,
-                  as: 'options',
-                  attributes: ['label', 'value'],
+                  include: [
+                    {
+                      model: Product,
+                      as: 'product',
+                      attributes: ['name'],
+                    },
+                  ],
+                  attributes: ['productId'],
                 },
               ],
+              attributes: ['configurationId'],
             },
           ],
         },
+        {
+          model: Carrier,
+          as: 'carrier',
+          attributes: ['name', 'type'],
+        },
       ],
-      transaction: t,
     })
-    return final
+
+    return shipments
   }
 
   // static async searchPurchaseOrders(term: string, t?: Transaction) {
