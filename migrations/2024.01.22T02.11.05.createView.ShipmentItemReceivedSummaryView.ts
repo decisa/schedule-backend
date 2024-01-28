@@ -33,7 +33,7 @@ export const up: Migration = async ({ context: queryIterface }) => {
   CREATE VIEW ${shipmentItemReceivedSummaryView} AS
   SELECT 
     ${siId} as shipmentItemId,
-    CAST(SUM(${riQtyReceived}) as SIGNED) as ${totalQtyReceivedField}
+    COALESCE(CAST(SUM(${riQtyReceived}) as SIGNED), 0) as ${totalQtyReceivedField}
 
   FROM
     ${ShipmentItem.tableName} si
