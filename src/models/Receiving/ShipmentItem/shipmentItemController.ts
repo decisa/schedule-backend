@@ -7,6 +7,7 @@ import {
 import { DBError } from '../../../ErrorManagement/errors'
 import { ShipmentItem } from './shipmentItem'
 import { ShipmentItemReceivedSummaryView } from '../../../views/ShipmentItemReceivedSummary/shipmentItemReceivedSummary'
+import { shipmentItemConstraintName } from '../../../../migrations/2023.12.27T02.04.54.receiving-shipment-items-add-constraint'
 
 // building elements of the ShipmentItem type
 type ShipmentItemCreational = {
@@ -243,7 +244,7 @@ export default class ShipmentItemController {
             path,
             validatorKey,
           } = error.errors[0]
-          if (path === 'shipmentId_purchaseOrderItemId_constraint' && validatorKey === 'not_unique') {
+          if (path === shipmentItemConstraintName && validatorKey === 'not_unique') {
             // if this is a duplicate entry error, find the existing shipment item and update it:
             const {
               purchaseOrderItemId,
