@@ -25,6 +25,7 @@ deliveryRouter.post('/item', (req, res) => {
   }
 })
 
+// note: is this method needed? why whould you access the item by ID without delivery id?
 // get deliveryItem record by id
 deliveryRouter.get('/item/:id', (req, res) => {
   try {
@@ -117,7 +118,7 @@ deliveryRouter.post('/', (req, res) => {
     // const id = 1
     // console.log('params', req.params)
     const deliveryData = req.body as unknown
-    DeliveryController.create(deliveryData)
+    DeliveryController.createWithItems(deliveryData)
       .then((result) => {
         const deliveryResult = DeliveryController.toJSON(result)
         handleResponse(res, deliveryResult)
