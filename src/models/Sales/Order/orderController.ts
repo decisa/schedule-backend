@@ -814,11 +814,11 @@ export default class OrderController {
         },
         {
           association: 'shippingAddress',
-          attributes: ['firstName', 'lastName'],
+          attributes: ['id', 'firstName', 'lastName'],
         },
         {
           association: 'billingAddress',
-          attributes: ['firstName', 'lastName'],
+          attributes: ['id', 'firstName', 'lastName'],
         },
         {
           model: ProductConfiguration,
@@ -930,11 +930,11 @@ export default class OrderController {
         },
         {
           association: 'shippingAddress',
-          attributes: ['firstName', 'lastName'],
+          attributes: ['id', 'firstName', 'lastName'],
         },
         {
           association: 'billingAddress',
-          attributes: ['firstName', 'lastName'],
+          attributes: ['id', 'firstName', 'lastName'],
         },
         {
           model: ProductConfiguration,
