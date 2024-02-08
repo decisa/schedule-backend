@@ -1,5 +1,5 @@
 import * as yup from 'yup'
-import { ForeignKeyConstraintError, Transaction } from 'sequelize'
+import { ForeignKeyConstraintError, Transaction, ValidationError } from 'sequelize'
 import { isId, useTransaction } from '../../../utils/utils'
 
 import type { ConfigurationAsProductRead } from '../../Sales/ProductConfiguration/productConfigurationController'
@@ -8,6 +8,7 @@ import { DeliveryItem } from './DeliveryItem'
 import ProductConfigurationController from '../../Sales/ProductConfiguration/productConfigurationController'
 import { ProductOption } from '../../Sales/ProductOption/productOption'
 import { ProductConfiguration } from '../../Sales/ProductConfiguration/productConfiguration'
+import { deliveryItemConstraintName } from '../../../../migrations/2024.02.08T02.04.54.delivery-items-add-constraint'
 
 export const deliveryStatuses = ['pending', 'scheduled', 'confirmed'] as const
 export type DeliveryStatus = typeof deliveryStatuses[number]
@@ -305,7 +306,7 @@ export default class DeliveryItemController {
   }
 
   /**
-   * insert multiple deliveryItem records to DB. deliveryId is required.
+   * insert multiple deliveryItem records to DB. deliveryId is required.will combine delivery items with the same configurationId
    * @param {number} deliveryId - id of delivery where to add the items
    * @param {DeliveryItemCreate[] | unknown[]} deliveryItems - an array of deliveryItems to insert to DB
    * @returns {DeliveryItem[]} array of created deliveryItems or throws error
@@ -316,15 +317,52 @@ export default class DeliveryItemController {
       const result: DeliveryItem[] = []
       for (let i = 0; i < deliveryItems.length; i += 1) {
         const item = deliveryItems[i]
-        if (typeof item !== 'object' || item === null) {
-          throw new Error('DeliveryItem malformed data: every item should be an object')
+
+        const parsedDeliveryItem = deliveryItemSchemaCreate.omit(['deliveryId']).validateSync(item, {
+          stripUnknown: true,
+          abortEarly: false,
+        })
+        // try to create.
+        try {
+          const deliveryItem = await this.create({
+            ...parsedDeliveryItem,
+            deliveryId,
+          }, transaction)
+          result.push(deliveryItem)
+        } catch (error) {
+          // if this is not a validation error, re-throw it
+          if (!(error instanceof ValidationError)) {
+            throw error
+          }
+
+          // if there are more than one errors, re-throw them
+          if (error.errors.length > 1) {
+            throw error
+          }
+
+          const {
+            path,
+            validatorKey,
+          } = error.errors[0]
+          if (path === deliveryItemConstraintName && validatorKey === 'not_unique') {
+            // if this is a duplicate entry error, find the existing shipment item and update it:
+            const {
+              configurationId,
+            } = parsedDeliveryItem
+
+            const existingDeliveryItem = result.find((deliveryItem) => deliveryItem.configurationId === configurationId)
+            if (!existingDeliveryItem) {
+              // if the existing shipment item is not found in current bulk batch, re-throw the error
+              throw error
+            }
+            // update the existing shipment item
+            existingDeliveryItem.qty += parsedDeliveryItem.qty
+            await existingDeliveryItem.save({ transaction })
+          } else {
+            // otherwise re-thow the error
+            throw error
+          }
         }
-        // create method will take care of all validations:
-        const deliveryItem = await this.create({
-          ...item,
-          deliveryId,
-        }, transaction)
-        result.push(deliveryItem)
       }
 
       await commit()
