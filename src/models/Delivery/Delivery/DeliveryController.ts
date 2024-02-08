@@ -552,6 +552,81 @@ export default class DeliveryController {
   }
 
   /**
+   * insert Delivery record to DB. orderId is required. will throw error if items are not provided
+   * @param {DeliveryCreate | unknown} deliveryData -  Delivery record to insert to DB
+   * @returns {Delivery} Delivery object or throws error
+   */
+  static async createWithItems(deliveryData: DeliveryCreate | unknown, t?: Transaction): Promise<Delivery> {
+    const [transaction, commit, rollback] = await useTransaction(t)
+    try {
+      // check if deliveryData is an object
+      if (typeof deliveryData !== 'object' || deliveryData === null) {
+        throw new Error('Delivery malformed data: data is missing or malformed')
+      }
+      const parsedDelivery = validateDeliveryCreate(deliveryData)
+
+      const result = await Delivery.create(parsedDelivery, {
+        transaction,
+      })
+
+      // check if delivery items were not included :
+      if (!('items' in deliveryData) || !Array.isArray(deliveryData.items)) {
+        // create delivery items
+        throw DBError.badData(new Error('Cannot create delivery without items'))
+      }
+      // const items = await DeliveryItemController.bulkCreate(result.id, deliveryData.items, transaction)
+      // result.items = items
+      await DeliveryItemController.bulkCreate(result.id, deliveryData.items, transaction)
+
+      // refetch the record to get all fields (including virtuals)
+      const final = await this.get(result.id, transaction)
+      if (!final) {
+        throw DBError.unknown(new Error('Internal Error: Delivery was not created'))
+      }
+
+      // now that we have all detailed data, check if any delivery items don't belong to an order
+      // and delete them if they don't
+      console.log('searching for items to delete, order = ', final?.order?.id)
+      const itemsToDelete = final?.items?.filter((item) => item.product?.orderId !== final.order?.id) || []
+
+      console.log('itemsToDelete', itemsToDelete.map((x) => x.toJSON()))
+
+      const deletedItemIds = new Set<number>()
+      if (itemsToDelete.length > 0) {
+        for (let i = 0; i < itemsToDelete.length; i += 1) {
+          const itemToDelete = itemsToDelete[i]
+          deletedItemIds.add(itemToDelete.id)
+          await itemToDelete.destroy({ transaction })
+          console.log('deleted item id = ', itemToDelete?.id)
+        }
+      }
+
+      // filter out deleted items from final object
+      final.items = final?.items?.filter((item) => !deletedItemIds.has(item.id)) || []
+
+      // check if at least one item was created
+      if (final.items.length === 0) {
+        throw DBError.badData(new Error('Delivery was created without any items or all items belonged to a wrong order'))
+      }
+
+      await commit()
+      return final
+    } catch (error) {
+      let errorMsg = ''
+      if (error instanceof ForeignKeyConstraintError && error.name === 'SequelizeForeignKeyConstraintError') {
+        errorMsg = `Delivery malformed data: constraint violation error: ${error?.fields?.toString() || ''}`
+      }
+      // console.log('error', error.name)
+      await rollback()
+      // rethrow the error for further handling
+      if (errorMsg !== '') {
+        throw DBError.badData(new Error(errorMsg))
+      }
+      throw error
+    }
+  }
+
+  /**
      * update Delivery record in DB.
      * @param {number | unknown} deliveryId - id of the Delivery record to update in DB
      * @param {unknown} deliveryData - update data for delivery record
