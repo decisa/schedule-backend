@@ -3,7 +3,10 @@ import { Migration } from '../umzug'
 
 const tableName = DeliveryItem.tableName || 'DeliveryItems'
 const constraintFields = ['configurationId', 'deliveryId'] as const
-const constraintName = `${constraintFields.join('_')}_constraint`
+
+export const deliveryItemConstraintName = `${constraintFields.join('_')}_constraint`
+
+const constraintName = deliveryItemConstraintName
 const summaryField = 'qty'
 
 type ConstraintFields = typeof constraintFields[number]
