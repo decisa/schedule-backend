@@ -44,9 +44,11 @@ x25. TripDrivers // reference table for drivers on a trip
 30. product summary views
 
 
-
+standardize DB validation errors. e.g. post to /receiving/ when data is not array is DBError.BadData, but when data is array, but bad data in items, the error is { error: 'validation error', errors: [...] }
 
 change all ids to unsigned
+
+test throw DBError.notFound(new Error('shipment does not exist')) on shipment update 
 
 test if cascade updates the brand after deletion
 

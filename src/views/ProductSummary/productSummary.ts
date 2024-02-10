@@ -11,16 +11,22 @@ import { ProductConfiguration } from '../../models/Sales/ProductConfiguration/pr
 export class ProductSummaryView extends Model<InferAttributes<ProductSummaryView>, InferCreationAttributes<ProductSummaryView>> {
   declare configurationId: number
 
-  declare qtyPurchased: number
+  declare qtyPlanned: number // delivery created
 
-  declare qtyShipped: number
+  declare qtyScheduled: number // delivery added to a schedule
 
-  declare qtyReceived: number
+  declare qtyConfirmed: number // delivery confirmed by customer
+
+  declare qtyPurchased: number // from vendor
+
+  declare qtyShipped: number // from vendor
+
+  declare qtyReceived: number // at the warehouse
 
   // virtual fields
-  declare qtyInProduction: CreationOptional<number>
+  // declare qtyInProduction: CreationOptional<number>
 
-  declare qtyInTransit: CreationOptional<number>
+  // declare qtyInTransit: CreationOptional<number>
 }
 
 // init function for the view
@@ -35,39 +41,36 @@ export function initProductSummaryView(db: Sequelize, tableViewName = 'ProductSu
         key: 'id',
       },
     },
+    qtyPlanned: {
+      type: DataTypes.INTEGER,
+    },
+    qtyScheduled: {
+      type: DataTypes.INTEGER,
+    },
+    qtyConfirmed: {
+      type: DataTypes.INTEGER,
+    },
     qtyPurchased: {
       type: DataTypes.INTEGER,
-      // get() {
-      //   const value = this.getDataValue('qtyPurchased')
-      //   return value === null ? 0 : Number(value)
-      // },
     },
     qtyShipped: {
       type: DataTypes.INTEGER,
-      // get() {
-      //   const value = this.getDataValue('qtyShipped')
-      //   return value === null ? 0 : Number(value)
-      // },
     },
     qtyReceived: {
       type: DataTypes.INTEGER,
-      // get() {
-      //   const value = this.getDataValue('qtyReceived')
-      //   return value === null ? 0 : Number(value)
-      // },
     },
-    qtyInTransit: {
-      type: new DataTypes.VIRTUAL(DataTypes.INTEGER, ['qtyShipped', 'qtyReceived']),
-      get() {
-        return this.qtyShipped - this.qtyReceived
-      },
-    },
-    qtyInProduction: {
-      type: new DataTypes.VIRTUAL(DataTypes.INTEGER, ['qtyPurchased', 'qtyShipped']),
-      get() {
-        return this.qtyPurchased - this.qtyShipped
-      },
-    },
+    // qtyInTransit: {
+    //   type: new DataTypes.VIRTUAL(DataTypes.INTEGER, ['qtyShipped', 'qtyReceived']),
+    //   get() {
+    //     return this.qtyShipped - this.qtyReceived
+    //   },
+    // },
+    // qtyInProduction: {
+    //   type: new DataTypes.VIRTUAL(DataTypes.INTEGER, ['qtyPurchased', 'qtyShipped']),
+    //   get() {
+    //     return this.qtyPurchased - this.qtyShipped
+    //   },
+    // },
   }, {
     sequelize: db,
     timestamps: false,

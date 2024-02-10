@@ -5,6 +5,7 @@ import { Migration } from '../umzug'
 import { PurchasedSummaryView, purchasedSummaryView, totalQtyPurchasedField } from '../src/views/PurchasedSummary/purchasedSummary'
 import { ShippedSummaryView, shippedSummaryView, totalQtyShippedField } from '../src/views/ShippedSummary/shippedSummary'
 import { ReceivedSummaryView, totalQtyReceivedField } from '../src/views/ReceivedSummary/receivedSummary'
+import { DeliverySummaryView } from '../src/views/DeliverySummary/deliverySummary'
 
 const productSummaryView = 'ProductSummaryViews'
 
@@ -34,12 +35,20 @@ export const up: Migration = async ({ context: queryIterface }) => {
   console.log('rsvTotalQtyReceived')
   const rsvTotalQtyReceived = `rsv.${ReceivedSummaryView.getAttributes()[totalQtyReceivedField].field || totalQtyReceivedField}`
 
+  const dsvConfigId = `dsv.${DeliverySummaryView.getAttributes().configurationId.field || 'configurationId'}`
+  const dsvTotalQtyPlanned = `dsv.${DeliverySummaryView.getAttributes().qtyPlanned.field || 'qtyPlanned'}`
+  const dsvTotalQtyScheduled = `dsv.${DeliverySummaryView.getAttributes().qtyScheduled.field || 'qtyScheduled'}`
+  const dsvTotalQtyConfirmed = `dsv.${DeliverySummaryView.getAttributes().qtyConfirmed.field || 'qtyConfirmed'}`
+
   // raw SQL query to create the view:
   const createViewSql = `
   CREATE VIEW ${productSummaryView} AS
   SELECT 
     ${pcId} as configurationId,
     ${pcQtyOrdered} as qtyOrdered,
+    COALESCE(${dsvTotalQtyPlanned}, 0) as qtyPlanned,
+    COALESCE(${dsvTotalQtyScheduled}, 0) as qtyScheduled,
+    COALESCE(${dsvTotalQtyConfirmed}, 0) as qtyConfirmed,
     COALESCE(${psvTotalQtyPurchased}, 0) as qtyPurchased,
     COALESCE(${ssvTotalQtyShipped}, 0) as qtyShipped,
     COALESCE(${rsvTotalQtyReceived}, 0) as qtyReceived
@@ -47,7 +56,9 @@ export const up: Migration = async ({ context: queryIterface }) => {
     ${ProductConfiguration.tableName} pc
     LEFT JOIN ${purchasedSummaryView} psv ON ${pcId} = ${psvConfigId}
     LEFT JOIN ${shippedSummaryView} ssv ON ${ssvConfigId} = ${pcId}
-    LEFT JOIN ${ReceivedSummaryView.tableName} rsv ON ${rsvConfigId} = ${pcId};
+    LEFT JOIN ${ReceivedSummaryView.tableName} rsv ON ${rsvConfigId} = ${pcId}
+    LEFT JOIN ${DeliverySummaryView.tableName} dsv ON ${dsvConfigId} = ${pcId}
+    ;
   `
 
   // search if the view with a given name already exists
