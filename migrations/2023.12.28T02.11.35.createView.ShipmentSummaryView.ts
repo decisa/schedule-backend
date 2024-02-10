@@ -5,6 +5,9 @@ import { Migration } from '../umzug'
 import { shippedSummaryView, totalQtyShippedField } from '../src/views/ShippedSummary/shippedSummary'
 import { PurchaseOrderItem } from '../src/models/Receiving/PurchaseOrderItem/purchaseOrderItem'
 
+// ShippedSummaryView is a view that calculates
+// the total number of units shipped from vendors for every configurationId
+
 export const up: Migration = async ({ context: queryIterface }) => {
   const db = queryIterface.sequelize
   // raw SQL query for checking if the view exists with some dynamic values from existing models
@@ -31,6 +34,16 @@ export const up: Migration = async ({ context: queryIterface }) => {
     LEFT JOIN ${ShipmentItem.tableName} si ON ${poiId} = ${siPurchaseOrderItemId}
   GROUP BY ${poiConfigurationId};
   `
+/*
+  CREATE VIEW ShippedSummaryView AS
+  SELECT
+    poi.ConfigurationId as configurationId,
+    CAST(SUM(si.QtyShipped) as SIGNED) as totalQtyShipped
+  FROM
+    PurchaseOrderItems poi
+    LEFT JOIN ShipmentItems si ON poi.Id = si.purchaseOrderItemId
+  GROUP BY poi.ConfigurationId
+*/
 
   // search if the view with a given name already exists
   const results = await db.query<{ 'COUNT(*)': number }>(checkViewExistsSql, { type: QueryTypes.SELECT })
