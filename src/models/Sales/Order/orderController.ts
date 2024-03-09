@@ -20,6 +20,7 @@ import AddressController from '../Address/addressController'
 import { Brand } from '../../Brand/brand'
 import { DeliveryMethod } from '../DeliveryMethod/deliveryMethod'
 import { ProductSummaryView } from '../../../views/ProductSummary/productSummary'
+import { DBError } from '../../../ErrorManagement/errors'
 
 type OrderCreational = {
   id: number
@@ -509,7 +510,7 @@ export default class OrderController {
       transaction: t,
     })
     if (!orderRecord) {
-      return null
+      throw DBError.notFound(new Error(`Order #${orderNumber} does not exist`))
     }
     return this.getFullOrderInfo(orderRecord.id, t)
   }
