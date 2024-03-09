@@ -176,7 +176,7 @@ export const orderAddressSchemaCreate: yup.ObjectSchema<OrderAddressCreate> = yu
     .required(),
   street1: yup.string().nonNullable(),
   // .label('Malformed data: street1'),
-  street2: yup.string(),
+  street2: yup.string().nullable(),
   // .label('Malformed data: street2'),
   street: yup.array()
     .of(yup.string().required())
@@ -280,7 +280,7 @@ const orderAddressSchemaUpdate: yup.ObjectSchema<Partial<OrderAddressCreate>> = 
     .nonNullable(),
   street1: yup.string().nonNullable(),
   // .label('Malformed data: street1'),
-  street2: yup.string(),
+  street2: yup.string().nullable(),
   // .label('Malformed data: street2'),
   street: yup.array()
     .of(yup.string().required())
@@ -553,7 +553,7 @@ export default class OrderAddressController {
    * @returns {OrderAddress | OrderAddress[] | null} OrderAddress object or null
    */
   // TODO: add this method to orders API
-  static async getByOrderId(id: number | unknown, t?: Transaction): Promise<OrderAddress[] | null> {
+  static async getAllByOrderId(id: number | unknown, t?: Transaction): Promise<OrderAddress[] | null> {
     const orderId = isId.validateSync(id)
     const final = await OrderAddress.findAll({
       where: {
