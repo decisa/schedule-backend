@@ -2,6 +2,7 @@ import express from 'express'
 import { handleError, handleResponse } from '../routeUtils'
 import OrderController from '../../models/Sales/Order/orderController'
 import OrderAddressController from '../../models/Sales/OrderAddress/orderAddressContoller'
+import { DBError } from '../../ErrorManagement/errors'
 
 const orderRouter = express.Router()
 
@@ -130,14 +131,38 @@ orderRouter.get('/:id', (req, res) => {
 })
 
 // get all addresses of the order by orderId
-orderRouter.get('/:id/addresses', (req, res) => {
+orderRouter.get('/:orderId/address/all', (req, res) => {
   try {
-    OrderAddressController.getByOrderId(req.params.id)
+    OrderAddressController.getAllByOrderId(req.params.orderId)
       .then((result) => {
         const brandResult = OrderAddressController.toJSON(result)
         handleResponse(res, brandResult)
       })
       .catch((err) => handleError(res, err))
+  } catch (error) {
+    handleError(res, error)
+  }
+})
+
+// get all addresses of the order by orderId
+orderRouter.post('/:orderId/address', (req, res) => {
+  try {
+    const orderAddressData = req.body as unknown
+    if (!orderAddressData || typeof orderAddressData !== 'object') {
+      throw DBError.badData(new Error('order address data is missing'))
+    }
+    OrderAddressController.create({
+      ...orderAddressData,
+      orderId: req.params.orderId,
+    })
+      .then((result) => {
+        const brandResult = OrderAddressController.toJSON(result)
+        handleResponse(res, brandResult)
+      })
+      .catch((err) => {
+        console.log('error', err)
+        handleError(res, err)
+      })
   } catch (error) {
     handleError(res, error)
   }
