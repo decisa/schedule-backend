@@ -30,10 +30,10 @@ export const up: Migration = async ({ context: queryIterface }) => {
   const createViewSql = `
   CREATE VIEW ${deliverySummaryViewName} AS
   SELECT 
-    ${pcId} as configurationId,
-    COALESCE(CAST(SUM(${diQty}) as SIGNED), 0) as ${qtyPlannedField},
-    CAST(SUM(CASE WHEN ${dDeliveryStopId}  IS NOT NULL  THEN ${diQty} ELSE 0 END) as SIGNED) AS ${qtyScheduledField},
-    CAST(SUM(CASE WHEN ${dStatus} = 'confirmed' THEN ${diQty} ELSE 0 END) as SIGNED) AS ${qtyConfirmedField}
+    ${pcId} as configurationId,  
+    CAST(COALESCE(SUM(CASE WHEN (${dDeliveryStopId}  IS NULL) THEN ${diQty} ELSE 0 END),0) as SIGNED) AS ${qtyPlannedField},
+    CAST(SUM(CASE WHEN (${dDeliveryStopId}  IS NOT NULL) AND  (${dStatus} != 'confirmed') THEN ${diQty} ELSE 0 END) as SIGNED) AS ${qtyScheduledField},
+    CAST(SUM(CASE WHEN (${dDeliveryStopId}  IS NOT NULL) AND ( ${dStatus} = 'confirmed') THEN ${diQty} ELSE 0 END) as SIGNED) AS ${qtyConfirmedField}
   FROM 
     ${ProductConfiguration.tableName} pc
     LEFT JOIN ${DeliveryItem.tableName} di ON ${pcId} = ${diConfigurationId}
@@ -44,10 +44,10 @@ export const up: Migration = async ({ context: queryIterface }) => {
   CREATE VIEW DeliverySummaryView AS
   SELECT
     pc.id as configurationId,
-     --pc.qtyOrdered as qtyOrdered,
-     COALESCE(CAST(SUM(di.qty) as SIGNED), 0) as totalPlanned,
-     SUM(CASE WHEN d.deliveryStopId  IS NOT NULL  THEN di.qty ELSE 0 END) AS totalScheduled,
-    SUM(CASE WHEN d.status = 'confirmed' THEN di.qty ELSE 0 END) AS totalConfirmed
+    --pc.qtyOrdered as qtyOrdered,
+    SUM(COALESCE(CASE WHEN (d.deliveryStopId  IS NULL) THEN di.qty ELSE 0 END),0) AS totalPlanned,
+    SUM(CASE WHEN (d.deliveryStopId  IS NOT NULL) AND (d.status != 'confirmed') THEN di.qty ELSE 0 END) AS totalScheduled,
+    SUM(CASE WHEN (d.deliveryStopId  IS NOT NULL) AND (d.status = 'confirmed') THEN di.qty ELSE 0 END) AS totalConfirmed
   FROM
     productconfigurations pc
     LEFT JOIN deliveryitems di ON pc.id = di.configurationId
