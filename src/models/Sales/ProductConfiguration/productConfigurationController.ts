@@ -65,10 +65,18 @@ export type ProductConfigurationRead = Omit<Required<ProductConfigurationCreate>
   summary?: ProductSummaryView
 }
 
-export type ConfigurationAsProductRead = Omit<ProductRead, 'id'> & {
-  configurationId: number
+// export type ConfigurationAsProductRead = Omit<ProductRead, 'id'> & {
+//   configurationId: number
+//   orderId: number
+//   configuration: Omit<Required<ProductConfigurationCreate>, 'productId' | 'id' | 'orderId'> & {
+//     options?: ProductOptionRead[] | null,
+//   }
+//   mainProductId: number
+// }
+
+export type ConfigurationAsProductRead = ProductRead & {
   orderId: number
-  configuration: Omit<Required<ProductConfigurationCreate>, 'productId' | 'id' | 'orderId'> & {
+  configuration: Omit<Required<ProductConfigurationCreate>, 'productId' | 'orderId'> & {
     options?: ProductOptionRead[] | null,
   }
   mainProductId: number
@@ -251,7 +259,7 @@ function configurationToJson(configuration: ProductConfiguration): ProductConfig
 function configurationToJsonAsProduct(configuration: ProductConfiguration): ConfigurationAsProductRead {
   const {
     product,
-    id: configurationId,
+    // id: configurationId,
     orderId,
     ...configurationJson
   } = configurationToJson(configuration)
@@ -265,7 +273,7 @@ function configurationToJsonAsProduct(configuration: ProductConfiguration): Conf
   } = product
 
   const result = {
-    configurationId,
+    id: configurationJson.id,
     orderId,
     ...productJson,
     configuration: configurationJson,
