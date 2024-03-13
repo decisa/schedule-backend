@@ -16,6 +16,7 @@ export const commentTypes = [
   'creditmemo',
 ] as const
 
+// fixme: why do I have 'shipping' & 'shipment'? seems redundant
 export type CommentType = typeof commentTypes[number]
 
 // Creational
