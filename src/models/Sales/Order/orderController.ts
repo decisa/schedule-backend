@@ -439,9 +439,9 @@ export default class OrderController {
           model: MagentoCustomer,
           as: 'magento',
         }],
-        attributes: {
-          exclude: ['defaultShippingId'],
-        },
+        // attributes: {
+        //   exclude: ['defaultShippingId'],
+        // },
       },
       {
         model: ProductConfiguration,
@@ -449,27 +449,32 @@ export default class OrderController {
         attributes: {
           exclude: ['productId', 'orderId'],
         },
-        include: [{
-          model: Product,
-          as: 'product',
-          attributes: {
-            exclude: ['brandId'],
+        include: [
+          {
+            model: ProductSummaryView,
+            as: 'summary',
           },
-          include: [{
-            association: 'brand',
-          }],
-        },
-        {
-          model: ProductOption,
-          as: 'options',
-          attributes: {
-            exclude: ['configId'],
+          {
+            model: Product,
+            as: 'product',
+            attributes: {
+              exclude: ['brandId'],
+            },
+            include: [{
+              association: 'brand',
+            }],
           },
+          {
+            model: ProductOption,
+            as: 'options',
+            attributes: {
+              exclude: ['configId'],
+            },
           // separate: true,
           // order: [
           //   ['sortOrder', 'ASC'],
           // ],
-        }],
+          }],
       }],
       attributes: {
         exclude: [
