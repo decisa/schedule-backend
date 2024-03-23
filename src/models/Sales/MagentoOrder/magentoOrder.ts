@@ -24,6 +24,15 @@ export const orderStatuses = [
   'preparing_shipment',
   'complete',
   'closed',
+  'canceled',
+  'paypal_reversed',
+  'paypal_canceled_reversal',
+  'holded',
+  'pending_paypal',
+  'payment_review',
+  'pending_payment',
+  'production',
+  'fraud',
   'unknown',
 ] as const
 
