@@ -498,6 +498,16 @@ function createAssociations() {
     foreignKey: 'deliveryStopId',
   })
 
+  // one-to-many relationship between DeliveryMethod and Delivery
+  DeliveryMethod.hasMany(Delivery, {
+    as: 'deliveries',
+    foreignKey: 'deliveryMethodId',
+  })
+  Delivery.belongsTo(DeliveryMethod, {
+    as: 'deliveryMethod',
+    foreignKey: 'deliveryMethodId',
+  })
+
   // one-to-many relationship between OrderAddress and Delivery
   OrderAddress.hasMany(Delivery, {
     as: 'deliveries',

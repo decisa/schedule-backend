@@ -16,13 +16,12 @@ import {
   BelongsToCreateAssociationMixin,
 
 } from 'sequelize'
-
-import { da, de } from 'date-fns/locale'
 import type { OrderAddress } from '../../Sales/OrderAddress/orderAddress'
 import type { Order } from '../../Sales/Order/order'
 import type { DeliveryStop } from '../DeliveryStop/DeliveryStop'
 import type { DeliveryItem } from '../DeliveryItem/DeliveryItem'
 import type { DeliveryStatus } from './DeliveryController'
+import type { DeliveryMethod } from '../../Sales/DeliveryMethod/deliveryMethod'
 
 export type Period = {
   start: number
@@ -49,7 +48,7 @@ export function numberToDays(num: number) {
 export class Delivery extends Model<InferAttributes<Delivery>, InferCreationAttributes<Delivery>> {
   declare id: CreationOptional<number>
 
-  declare status: DeliveryStatus
+  // declare status: DeliveryStatus
 
   declare estimatedDurationString: string | null
 
@@ -96,6 +95,10 @@ export class Delivery extends Model<InferAttributes<Delivery>, InferCreationAttr
 
   declare deliveryStop?: NonAttribute<DeliveryStop>
 
+  declare deliveryMethodId: ForeignKey<DeliveryMethod['id']>
+
+  declare deliveryMethod?: NonAttribute<DeliveryMethod>
+
   declare items?: NonAttribute<DeliveryItem[]>
 
   declare public static associations: {
@@ -103,6 +106,7 @@ export class Delivery extends Model<InferAttributes<Delivery>, InferCreationAttr
     shippingAddress: Association<Delivery, OrderAddress>,
     deliveryStop: Association<Delivery, DeliveryStop>,
     items: Association<Delivery, DeliveryItem>,
+    deliveryMethod: Association<Delivery, DeliveryMethod>,
   }
 
   // MIXINS
@@ -151,6 +155,14 @@ export class Delivery extends Model<InferAttributes<Delivery>, InferCreationAttr
   declare removeDeliveryItem: HasManyRemoveAssociationMixin<DeliveryItem, number>
 
   declare removeDeliveryItems: HasManyRemoveAssociationsMixin<DeliveryItem, number>
+
+  // one-to-many relationship between DeliveryMethod and Delivery
+  // deliveryMethod:
+  declare getDeliveryMethod: BelongsToGetAssociationMixin<DeliveryMethod>
+
+  declare setDeliveryMethod: BelongsToSetAssociationMixin<DeliveryMethod, number>
+
+  declare createDeliveryMethod: BelongsToCreateAssociationMixin<DeliveryMethod>
 }
 
 export function initDelivery(db: Sequelize) {
@@ -162,10 +174,10 @@ export function initDelivery(db: Sequelize) {
         autoIncrement: true,
         primaryKey: true,
       },
-      status: {
-        type: DataTypes.STRING,
-        allowNull: false,
-      },
+      // status: {
+      //   type: DataTypes.STRING,
+      //   allowNull: false,
+      // },
       estimatedDurationString: DataTypes.STRING,
       estimatedDuration: {
         type: DataTypes.VIRTUAL,

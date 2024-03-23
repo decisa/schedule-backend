@@ -10,6 +10,7 @@ import { ProductConfiguration } from '../../Sales/ProductConfiguration/productCo
 import { ProductOption } from '../../Sales/ProductOption/productOption'
 import { DeliveryItem } from '../DeliveryItem/DeliveryItem'
 import { DBError } from '../../../ErrorManagement/errors'
+import { DeliveryMethodRead } from '../../Sales/DeliveryMethod/deliveryMethodController'
 
 // TODO: allow to update and create delivery, when availability is nested, same like when reading json. ie. update validateDeliveryCreate and validateDeliveryUpdate
 
@@ -21,7 +22,7 @@ type DeliveryCreational = {
 }
 
 type DeliveryRequired = {
-  status: DeliveryStatus
+  // status: DeliveryStatus
   title: string
   coiRequired: boolean // in required, because has default value
   coiReceived: boolean // in required, because has default value
@@ -50,6 +51,7 @@ type DeliveryFK = {
   orderId: number
   shippingAddressId: number
   deliveryStopId: number | null
+  deliveryMethodId: number
 }
 
 type DeliveryAssociations = {
@@ -57,6 +59,7 @@ type DeliveryAssociations = {
   shippingAddress: OrderAddressMagentoRead
   // deliveryStop: DeliveryStopRead
   items: DeliveryItemRead[]
+  deliveryMethod: DeliveryMethodRead
 }
 
 // Note: DATA TYPES
@@ -115,15 +118,20 @@ const deliverySchemaCreate: yup.ObjectSchema<DeliveryCreate> = yup.object({
     .nullable()
     .default(null)
     .label('Delivery malformed data: deliveryStopId'),
+  deliveryMethodId: yup.number()
+    .integer()
+    .positive()
+    .required()
+    .label('Delivery malformed data: deliveryMethodId'),
   // required
   // status: DeliveryStatus
   // title: string
-  status: yup.mixed<DeliveryStatus>()
-    .oneOf(deliveryStatuses)
-    .nonNullable()
-    .default('pending')
-    .required()
-    .label('Malformed data: status'),
+  // status: yup.mixed<DeliveryStatus>()
+  //   .oneOf(deliveryStatuses)
+  //   .nonNullable()
+  //   .default('pending')
+  //   .required()
+  //   .label('Malformed data: status'),
   title: yup.string()
     .default('')
     .defined()
@@ -259,10 +267,15 @@ const deliverySchemaUpdate: yup.ObjectSchema<Omit<DeliveryUpdate, 'timePeriod'>>
       .positive()
       .nonNullable()
       .label('Delivery malformed data: shippingAddressId'),
-    status: yup.mixed<DeliveryStatus>()
-      .oneOf(deliveryStatuses)
+    deliveryMethodId: yup.number()
+      .integer()
+      .positive()
       .nonNullable()
-      .label('Malformed data: status'),
+      .label('Delivery malformed data: deliveryMethodId'),
+    // status: yup.mixed<DeliveryStatus>()
+    //   .oneOf(deliveryStatuses)
+    //   .nonNullable()
+    //   .label('Malformed data: status'),
     coiRequired: yup.boolean()
       .nonNullable()
       .label('Delivery malformed data: coiRequired'),
@@ -466,6 +479,9 @@ export default class DeliveryController {
         },
         {
           association: 'deliveryStop',
+        },
+        {
+          association: 'deliveryMethod',
         },
         {
           association: 'items',
