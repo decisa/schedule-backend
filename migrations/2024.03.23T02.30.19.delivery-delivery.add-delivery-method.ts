@@ -5,7 +5,7 @@ import { DeliveryMethod } from '../src/models/Sales/DeliveryMethod/deliveryMetho
 
 const { tableName } = Delivery
 const newColumn = 'deliveryMethodId'
-const columnToRemove = 'status'
+// const columnToRemove = 'status'
 
 // add new column deliveryMethodId to Delivery table
 // remove status column from Delivery table
@@ -55,9 +55,9 @@ export const up: Migration = async ({ context: queryInterface }) => {
       // onUpdate: 'CASCADE',
     }, { transaction })
 
-    console.log('removing status column')
+    // console.log('removing status column')
     // remove status column
-    await queryInterface.removeColumn(tableName, columnToRemove, { transaction })
+    // await queryInterface.removeColumn(tableName, columnToRemove, { transaction })
 
     await transaction.commit()
     console.log('up: complete')
@@ -79,13 +79,13 @@ export const down: Migration = async ({ context: queryInterface }) => {
     await queryInterface.removeColumn(tableName, newColumn)
     console.log(`successfully removed ${newColumn} column`)
     // add status column back
-    await queryInterface.addColumn(tableName, columnToRemove, {
-      type: DataTypes.STRING,
-      defaultValue: 'pending',
-      allowNull: false,
-    })
-    console.log(`successfully re-added ${columnToRemove} column with default value 'pending'`)
-    console.log('down: complete')
+    // await queryInterface.addColumn(tableName, columnToRemove, {
+    //   type: DataTypes.STRING,
+    //   defaultValue: 'pending',
+    //   allowNull: false,
+    // })
+    // console.log(`successfully re-added ${columnToRemove} column with default value 'pending'`)
+    // console.log('down: complete')
   } catch (error) {
     console.log(`error in down migration: ${String(error)}`)
     throw error

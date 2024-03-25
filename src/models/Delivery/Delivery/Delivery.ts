@@ -48,7 +48,7 @@ export function numberToDays(num: number) {
 export class Delivery extends Model<InferAttributes<Delivery>, InferCreationAttributes<Delivery>> {
   declare id: CreationOptional<number>
 
-  // declare status: DeliveryStatus
+  declare status: DeliveryStatus
 
   declare estimatedDurationString: string | null
 
@@ -174,10 +174,10 @@ export function initDelivery(db: Sequelize) {
         autoIncrement: true,
         primaryKey: true,
       },
-      // status: {
-      //   type: DataTypes.STRING,
-      //   allowNull: false,
-      // },
+      status: {
+        type: DataTypes.STRING,
+        allowNull: false,
+      },
       estimatedDurationString: DataTypes.STRING,
       estimatedDuration: {
         type: DataTypes.VIRTUAL,

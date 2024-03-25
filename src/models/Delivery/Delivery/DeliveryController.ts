@@ -22,7 +22,7 @@ type DeliveryCreational = {
 }
 
 type DeliveryRequired = {
-  // status: DeliveryStatus
+  status: DeliveryStatus
   title: string
   coiRequired: boolean // in required, because has default value
   coiReceived: boolean // in required, because has default value
@@ -126,12 +126,12 @@ const deliverySchemaCreate: yup.ObjectSchema<DeliveryCreate> = yup.object({
   // required
   // status: DeliveryStatus
   // title: string
-  // status: yup.mixed<DeliveryStatus>()
-  //   .oneOf(deliveryStatuses)
-  //   .nonNullable()
-  //   .default('pending')
-  //   .required()
-  //   .label('Malformed data: status'),
+  status: yup.mixed<DeliveryStatus>()
+    .oneOf(deliveryStatuses)
+    .nonNullable()
+    .default('pending')
+    .required()
+    .label('Malformed data: status'),
   title: yup.string()
     .default('')
     .defined()
@@ -272,10 +272,10 @@ const deliverySchemaUpdate: yup.ObjectSchema<Omit<DeliveryUpdate, 'timePeriod'>>
       .positive()
       .nonNullable()
       .label('Delivery malformed data: deliveryMethodId'),
-    // status: yup.mixed<DeliveryStatus>()
-    //   .oneOf(deliveryStatuses)
-    //   .nonNullable()
-    //   .label('Malformed data: status'),
+    status: yup.mixed<DeliveryStatus>()
+      .oneOf(deliveryStatuses)
+      .nonNullable()
+      .label('Malformed data: status'),
     coiRequired: yup.boolean()
       .nonNullable()
       .label('Delivery malformed data: coiRequired'),
