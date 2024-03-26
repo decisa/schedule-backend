@@ -11,6 +11,8 @@ import { ProductOption } from '../../Sales/ProductOption/productOption'
 import { DeliveryItem } from '../DeliveryItem/DeliveryItem'
 import { DBError } from '../../../ErrorManagement/errors'
 import { DeliveryMethodRead } from '../../Sales/DeliveryMethod/deliveryMethodController'
+import { ProductSummaryView } from '../../../views/ProductSummary/productSummary'
+import { Product } from '../../Sales/Product/product'
 
 // TODO: allow to update and create delivery, when availability is nested, same like when reading json. ie. update validateDeliveryCreate and validateDeliveryUpdate
 
@@ -437,6 +439,11 @@ function deliveryToJson(deliveryRaw: Delivery): DeliveryRead {
   return result
 }
 
+type DeliverySearchResult = {
+  items: Delivery[]
+  count: number
+  limit: number
+}
 export default class DeliveryController {
   /**
    * convert Delivery Instance or array of instances to a regular JSON object.
@@ -487,10 +494,22 @@ export default class DeliveryController {
           association: 'items',
           include: [
             {
-              association: 'product',
+              model: ProductConfiguration,
+              as: 'product',
+              attributes: {
+                exclude: ['productId'],
+              },
               include: [
                 {
-                  association: 'product',
+                  model: ProductSummaryView,
+                  as: 'summary',
+                },
+                {
+                  model: Product,
+                  as: 'product',
+                  // attributes: {
+                  //   exclude: ['brandId'],
+                  // },
                   include: [{
                     association: 'brand',
                   }],
@@ -498,8 +517,104 @@ export default class DeliveryController {
                 {
                   model: ProductOption,
                   as: 'options',
+                  attributes: {
+                    exclude: ['configId'],
+                  },
+                // separate: true,
+                // order: [
+                //   ['sortOrder', 'ASC'],
+                // ],
+                }],
+            },
+          ],
+        },
+      ],
+      order: [
+        [
+          { model: DeliveryItem, as: 'items' },
+          { model: ProductConfiguration, as: 'product' },
+          { model: ProductOption, as: 'options' },
+          'sortOrder', 'ASC',
+        ],
+      ],
+      // attributes: {
+      //   exclude: ['orderId', 'shippingAddressId', 'deliveryStopId'],
+      // },
+      transaction: t,
+    })
+    return final
+  }
+
+  /**
+   * get All Delivery records id from DB.
+   * @param {unknown} id - deliveryId
+   * @returns {DeliverySearchResult} Delivery Search result object
+   */
+  static async getAll(limit = 1000, t?: Transaction): Promise<DeliverySearchResult> {
+    const final = await Delivery.findAll({
+      include: [
+        {
+          association: 'order',
+        },
+        {
+          association: 'shippingAddress',
+        },
+        {
+          association: 'deliveryStop',
+        },
+        {
+          association: 'deliveryMethod',
+        },
+        {
+          association: 'items',
+          include: [
+            // {
+            //   association: 'product',
+            //   include: [
+            //     {
+            //       association: 'product',
+            //       include: [{
+            //         association: 'brand',
+            //       }],
+            //     },
+            //     {
+            //       model: ProductOption,
+            //       as: 'options',
+            //     },
+            //   ],
+            // },
+            {
+              model: ProductConfiguration,
+              as: 'product',
+              attributes: {
+                exclude: ['productId'],
+              },
+              include: [
+                {
+                  model: ProductSummaryView,
+                  as: 'summary',
                 },
-              ],
+                {
+                  model: Product,
+                  as: 'product',
+                  // attributes: {
+                  //   exclude: ['brandId'],
+                  // },
+                  include: [{
+                    association: 'brand',
+                  }],
+                },
+                {
+                  model: ProductOption,
+                  as: 'options',
+                  attributes: {
+                    exclude: ['configId'],
+                  },
+                // separate: true,
+                // order: [
+                //   ['sortOrder', 'ASC'],
+                // ],
+                }],
             },
           ],
         },
@@ -515,9 +630,17 @@ export default class DeliveryController {
       attributes: {
         exclude: ['orderId', 'shippingAddressId', 'deliveryStopId'],
       },
+      limit,
       transaction: t,
     })
-    return final
+    // if (!final) {
+    //   throw DBError.notFound(new Error('Deliveries not found'))
+    // }
+    return {
+      items: final,
+      count: final?.length || 0,
+      limit,
+    }
   }
 
   /**
@@ -622,7 +745,7 @@ export default class DeliveryController {
 
       // check if at least one item was created
       if (final.items.length === 0) {
-        throw DBError.badData(new Error('Delivery was created without any items or all items belonged to a wrong order'))
+        throw DBError.badData(new Error('Tried to creaate a Delivery without any items or all items belonged to a wrong order'))
       }
 
       await commit()
