@@ -23,7 +23,7 @@ import type { DeliveryItem } from '../DeliveryItem/DeliveryItem'
 import type { DeliveryStatus } from './DeliveryController'
 import type { DeliveryMethod } from '../../Sales/DeliveryMethod/deliveryMethod'
 
-export type Period = {
+export type MinutesInterval = {
   start: number
   end: number
 }
@@ -52,7 +52,7 @@ export class Delivery extends Model<InferAttributes<Delivery>, InferCreationAttr
 
   declare estimatedDurationString: string | null
 
-  declare estimatedDuration: CreationOptional<[number, number]>
+  declare estimatedDuration: CreationOptional<MinutesInterval | null>
 
   declare notes: string | null
 
@@ -74,7 +74,7 @@ export class Delivery extends Model<InferAttributes<Delivery>, InferCreationAttr
 
   declare endTime: number // in minutes
 
-  declare timePeriod: CreationOptional<Period>
+  declare timePeriod: CreationOptional<MinutesInterval>
 
   // timestamps
   declare createdAt: CreationOptional<Date>
@@ -185,12 +185,19 @@ export function initDelivery(db: Sequelize) {
         get() {
           const rawValue = this.getDataValue('estimatedDurationString') // as unknown as string
           if (rawValue === null) { return null }
-          const result = (rawValue || '0,0').split(',').map(Number)
-          console.log('result', result)
-          return result
+          const numbers = (rawValue || '0,0').split(',').map(Number)
+          const result: MinutesInterval = {
+            start: numbers[0],
+            end: numbers[1],
+          }
+          return result satisfies MinutesInterval | null
         },
-        set(val: [number, number]) {
-          this.setDataValue('estimatedDurationString', val.join(','))
+        set(val: MinutesInterval | null) {
+          if (val === null) {
+            this.setDataValue('estimatedDurationString', null)
+            return
+          }
+          this.setDataValue('estimatedDurationString', `${val.start},${val.end}`)
         },
       },
       notes: DataTypes.STRING,
@@ -228,7 +235,7 @@ export function initDelivery(db: Sequelize) {
             end,
           }
         },
-        set(val: Period) {
+        set(val: MinutesInterval) {
           this.setDataValue('startTime', val.start)
           this.setDataValue('endTime', val.end)
         },

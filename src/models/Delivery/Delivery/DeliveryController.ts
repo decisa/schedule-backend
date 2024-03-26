@@ -1,7 +1,7 @@
 import * as yup from 'yup'
 import { ForeignKeyConstraintError, Transaction } from 'sequelize'
 // import { de } from 'date-fns/locale'
-import { Delivery, Period, daysToNumber } from './Delivery'
+import { Delivery, MinutesInterval, daysToNumber } from './Delivery'
 import { isId, printYellowLine, useTransaction } from '../../../utils/utils'
 import OrderController, { OrderRead } from '../../Sales/Order/orderController'
 import OrderAddressController, { OrderAddressMagentoRead } from '../../Sales/OrderAddress/orderAddressContoller'
@@ -35,13 +35,13 @@ type DeliveryRequired = {
 
 type DeliveryOptional = {
   estimatedDurationString?: string | null
-  estimatedDuration?: [number, number] | null
+  estimatedDuration?: MinutesInterval | null
   notes: string | null
   coiNotes: string | null
   amountDue: string | null
   days:[boolean, boolean, boolean, boolean, boolean, boolean, boolean] // virtual
 
-  timePeriod?: Period // virtual
+  timePeriod?: MinutesInterval // virtual
 }
 
 type DeliveryTimeStamps = {
@@ -77,10 +77,10 @@ export type DeliveryUpdate = Partial<DeliveryCreate>
 
 export type DeliveryRead = Omit<Required<DeliveryCreate>, 'estimatedDurationString' | 'startTime' | 'endTime' | 'daysAvailability' | 'days' | 'timePeriod'> & {
   // items?: DeliveryItem[],
-  estimatedDuration: [number, number] | null,
+  estimatedDuration: MinutesInterval | null,
   availability: {
     days: [boolean, boolean, boolean, boolean, boolean, boolean, boolean],
-    timePeriod: Period,
+    timePeriod: MinutesInterval,
   }
   // timePeriod: Period,
 } & Partial<DeliveryAssociations>
@@ -145,7 +145,20 @@ const deliverySchemaCreate: yup.ObjectSchema<DeliveryCreate> = yup.object({
   estimatedDurationString: yup.string()
     .nullable()
     .label('Delivery malformed data: estimatedDurationString'),
-  estimatedDuration: yup.tuple([yup.number().required(), yup.number().required()])
+  estimatedDuration: yup.object({
+    start: yup.number()
+      .integer()
+      .min(0)
+      .default(30)
+      .nonNullable()
+      .required(),
+    end: yup.number()
+      .integer()
+      .min(0)
+      .default(60)
+      .nonNullable()
+      .required(),
+  })
     .nullable()
     .label('Delivery malformed data: estimatedDuration'),
   notes: yup.string().nullable().label('Delivery malformed data: notes'),
@@ -240,7 +253,7 @@ const deliverySchemaCreate: yup.ObjectSchema<DeliveryCreate> = yup.object({
   updatedAt: yup.date().nonNullable().label('Delivery malformed data: updatedAt'),
 })
 
-const periodSchema: yup.ObjectSchema<Period> = yup.object({
+const periodSchema: yup.ObjectSchema<MinutesInterval> = yup.object({
   start: yup.number()
     .integer()
     .min(0)
@@ -320,7 +333,8 @@ export function validateDeliveryCreate(object: unknown): Omit<DeliveryCreate, 'e
 
   // if virtual field estimatedDuration was provided, combine it into a single string
   if (delivery.estimatedDuration) {
-    delivery.estimatedDurationString = delivery.estimatedDuration.join(',')
+    const { start, end } = delivery.estimatedDuration
+    delivery.estimatedDurationString = `${start},${end}`
     delete delivery.estimatedDuration
   }
 
@@ -356,7 +370,7 @@ export function validateDeliveryUpdate(object: unknown): Omit<Partial<DeliveryCr
     const timePeriod = periodSchema.validateSync(object.timePeriod, {
       stripUnknown: true,
       abortEarly: false,
-    }) satisfies Period
+    }) satisfies MinutesInterval
     delivery.startTime = timePeriod.start
     delivery.endTime = timePeriod.end
   }
@@ -379,7 +393,8 @@ export function validateDeliveryUpdate(object: unknown): Omit<Partial<DeliveryCr
   // note: take care of virtual field estimatedDuration and its related field estimatedDurationString
   // check if estimatedDuration was provided. if provided, then use it as a source of truth, convert to estimatedDurationString and delete the virtual field estimatedDuration
   if (delivery.estimatedDuration) {
-    delivery.estimatedDurationString = delivery.estimatedDuration.join(',')
+    const { start, end } = delivery.estimatedDuration
+    delivery.estimatedDurationString = `${start},${end}`
     delete delivery.estimatedDuration
   }
   // check for null
