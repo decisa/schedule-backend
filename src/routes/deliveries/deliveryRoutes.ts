@@ -44,6 +44,27 @@ deliveryRouter.get('/item/:id', (req, res) => {
   }
 })
 
+// get all delivery records
+deliveryRouter.get('/all', (req, res) => {
+  try {
+    DeliveryController.getAll()
+      .then((result) => {
+        const deliveryItems = DeliveryController.toJSON(result.items)
+        // if (!deliveryResult) {
+        //   res.status(404).json({ message: 'No deliveries found' })
+        //   return
+        // }
+        handleResponse(res, {
+          ...result,
+          items: deliveryItems,
+        })
+      })
+      .catch((err) => handleError(res, err))
+  } catch (error) {
+    handleError(res, error)
+  }
+})
+
 // get delivery record by id
 deliveryRouter.get('/:id', (req, res) => {
   try {
