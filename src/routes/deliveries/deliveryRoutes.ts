@@ -117,6 +117,21 @@ deliveryRouter.patch('/:id', (req, res) => {
   }
 })
 
+// get delivery record edit form data: order, delivery, addresses
+
+deliveryRouter.get('/:id/edit', (req, res) => {
+  try {
+    DeliveryController.getEditFormData(req.params.id)
+      .then((result) => {
+        // const deliveryResult = DeliveryController.toJSON(result)
+        handleResponse(res, result)
+      })
+      .catch((err) => handleError(res, err))
+  } catch (error) {
+    handleError(res, error)
+  }
+})
+
 // note: manage Drivers
 // get all drivers for the delivery
 deliveryRouter.get('/:deliveryId/drivers', (req, res) => {

@@ -3,14 +3,14 @@ import { ForeignKeyConstraintError, Transaction } from 'sequelize'
 // import { de } from 'date-fns/locale'
 import { Delivery, MinutesInterval, daysToNumber } from './Delivery'
 import { isId, printYellowLine, useTransaction } from '../../../utils/utils'
-import OrderController, { OrderRead } from '../../Sales/Order/orderController'
+import OrderController, { FullOrder, OrderRead } from '../../Sales/Order/orderController'
 import OrderAddressController, { OrderAddressMagentoRead } from '../../Sales/OrderAddress/orderAddressContoller'
 import DeliveryItemController, { DeliveryItemRead } from '../DeliveryItem/DeliveryItemController'
 import { ProductConfiguration } from '../../Sales/ProductConfiguration/productConfiguration'
 import { ProductOption } from '../../Sales/ProductOption/productOption'
 import { DeliveryItem } from '../DeliveryItem/DeliveryItem'
 import { DBError } from '../../../ErrorManagement/errors'
-import { DeliveryMethodRead } from '../../Sales/DeliveryMethod/deliveryMethodController'
+import DeliveryMethodController, { DeliveryMethodRead } from '../../Sales/DeliveryMethod/deliveryMethodController'
 import { ProductSummaryView } from '../../../views/ProductSummary/productSummary'
 import { Product } from '../../Sales/Product/product'
 
@@ -459,6 +459,13 @@ type DeliverySearchResult = {
   count: number
   limit: number
 }
+
+type EditFormDataResult = {
+  delivery: DeliveryRead
+  order: FullOrder
+  addresses: OrderAddressMagentoRead[]
+  deliveryMethods: DeliveryMethodRead[]
+}
 export default class DeliveryController {
   /**
    * convert Delivery Instance or array of instances to a regular JSON object.
@@ -558,6 +565,37 @@ export default class DeliveryController {
       transaction: t,
     })
     return final
+  }
+
+  /**
+   * get Delivery record by id from DB.
+   * @param {unknown} id - deliveryId
+   * @returns {EditFormDataResult} EditFormDataResult
+   */
+  static async getEditFormData(id: number | unknown, t?: Transaction): Promise<EditFormDataResult> {
+    const deliveryId = isId.validateSync(id)
+    const delivery = await this.get(deliveryId, t)
+    if (!delivery) {
+      throw DBError.notFound(new Error('Delivery not found'))
+    }
+    const order = await OrderController.getFullOrderInfo(delivery.orderId, t)
+    if (!order) {
+      throw DBError.notFound(new Error('Order associated with the delivery was not found'))
+    }
+    const orderAddresses = await OrderAddressController.getAllByOrderId(order.id, t)
+    if (!orderAddresses) {
+      throw DBError.notFound(new Error('Order associated with the delivery has no addresses'))
+    }
+    const deliveryMethods = await DeliveryMethodController.getAll(t)
+    if (!deliveryMethods) {
+      throw DBError.notFound(new Error('No delivery methods found'))
+    }
+    return {
+      delivery: this.toJSON(delivery),
+      order: OrderController.toJSON(order),
+      addresses: OrderAddressController.toJSON(orderAddresses),
+      deliveryMethods: DeliveryMethodController.toJSON(deliveryMethods),
+    }
   }
 
   /**
