@@ -4,7 +4,13 @@ import { ValidationError } from 'sequelize'
 import { printYellowLine } from '../utils/utils'
 import { DBError } from '../ErrorManagement/errors'
 
-export const handleResponse = (res: Response, data: unknown) => res.status(200).send(data)
+export const handleResponse = (res: Response, data: unknown) => {
+  if (data === null) {
+    res.status(204).send()
+    return
+  }
+  res.status(200).send(data)
+}
 export const handleError = (res: Response, err: unknown) => {
   // printYellowLine()
   if (err instanceof Error) {
