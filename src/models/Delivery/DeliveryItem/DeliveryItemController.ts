@@ -1,6 +1,8 @@
 import * as yup from 'yup'
 import { ForeignKeyConstraintError, Transaction, ValidationError } from 'sequelize'
-import { isId, useTransaction } from '../../../utils/utils'
+import {
+  isId, printRedLine, printYellowLine, useTransaction,
+} from '../../../utils/utils'
 
 import type { ConfigurationAsProductRead } from '../../Sales/ProductConfiguration/productConfigurationController'
 import type { DeliveryRead } from '../Delivery/DeliveryController'
@@ -9,9 +11,13 @@ import ProductConfigurationController from '../../Sales/ProductConfiguration/pro
 import { ProductOption } from '../../Sales/ProductOption/productOption'
 import { ProductConfiguration } from '../../Sales/ProductConfiguration/productConfiguration'
 import { deliveryItemConstraintName } from '../../../../migrations/2024.02.08T02.04.54.delivery-items-add-constraint'
+import { DBError } from '../../../ErrorManagement/errors'
+import { Delivery } from '../Delivery/Delivery'
 
 export const deliveryStatuses = ['pending', 'scheduled', 'confirmed'] as const
 export type DeliveryStatus = typeof deliveryStatuses[number]
+
+const CANNOTBEZEROERROR = 'DeliveryItem cannot have qty=0'
 
 type DeliveryItemCreational = {
   id: number
@@ -75,7 +81,7 @@ const deliveryItemSchemaCreate: yup.ObjectSchema<DeliveryItemCreate> = yup.objec
     .label('DeliveryItem malformed data: deliveryId'),
   // required
   qty: yup.number()
-    .min(1)
+    .min(0)
     .nonNullable()
     .required()
     .label('DeliveryItem malformed data: qty'),
@@ -173,9 +179,10 @@ export default class DeliveryItemController {
   /**
    * get DeliveryItem record by id from DB.
    * @param {unknown} id - deliveryItemId
+   * @param {Transaction} [t] - (optional) The transaction within which to get the record.
    * @returns {DeliveryItem} DeliveryItem object or null
    */
-  static async get(id: number | unknown, t?: Transaction): Promise<DeliveryItem | null> {
+  static async get(id: number | unknown, t?: Transaction): Promise<DeliveryItem> {
     const deliveryItemId = isId.validateSync(id)
     const final = await DeliveryItem.findByPk(deliveryItemId, {
       include: [
@@ -207,100 +214,59 @@ export default class DeliveryItemController {
       // },
       transaction: t,
     })
+    if (!final) {
+      throw DBError.notFound(new Error(`DeliveryItem with id#${deliveryItemId} was not found`))
+    }
     return final
   }
-
-  // /**
-  //  * get PurchaseOrder record by id from DB.
-  //  * @param {unknown} id - purchaseOrderId
-  //  * @returns {PurchaseOrder} PurchaseOrder object or null
-  //  */
-  // static async getFullPO(id: number | unknown, t?: Transaction): Promise<PurchaseOrder | null> {
-  //   const purchaseOrderId = isId.validateSync(id)
-  //   const final = await PurchaseOrder.findByPk(purchaseOrderId, {
-  //     attributes: ['id', 'poNumber', 'dateSubmitted', 'productionWeeks', 'status', 'createdAt', 'updatedAt'],
-  //     include: [
-  //       {
-  //         model: Brand,
-  //         as: 'brand',
-  //       },
-  //       {
-  //         model: PurchaseOrderItem,
-  //         as: 'items',
-  //         attributes: {
-  //           exclude: ['purchaseOrderId', 'createdAt', 'updatedAt'],
-  //         },
-  //         include: [
-  //           {
-  //             model: ProductConfiguration,
-  //             as: 'product',
-  //             attributes: ['qtyOrdered', 'qtyRefunded', 'qtyShippedExternal', 'sku'],
-  //             include: [
-  //               {
-  //                 model: Product,
-  //                 as: 'product',
-  //                 attributes: ['name', 'sku'],
-  //               },
-  //               {
-  //                 model: ProductOption,
-  //                 as: 'options',
-  //                 attributes: ['label', 'value'],
-  //               },
-  //             ],
-  //           },
-  //         ],
-  //       },
-  //       {
-  //         model: Order,
-  //         as: 'order',
-  //         attributes: ['orderNumber', 'id'],
-  //         include: [{
-  //           model: Customer,
-  //           as: 'customer',
-  //           attributes: {
-  //             exclude: ['defaultShippingId', 'createdAt', 'updatedAt'],
-  //           },
-  //         },
-  //         ],
-  //       },
-  //     ],
-  //     transaction: t,
-  //   })
-  //   return final
-  // }
 
   /**
    * insert Delivery record to DB. orderId and orderId are required.
    * @param {DeliveryCreate | unknown} deliveryItemData -  Delivery record to insert to DB
+   * @param {Transaction} [t] - (optional) The transaction within which to create.
    * @returns {Delivery} Delivery object or throws error
    */
-  static async create(deliveryItemData: DeliveryItemCreate | unknown, t?: Transaction): Promise<DeliveryItem> {
+  static async create(deliveryId: number, deliveryItemData: DeliveryItemCreate | unknown, t?: Transaction): Promise<DeliveryItem> {
     const [transaction, commit, rollback] = await useTransaction(t)
     try {
-      const parsedDeliveryItem = validateDeliveryItemCreate(deliveryItemData)
+      const parsedDeliveryItem = deliveryItemSchemaCreate.omit(['deliveryId']).validateSync(deliveryItemData, {
+        stripUnknown: true,
+        abortEarly: false,
+      })
 
-      const result = await DeliveryItem.create(parsedDeliveryItem, {
+      if (parsedDeliveryItem.qty === 0) {
+        throw DBError.badData(new Error(CANNOTBEZEROERROR))
+      }
+
+      const result = await DeliveryItem.create({ ...parsedDeliveryItem, deliveryId }, {
         transaction,
       })
 
       // refetch the record to get all fields (including virtuals)
       const final = await this.get(result.id, transaction)
       if (!final) {
-        throw new Error('Internal Error: Delivery was not created')
+        throw DBError.unknown(new Error('Internal Error: Delivery was not created'))
       }
+
+      // check if delivery item belongs to the same order as delivery
+      const deliveryItemIsLegit = await this.checkOrderIntegrity(final, transaction)
+      if (!deliveryItemIsLegit) {
+        // if delivery item does not belong to the same order as delivery, throw an error
+        throw DBError.badData(new Error('DeliveryItem does not belong to the same order as delivery'))
+      }
+
       await commit()
       return final
     } catch (error) {
       let errorMsg = ''
       if (error instanceof ForeignKeyConstraintError && error.name === 'SequelizeForeignKeyConstraintError') {
         errorMsg = `DeliveryItem malformed data: constraint violation error: ${error?.fields?.toString() || ''}`
+        await rollback()
+        throw DBError.badData(new Error(errorMsg))
       }
       // console.log('error', error.name)
       await rollback()
       // rethrow the error for further handling
-      if (errorMsg) {
-        throw Error(errorMsg)
-      }
       throw error
     }
   }
@@ -309,6 +275,7 @@ export default class DeliveryItemController {
    * insert multiple deliveryItem records to DB. deliveryId is required.will combine delivery items with the same configurationId
    * @param {number} deliveryId - id of delivery where to add the items
    * @param {DeliveryItemCreate[] | unknown[]} deliveryItems - an array of deliveryItems to insert to DB
+   * @param {Transaction} [t] - (optional) The transaction within which to perform the bulk create.
    * @returns {DeliveryItem[]} array of created deliveryItems or throws error
    */
   static async bulkCreate(deliveryId: number, deliveryItems: DeliveryItemCreate[] | unknown[], t?: Transaction): Promise<DeliveryItem[]> {
@@ -324,11 +291,11 @@ export default class DeliveryItemController {
         })
         // try to create.
         try {
-          const deliveryItem = await this.create({
-            ...parsedDeliveryItem,
-            deliveryId,
-          }, transaction)
-          result.push(deliveryItem)
+          // do not create records with qty=0
+          if (parsedDeliveryItem.qty !== 0) {
+            const deliveryItem = await this.create(deliveryId, parsedDeliveryItem, transaction)
+            result.push(deliveryItem)
+          }
         } catch (error) {
           // if this is not a validation error, re-throw it
           if (!(error instanceof ValidationError)) {
@@ -374,231 +341,194 @@ export default class DeliveryItemController {
     }
   }
 
-  // /**
-  //  * create a PurchaseOrder with PurchaseOrderItems
-  //  * @param {PurchaseOrderCreate | unknown} purchaseOrderData - purchaseOrder data along with purchaseOrderItems
-  //  * @returns {PurchaseOrder} PurchaseOrder object or throws error
-  //  */
-  // static async createPurchaseOrder(purchaseOrderData: PurchaseOrderCreate | unknown, t?: Transaction): Promise<PurchaseOrder> {
-  //   const [transaction, commit, rollback] = await useTransaction(t)
-  //   try {
-  //     const parsedPurchaseOrder = purchaseOrderRequestCreate.validateSync(purchaseOrderData, {
-  //       stripUnknown: true,
-  //       abortEarly: false,
-  //     }) satisfies PurchaseOrderRequest
+  /**
+   * upsert(insert or create) DeliveryItem record in DB.
+   * @param {number} deliveryId - delivery ID
+   * @param {DeliveryItemCreate | unknown} deliveryItem - update/create data for deliveryItem record
+   * @param {Transaction} [t] - (optional) The transaction within which to perform the upsert.
+   * @returns {DeliveryItem} updated or created deliveryItem object
+   */
+  static async upsert(deliveryId: number, deliveryItem: DeliveryItemCreate | unknown, t?: Transaction): Promise<DeliveryItem | null> {
+    const [transaction, commit, rollback] = await useTransaction(t)
+    try {
+      const deliveryItemParsed = deliveryItemSchemaCreate.omit(['deliveryId']).validateSync(deliveryItem, {
+        stripUnknown: true,
+        abortEarly: false,
+      })
 
-  //     const newPurchaseOrderRecord = await PurchaseOrder.create(parsedPurchaseOrder, {
-  //       transaction,
-  //     })
+      // check if the record already exists:
+      const deliveryItemRecord = await DeliveryItem.findOne({
+        where: {
+          deliveryId,
+          configurationId: deliveryItemParsed.configurationId,
+        },
+        transaction,
+      })
 
-  //     const items = await PurchaseOrderItemController.bulkCreate(newPurchaseOrderRecord.id, parsedPurchaseOrder.items, transaction)
+      let result: DeliveryItem | null = null
 
-  //     newPurchaseOrderRecord.items = items
-  //     if (!newPurchaseOrderRecord) {
-  //       throw new Error('Internal Error: PurchaseOrder was not created')
-  //     }
-  //     await commit()
-  //     return newPurchaseOrderRecord
-  //   } catch (error) {
-  //     await rollback()
-  //     // rethrow the error for further handling
-  //     throw error
-  //   }
-  // }
+      if (!deliveryItemRecord) {
+        // create new record if it does not exist
+        printYellowLine('create new delivery item')
+        // do not create records with qty=0
+        if (deliveryItemParsed.qty === 0) {
+          await commit()
+          return null
+        }
+        result = await this.create(deliveryId, deliveryItemParsed, transaction)
+      } else {
+        // if updated qty is 0, then delete the record
+        printYellowLine('update existing delivery item')
+        if (deliveryItemParsed.qty === 0) {
+          await this.delete({
+            id: deliveryItemRecord.id,
+            reason: 'qty = 0',
+            transaction,
+          })
+          // exit early if qty is 0
+          await commit()
+          return null
+        }
 
-  // /**
-  //    * update Delivery record in DB.
-  //    * @param {number | unknown} deliveryId - id of the Delivery record to update in DB
-  //    * @param {unknown} deliveryData - update data for delivery record
-  //    * @returns {Delivery}  updated delivery object or throws error
-  //    */
-  // static async update(deliveryId: number | unknown, deliveryData: unknown, t?: Transaction): Promise<Delivery> {
-  //   const [transaction, commit, rollback] = await useTransaction(t)
-  //   try {
-  //     const parsedDeliveryUpdate = validateDeliveryUpdate(deliveryData)
+        await deliveryItemRecord.update(deliveryItemParsed, { transaction })
+        result = await this.get(deliveryItemRecord.id, transaction)
+      }
 
-  //     const id = isId.validateSync(deliveryId)
-  //     const deliveryRecord = await Delivery.findByPk(id, { transaction })
-  //     if (!deliveryRecord) {
-  //       throw new Error('Delivery does not exist')
-  //     }
+      const deliveryItemIsLegit = await this.checkOrderIntegrity(result, transaction)
+      if (!deliveryItemIsLegit) {
+        // if delivery item does not belong to the same order as delivery, delete it
+        // if delivery new qty is 0, delete it
+        await this.delete({
+          id: result.id,
+          reason: 'order integrity check failed',
+          transaction,
+        })
+        result = null
+      }
+      await commit()
+      return result
+    } catch (error) {
+      await rollback()
+      // rethrow the error for further handling
+      throw error
+    }
+  }
 
-  //     await deliveryRecord.update(parsedDeliveryUpdate, { transaction })
+  /**
+   * checks if the delivery item belongs to the same order as the delivery itself.
+   * @param {DeliveryItem} fullDeliveryItemRecord - delivery item record
+   * @returns {boolean} true if delivery item belongs to the same order as the delivery itself
+   */
+  static async checkOrderIntegrity(fullDeliveryItemRecord: DeliveryItem, t?: Transaction) {
+    // delivery item record and delivery record should belong to the same order id
+    // find orderId from delivery record
+    const deliveryRecord = await Delivery.findByPk(fullDeliveryItemRecord.deliveryId, {
+      attributes: ['orderId'],
+      transaction: t,
+    })
+    if (!deliveryRecord) {
+      return false
+    }
+    let deliveryItemOrderId = 0
+    if (fullDeliveryItemRecord.product) {
+      deliveryItemOrderId = fullDeliveryItemRecord.product.orderId
+    } else {
+      // if product record is not present, get it
+      const productRecord = await ProductConfiguration.findByPk(fullDeliveryItemRecord.configurationId, {
+        attributes: ['orderId'],
+        transaction: t,
+      })
+      if (!productRecord) {
+        return false
+      }
+      deliveryItemOrderId = productRecord.orderId
+    }
+    // const deliveryItemOrderId = fullDeliveryItemRecord?.product?.orderId || 0
+    return deliveryRecord.orderId === deliveryItemOrderId
+  }
 
-  //     await commit()
-  //     return deliveryRecord
-  //   } catch (error) {
-  //     await rollback()
-  //     // rethrow the error for further handling
-  //     throw error
-  //   }
-  // }
+  /**
+   * delete DeliveryItem record with a given id from DB.
+   * @param {Object} options - The options for deleting a DeliveryItem.
+   * @param {(number|unknown)} options.id - The ID of the DeliveryItem to delete.
+   * @param {string} [options.reason] - (optional) The reason for deleting the DeliveryItem .
+   * @param {Transaction} [options.transaction] - (optional) The transaction within which to perform the deletion.
+   * @returns {DeliveryItem} DeliveryItem that was deleted
+   */
+  static async delete({
+    id,
+    reason,
+    transaction: t,
+  }: {
+    id: number | unknown
+    reason?: string
+    transaction?: Transaction
+  }): Promise<DeliveryItem> {
+    const [transaction, commit, rollback] = await useTransaction(t)
+    try {
+      const deliveryItemId = isId.validateSync(id)
+      const deliveryItemRecord = await DeliveryItem.findByPk(deliveryItemId, { transaction })
 
-  // /**
-  //  * upsert(insert or create) purchaseOrder record in DB. poNumber is required
-  //  * @param {unknown} purchaseOrderData - update/create data for productConfiguration record
-  //  * @returns {productConfiguration} updated or created productConfiguration object with Brand Record if available
-  //  */
-  // static async upsert(purchaseOrderData: unknown, t?: Transaction): Promise<PurchaseOrder> {
-  //   const [transaction, commit, rollback] = await useTransaction(t)
-  //   try {
-  //     const parsedPurchaseOrder = validatePurchaseOrderCreate(purchaseOrderData)
-  //     const purchaseOrderRecord = await PurchaseOrder.findOne({
-  //       where: {
-  //         poNumber: parsedPurchaseOrder.poNumber,
-  //       },
-  //       transaction,
-  //     })
+      if (!deliveryItemRecord) {
+        throw DBError.notFound(new Error(`DeliveryItem with id ${deliveryItemId} was not found`))
+      }
+      // delete the Delivery Item record
+      printRedLine(`delete delivery item${reason ? `: ${reason}` : ''}`)
+      await DeliveryItem.destroy({
+        where: {
+          id: deliveryItemId,
+        },
+        transaction,
+      })
 
-  //     let result: PurchaseOrder
-  //     if (!purchaseOrderRecord) {
-  //       result = await this.create(purchaseOrderData, transaction)
-  //     } else {
-  //       result = await this.update(purchaseOrderRecord.id, purchaseOrderData, transaction)
-  //     }
+      // // check validity of the delivery after deletion. delivery should not be empty
+      // const deliveryRecord = await Delivery.findByPk(deliveryItemRecord.deliveryId, { transaction, include: ['items'] })
+      // if (deliveryRecord && deliveryRecord.items && deliveryRecord.items.length === 0) {
+      //   printRedLine('delete delivery record: no items left')
+      //   await deliveryRecord.destroy({ transaction })
+      // }
 
-  //     await commit()
-  //     return result
-  //   } catch (error) {
-  //     await rollback()
-  //     // rethrow the error for further handling
-  //     throw error
-  //   }
-  // }
+      await commit()
+      return deliveryItemRecord
+    } catch (error) {
+      await rollback()
+      // rethrow the error for further handling
+      throw error
+    }
+  }
 
-  // /**
-  //  * delete Delivery record with a given id from DB.
-  //  * @param {unknown} id - deliveryId
-  //  * @returns {boolean} true if Delivery was deleted
-  //  */
-  // static async delete(id: number | unknown, t?: Transaction): Promise<boolean> {
-  //   const [transaction, commit, rollback] = await useTransaction(t)
-  //   try {
-  //     const deliveryId = isId.validateSync(id)
-  //     const final = await Delivery.destroy({
-  //       where: {
-  //         id: deliveryId,
-  //       },
-  //       transaction,
-  //     })
-  //     await commit()
-  //     return final === 1
-  //   } catch (error) {
-  //     await rollback()
-  //     // rethrow the error for further handling
-  //     throw error
-  //   }
-  // }
+  /**
+   * bulkUpsert(insert or create) DeliveryItem records to DB.
+   * !!! WARNING: items with qty=0 will be deleted.
+   * @param {number} deliveryId - delivery ID
+   * @param {DeliveryItemCreate[] | unknown[]} deliveryItems - update/create data for deliveryItem record
+   * @param {Transaction} [t] - (optional) The transaction within which to perform the bulk upsert.
+   * @returns {DeliveryItem[]} array of updated or created deliveryItem objects (all items with qty=0 are deleted)
+   */
+  static async bulkUpsert(deliveryId: number, deliveryItems: DeliveryItemCreate[] | unknown[], t?: Transaction): Promise<DeliveryItem[]> {
+    const [transaction, commit, rollback] = await useTransaction(t)
+    try {
+      const result: DeliveryItem[] = []
+      for (let i = 0; i < deliveryItems.length; i += 1) {
+        const item = deliveryItems[i]
 
-  // static async searchPurchaseOrders(term: string, t?: Transaction) {
-  //   const wildCardTerm = `%${term}%`
-  //   const purchaseOrders = await PurchaseOrder.findAll({
-  //     include: [
-  //       {
-  //         association: 'customer',
-  //         attributes: ['email', 'firstName', 'lastName'],
-  //       },
-  //       {
-  //         association: 'shippingAddress',
-  //         attributes: ['firstName', 'lastName'],
-  //       },
-  //       {
-  //         association: 'billingAddress',
-  //         attributes: ['firstName', 'lastName'],
-  //       },
-  //       {
-  //         model: ProductConfiguration,
-  //         as: 'products',
-  //         attributes: ['qtyPurchaseOrdered', 'qtyRefunded', 'qtyShippedExternal'],
-  //         include: [
-  //           {
-  //             model: Product,
-  //             as: 'product',
-  //             attributes: ['name'],
-  //             include: [
-  //               {
-  //                 model: Brand,
-  //                 as: 'brand',
-  //                 attributes: ['name'],
-  //               },
-  //             ],
-  //           },
-  //         ],
+        const parsedDeliveryItem = deliveryItemSchemaCreate.omit(['deliveryId']).validateSync(item, {
+          stripUnknown: true,
+          abortEarly: false,
+        })
 
-  //         // include: [
-  //         //   {
-  //         //     association: 'product',
-  //         //     attributes: ['name'],
-  //         //     include: [
-  //         //       {
-  //         //         association: 'brand',
-  //         //         attributes: ['name'],
-  //         //       },
-  //         //     ],
-  //         //   },
-  //         // ],
-  //       },
-  //     ],
-  //     where: {
-  //       [Op.or]: [
-  //         {
-  //           '$customer.firstName$': {
-  //             [Op.like]: wildCardTerm,
-  //           },
-  //         },
-  //         {
-  //           '$customer.lastName$': {
-  //             [Op.like]: wildCardTerm,
-  //           },
-  //         },
-  //         {
-  //           '$shippingAddress.firstName$': {
-  //             [Op.like]: wildCardTerm,
-  //           },
-  //         },
-  //         {
-  //           '$shippingAddress.lastName$': {
-  //             [Op.like]: wildCardTerm,
-  //           },
-  //         },
-  //         {
-  //           '$billingAddress.firstName$': {
-  //             [Op.like]: wildCardTerm,
-  //           },
-  //         },
-  //         {
-  //           '$billingAddress.lastName$': {
-  //             [Op.like]: wildCardTerm,
-  //           },
-  //         },
-  //         Sequelize.where(
-  //           Sequelize.fn('concat', Sequelize.col('customer.firstName'), ' ', Sequelize.col('customer.lastName')),
-  //           {
-  //             [Op.like]: wildCardTerm,
-  //           },
-  //         ),
-  //         Sequelize.where(
-  //           Sequelize.fn('concat', Sequelize.col('billingAddress.firstName'), ' ', Sequelize.col('billingAddress.lastName')),
-  //           {
-  //             [Op.like]: wildCardTerm,
-  //           },
-  //         ),
-  //         Sequelize.where(
-  //           Sequelize.fn('concat', Sequelize.col('shippingAddress.firstName'), ' ', Sequelize.col('shippingAddress.lastName')),
-  //           {
-  //             [Op.like]: wildCardTerm,
-  //           },
-  //         ),
-  //         {
-  //           purchaseOrderNumber: {
-  //             [Op.like]: wildCardTerm,
-  //           },
-  //         },
-  //       ],
-  //     },
-  //     attributes: ['id', 'purchaseOrderNumber'],
-  //     transaction: t,
-  //   })
-  //   return purchaseOrders.map((purchaseOrder) => this.toJSON(purchaseOrder)).filter((x) => x)
-  // }
+        const deliveryItemRecord = await this.upsert(deliveryId, parsedDeliveryItem, transaction)
+
+        if (deliveryItemRecord) {
+          result.push(deliveryItemRecord)
+        }
+      }
+      await commit()
+      return result
+    } catch (error) {
+      await rollback()
+      // rethrow the error for further handling
+      throw error
+    }
+  }
 }
