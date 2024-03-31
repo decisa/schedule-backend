@@ -7,14 +7,15 @@ import DriverController from '../../models/Delivery/Driver/driverController'
 const deliveryRouter = express.Router()
 
 // note: DeliveryItems:
-// fixme: why is delivery item not linked to 'id' of delivery?
+
 // create delivery item record
-deliveryRouter.post('/item', (req, res) => {
+deliveryRouter.post('/:deliveryId/item', (req, res) => {
+  const deliveryId = Number(req.params.deliveryId)
   try {
     // const id = 1
     // console.log('params', req.params)
     const deliveryItemData = req.body as unknown
-    DeliveryItemController.create(deliveryItemData)
+    DeliveryItemController.create(deliveryId, deliveryItemData)
       .then((result) => {
         const deliveryItemResult = DeliveryItemController.toJSON(result)
         handleResponse(res, deliveryItemResult)
@@ -86,7 +87,10 @@ deliveryRouter.get('/:id', (req, res) => {
 // delete delivery record by id
 deliveryRouter.delete('/:id', (req, res) => {
   try {
-    DeliveryController.delete(req.params.id)
+    DeliveryController.delete({
+      id: req.params.id,
+      reason: 'deleted by user',
+    })
       .then((deleted) => {
         if (!deleted) {
           res.status(404).json({ message: 'Delivery id was not found' })
@@ -101,12 +105,12 @@ deliveryRouter.delete('/:id', (req, res) => {
 })
 
 // update delivery record
-deliveryRouter.patch('/:id', (req, res) => {
+deliveryRouter.patch('/:deliveryId', (req, res) => {
   try {
-    // const id = 1
+    // const deliveryId = 1
     // console.log('params', req.params)
     const deliveryData = req.body as unknown
-    DeliveryController.update(req.params.id, deliveryData)
+    DeliveryController.updateWithItems(req.params.deliveryId, deliveryData)
       .then((result) => {
         const deliveryResult = DeliveryController.toJSON(result)
         handleResponse(res, deliveryResult)
@@ -117,11 +121,47 @@ deliveryRouter.patch('/:id', (req, res) => {
   }
 })
 
+// create delivery item record
+deliveryRouter.post('/:deliveryId/item', (req, res) => {
+  const deliveryId = Number(req.params.deliveryId)
+  try {
+    // const id = 1
+    // console.log('params', req.params)
+    const deliveryItemData = req.body as unknown
+    DeliveryItemController.create(deliveryId, deliveryItemData)
+      .then((result) => {
+        const deliveryItemResult = DeliveryItemController.toJSON(result)
+        handleResponse(res, deliveryItemResult)
+      })
+      .catch((err) => handleError(res, err))
+  } catch (error) {
+    handleError(res, error)
+  }
+})
+
+// upsert delivery item record
+deliveryRouter.put('/:deliveryId/item', (req, res) => {
+  const deliveryId = Number(req.params.deliveryId)
+  try {
+    // const id = 1
+    // console.log('params', req.params)
+    const deliveryItemData = req.body as unknown
+    DeliveryItemController.upsert(deliveryId, deliveryItemData)
+      .then((result) => {
+        const deliveryItemResult = DeliveryItemController.toJSON(result)
+        handleResponse(res, deliveryItemResult)
+      })
+      .catch((err) => handleError(res, err))
+  } catch (error) {
+    handleError(res, error)
+  }
+})
+
 // get delivery record edit form data: order, delivery, addresses
 
-deliveryRouter.get('/:id/edit', (req, res) => {
+deliveryRouter.get('/:deliveryId/edit', (req, res) => {
   try {
-    DeliveryController.getEditFormData(req.params.id)
+    DeliveryController.getEditFormData(req.params.deliveryId)
       .then((result) => {
         // const deliveryResult = DeliveryController.toJSON(result)
         handleResponse(res, result)
