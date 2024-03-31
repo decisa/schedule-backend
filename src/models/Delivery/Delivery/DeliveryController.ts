@@ -2,7 +2,9 @@ import * as yup from 'yup'
 import { ForeignKeyConstraintError, Transaction } from 'sequelize'
 // import { de } from 'date-fns/locale'
 import { Delivery, MinutesInterval, daysToNumber } from './Delivery'
-import { isId, printYellowLine, useTransaction } from '../../../utils/utils'
+import {
+  isId, printRedLine, printYellowLine, useTransaction,
+} from '../../../utils/utils'
 import OrderController, { FullOrder, OrderRead } from '../../Sales/Order/orderController'
 import OrderAddressController, { OrderAddressMagentoRead } from '../../Sales/OrderAddress/orderAddressContoller'
 import DeliveryItemController, { DeliveryItemRead } from '../DeliveryItem/DeliveryItemController'
@@ -363,7 +365,7 @@ export function validateDeliveryUpdate(object: unknown): Omit<Partial<DeliveryCr
       stripUnknown: true,
       abortEarly: false,
     }) satisfies Partial<DeliveryCreate>
-  console.log('parsed delivery update:', delivery)
+  // console.log('parsed delivery update:', delivery)
   // note: take care of virtual field timePeriod and related fields startTime and endTime
   // if timePeriod was provided, extract it separately and use it as source of truth:
   if (object && typeof object === 'object' && 'timePeriod' in object && object.timePeriod) {
@@ -460,8 +462,8 @@ type DeliverySearchResult = {
   limit: number
 }
 
-type EditFormDataResult = {
-  delivery: DeliveryRead
+export type EditFormDataResult = {
+  delivery?: DeliveryRead
   order: FullOrder
   addresses: OrderAddressMagentoRead[]
   deliveryMethods: DeliveryMethodRead[]
@@ -832,11 +834,10 @@ export default class DeliveryController {
       const id = isId.validateSync(deliveryId)
       const deliveryRecord = await Delivery.findByPk(id, { transaction })
       if (!deliveryRecord) {
-        throw new Error('Delivery does not exist')
+        throw DBError.notFound(new Error(`Delivery with id ${id} was not found`))
       }
-
-      printYellowLine()
-      console.log('parsedDeliveryUpdate', parsedDeliveryUpdate)
+      // printYellowLine()
+      // console.log('parsedDeliveryUpdate', parsedDeliveryUpdate)
       await deliveryRecord.update(parsedDeliveryUpdate, { transaction })
 
       await commit()
@@ -849,11 +850,79 @@ export default class DeliveryController {
   }
 
   /**
+     * update Delivery record in DB including items.
+     * @warning will DELETE items that don't belong to the order
+     * @warning will DELETE delivery items that have qty = 0
+     * @warning will DELETE the delivery record if the final result has no items
+     * @param {number | unknown} deliveryId - id of the Delivery record to update in DB
+     * @param {unknown} deliveryData - update data for delivery record
+     * @returns {Delivery | null}  updated delivery object or null, if delivery was deleted due to not having items
+     */
+  static async updateWithItems(deliveryId: number | unknown, deliveryData: unknown, t?: Transaction): Promise<Delivery | null> {
+    const [transaction, commit, rollback] = await useTransaction(t)
+    try {
+      const id = isId.validateSync(deliveryId)
+      // update delivery record first
+      printYellowLine('update delivery')
+      const updatedDelivery = await this.update(id, deliveryData, transaction)
+
+      // check if delivery items were included:
+      printYellowLine('update delivery items')
+      if (deliveryData && typeof deliveryData === 'object' && 'items' in deliveryData && Array.isArray(deliveryData.items)) {
+        // upsert delivery items
+        // upsert will check all the data integrity (belong to order, qty > 0, etc.)
+        await DeliveryItemController.bulkUpsert(updatedDelivery.id, deliveryData.items, transaction)
+      }
+
+      // refetch the record to get all fields (including virtuals)
+      printYellowLine('get final delivery')
+      const final = await this.get(id, transaction)
+      if (!final) {
+        throw DBError.unknown(new Error('Internal Error: Delivery was not updated'))
+      }
+
+      if (!final.items) {
+        throw DBError.unknown(new Error('Internal Error: Could not verify final delivery items integrity'))
+      }
+
+      printYellowLine('check if final delivery has items')
+      // check if final delivery record has items. if not, delete the delivery record
+      if (final.items.length === 0) {
+        await this.delete({
+          id: final.id,
+          reason: 'no items left',
+          transaction,
+        })
+        await commit()
+        return null
+      }
+
+      await commit()
+      return final
+    } catch (error) {
+      await rollback()
+      // rethrow the error for further handling
+      throw error
+    }
+  }
+
+  /**
    * delete Delivery record with a given id from DB.
-   * @param {unknown} id - deliveryId
-   * @returns {Delivery} Delivery object that was deleted or throws not found error
+   * @param {Object} options - The options for deleting a Delivery record.
+   * @param {(number|unknown)} options.id - The ID of the Delivery to delete.
+   * @param {string} [options.reason] - (optional) The reason for deleting the Delivery record.
+   * @param {Transaction} [options.transaction] - (optional) The transaction within which to perform the deletion.
+   * @returns {Delivery} Delivery record that was deleted
    */
-  static async delete(id: number | unknown, t?: Transaction): Promise<Delivery> {
+  static async delete({
+    id,
+    reason,
+    transaction: t,
+  }: {
+    id: number | unknown
+    reason?: string
+    transaction?: Transaction
+  }): Promise<Delivery> {
     const [transaction, commit, rollback] = await useTransaction(t)
     try {
       const deliveryId = isId.validateSync(id)
@@ -861,7 +930,7 @@ export default class DeliveryController {
       if (!deliveryRecord) {
         throw DBError.notFound(new Error(`Delivery with id ${deliveryId} was not found`))
       }
-
+      printRedLine(`delete delivery${reason ? `: ${reason}` : ''}`)
       await Delivery.destroy({
         where: {
           id: deliveryId,
@@ -875,5 +944,34 @@ export default class DeliveryController {
       // rethrow the error for further handling
       throw error
     }
+  }
+}
+
+async function cleanupDeliveryItems(fullDeliveryRecord: Delivery, transaction: Transaction) {
+  // now that we have all detailed data, check if any delivery items don't belong to an order
+  // and delete them if they don't
+  console.log('searching for items to delete, order = ', fullDeliveryRecord?.order?.id)
+  // will delete items that have mismatched order id or items that have qty = 0
+  const itemsToDelete = fullDeliveryRecord?.items?.filter((item) => (item.product?.orderId !== fullDeliveryRecord.order?.id) || item.qty === 0) || []
+
+  console.log('itemsToDelete', itemsToDelete.map((x) => x.toJSON()))
+
+  const deletedItemIds = new Set<number>()
+  if (itemsToDelete.length > 0) {
+    for (let i = 0; i < itemsToDelete.length; i += 1) {
+      const itemToDelete = itemsToDelete[i]
+      deletedItemIds.add(itemToDelete.id)
+      await itemToDelete.destroy({ transaction })
+      console.log('deleted item id = ', itemToDelete?.id)
+    }
+  }
+
+  // filter out deleted items from final object
+  // eslint-disable-next-line no-param-reassign
+  fullDeliveryRecord.items = fullDeliveryRecord?.items?.filter((item) => !deletedItemIds.has(item.id)) || []
+
+  // check if at least one item was created
+  if (fullDeliveryRecord.items.length === 0) {
+    throw DBError.badData(new Error('Tried to creaate a Delivery without any items or all items belonged to a wrong order'))
   }
 }
