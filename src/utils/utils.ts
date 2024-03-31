@@ -36,6 +36,9 @@ export function printYellowLine(str = '') {
   console.log('\x1b[43m%s\x1b[0m', `                                 ${str.split('').join(' ')}                                 `)
 }
 
+export function printRedLine(str = '') {
+  console.log('\x1b[41m%s\x1b[0m', `                                 ${str.split('').join(' ')}                                 `)
+}
 /**
  * Typeguard that ensures a valid date. Will try to convert a ISO format string to Date.
  * Will automatically add Z to the end if it's missing.
@@ -196,12 +199,14 @@ export async function useTransaction(t?: Transaction): Promise<[transaction: Tra
       // console.log('error occured: ', error, 'rolling back transaction')
       await transaction.rollback()
     }
+    // otherwise, transaction will remain open and will be rolled back elsewhere
   }
   const handleCommit = async () => {
     if (!t) {
       // if no transaction was provided, commit the local transaction:
       await transaction.commit()
     }
+    // otherwise, transaction will remain open and will be committed elsewhere
   }
   return [transaction, handleCommit, handleRollbackAndRethrow]
 }
