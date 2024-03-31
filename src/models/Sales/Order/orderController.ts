@@ -21,6 +21,8 @@ import { Brand } from '../../Brand/brand'
 import { DeliveryMethod } from '../DeliveryMethod/deliveryMethod'
 import { ProductSummaryView } from '../../../views/ProductSummary/productSummary'
 import { DBError } from '../../../ErrorManagement/errors'
+import type { EditFormDataResult } from '../../Delivery/Delivery/DeliveryController'
+import DeliveryMethodController from '../DeliveryMethod/deliveryMethodController'
 
 type OrderCreational = {
   id: number
@@ -322,8 +324,7 @@ function orderToJson(order: Order): OrderMagentoRead {
     products,
     magento,
   }
-  printYellowLine()
-  console.log('orderToJson', result.products)
+
   return result
 }
 
@@ -978,6 +979,35 @@ export default class OrderController {
       count: orders.length,
       results: orders,
       total: totalCount,
+    }
+  }
+
+  /**
+   * get all data required for creation of Delivery.
+   * @param {unknown} id - orderId
+   * @returns {EditFormDataResult} EditFormDataResult
+   */
+  static async getEditFormData(id: number | unknown, t?: Transaction): Promise<EditFormDataResult> {
+    const orderId = isId.validateSync(id)
+    const orderRecord = await this.getFullOrderInfo(orderId, t)
+    if (!orderRecord) {
+      // todo: make nicer
+      throw DBError.notFound(new Error('Order not found'))
+    }
+
+    const orderAddresses = await OrderAddressController.getAllByOrderId(orderRecord.id, t)
+    if (!orderAddresses) {
+      throw DBError.notFound(new Error('Order associated with the delivery has no addresses'))
+    }
+    const deliveryMethods = await DeliveryMethodController.getAll(t)
+    if (!deliveryMethods) {
+      throw DBError.notFound(new Error('No delivery methods found'))
+    }
+    return {
+      // delivery: this.toJSON(delivery),
+      order: OrderController.toJSON(orderRecord),
+      addresses: OrderAddressController.toJSON(orderAddresses),
+      deliveryMethods: DeliveryMethodController.toJSON(deliveryMethods),
     }
   }
 }
