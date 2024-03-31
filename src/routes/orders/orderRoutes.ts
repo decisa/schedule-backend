@@ -130,6 +130,20 @@ orderRouter.get('/:id', (req, res) => {
   }
 })
 
+// get data required for delivery creation
+orderRouter.get('/:orderId/deliverycreate', (req, res) => {
+  try {
+    OrderController.getEditFormData(req.params.orderId)
+      .then((result) => {
+        // const brandResult = OrderAddressController.toJSON(result)
+        handleResponse(res, result)
+      })
+      .catch((err) => handleError(res, err))
+  } catch (error) {
+    handleError(res, error)
+  }
+})
+
 // get all addresses of the order by orderId
 orderRouter.get('/:orderId/address/all', (req, res) => {
   try {
