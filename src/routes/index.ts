@@ -72,6 +72,15 @@ rootRouter.use('/2031360', (req, res, next) => {
   // newHeaders['content-length']
   delete newHeaders.cookie
   // console.log('HEADERS:', newHeaders)
+
+  // for some reason node 20.12 is encoding empty body as '{}' instead of undefined
+  // so we need to set it to undefined
+  let { body } = req
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+  if (req.body && typeof req.body === 'object' && Object.keys(req.body).length === 0) {
+    body = undefined
+  }
+
   axios({
     method: req.method,
     url: `https://www.roomservice360.com${req.originalUrl.replace('/2031360', '')}`,
@@ -79,13 +88,14 @@ rootRouter.use('/2031360', (req, res, next) => {
       ...newHeaders,
     },
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    data: req.body,
+    data: body,
   }).then((response) => {
     const { data } = response
     // console.log('response:', response)
     res.json(data)
   }).catch((error) => {
     console.error('error:', error)
+    // console.error('error:')
 
     // handle unauthorized error
     if (error && error instanceof AxiosError && error.response && error.response.status === 401) {
