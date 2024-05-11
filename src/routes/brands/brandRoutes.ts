@@ -34,6 +34,21 @@ brandRouter.put('/', (req, res) => {
   }
 })
 
+// upsert address record including magento. magento externalId is required
+brandRouter.put('/bulk', (req, res) => {
+  try {
+    const brands = req.body as unknown // Brand[]
+    BrandController.bulkUpsert(brands)
+      .then((result) => {
+        const brandResults = BrandController.toJSON(result)
+        handleResponse(res, brandResults)
+      })
+      .catch((err) => handleError(res, err))
+  } catch (error) {
+    handleError(res, error)
+  }
+})
+
 // get brand by externalId
 brandRouter.get('/magento/:externalId', (req, res) => {
   try {
