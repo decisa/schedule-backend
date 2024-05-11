@@ -164,6 +164,7 @@ export default class BrandController {
    */
   static async getAll(t?: Transaction): Promise<Brand[] | null> {
     const final = await Brand.findAll({
+      order: [['name', 'ASC']],
       transaction: t,
     })
     return final
@@ -245,6 +246,27 @@ export default class BrandController {
         result = await this.update(brandRecord.id, brandData, transaction)
       }
 
+      await commit()
+      return result
+    } catch (error) {
+      await rollback()
+      // rethrow the error for further handling
+      throw error
+    }
+  }
+
+  static async bulkUpsert(brandsData: unknown, t?: Transaction): Promise<Brand[]> {
+    const [transaction, commit, rollback] = await useTransaction(t)
+    try {
+      const result: Brand[] = []
+      if (!Array.isArray(brandsData)) {
+        throw new Error('Data must be an array')
+      }
+      for (let i = 0; i < brandsData.length; i += 1) {
+        const brandData = brandsData[i] as unknown
+        const upsertResult = await this.upsert(brandData, transaction)
+        result.push(upsertResult)
+      }
       await commit()
       return result
     } catch (error) {
