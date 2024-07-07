@@ -3,7 +3,7 @@ import * as yup from 'yup'
 import { parseISO } from 'date-fns'
 import { Transaction } from 'sequelize'
 import { OrderStatus } from '../models/Sales/MagentoOrder/magentoOrder'
-import { BrandShape } from '../models/models'
+
 import db from '../models'
 
 type EmptyObject = null | undefined | 0 | '' | never[] | Record<string, never>
@@ -39,6 +39,11 @@ export function printYellowLine(str = '') {
 export function printRedLine(str = '') {
   console.log('\x1b[41m%s\x1b[0m', `                                 ${str.split('').join(' ')}                                 `)
 }
+
+export function consoleLogBlue(...args) {
+  console.log('\x1b[34m', args.map(String).join('\n'), '\x1b[0m')
+}
+
 /**
  * Typeguard that ensures a valid date. Will try to convert a ISO format string to Date.
  * Will automatically add Z to the end if it's missing.
@@ -133,28 +138,6 @@ export function getOrderStatus(status: string): OrderStatus {
     return status
   }
   return 'unknown'
-}
-
-export function parseBrandObject(obj: Record<string, string | number | undefined> | undefined): BrandShape | null {
-  let result: BrandShape
-  if (obj?.name) {
-    result = {
-      name: String(obj.name),
-    }
-    if (typeof obj?.externalId === 'string') {
-      const externalId = parseInt(obj.externalId, 10)
-      if (Number.isFinite(externalId)) {
-        result.externalId = externalId
-      }
-    }
-    if (typeof obj?.externalId === 'number') {
-      if (Number.isFinite(obj.externalId)) {
-        result.externalId = obj.externalId
-      }
-    }
-    return result
-  }
-  return null
 }
 
 export function parseMagentoBrand(obj: Record<string, string | number | undefined> | undefined): { name: string, externalId: number } | null {
