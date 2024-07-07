@@ -1,13 +1,11 @@
-import {
-  InferAttributes, Model, QueryTypes, Sequelize,
-} from 'sequelize'
-// import app from './app'
 import db from './models'
 import { printYellowLine } from './utils/utils'
-import { Driver } from './models/Delivery/Driver/driver'
+// import { Driver } from './models/Delivery/Driver/driver'
 import app from './app'
-import { Vehicle } from './models/Delivery/Vehicle/vehicle'
-import { Trip } from './models/Delivery/Trip/Trip'
+// import { Vehicle } from './models/Delivery/Vehicle/vehicle'
+// import { Trip } from './models/Delivery/Trip/Trip'
+
+import AddressController from './models/Sales/Address/addressController'
 
 const PORT = process.env.PORT || 8080
 
@@ -88,35 +86,8 @@ const PORT = process.env.PORT || 8080
 db
   .authenticate()
   .then(async () => {
-  // note: import orders:
-  // await addDrivers()
-  // await addVehicles()
-  // const trip = await Trip.findByPk(3, {
-  //   include: [
-  //     {
-  //       model: Driver,
-  //     },
-  //   ],
-  // })
-  // if (trip) {
-  //   // await trip.addDrivers([3])
-  //   console.log(trip.toJSON())
-  // }
-
-    const driver = await Driver.findByPk(1, {
-      include: [
-        {
-          model: Trip,
-          as: 'trips',
-          // required: true,
-        },
-
-      ],
-    })
-
-    if (driver) {
-      console.log(driver.toJSON())
-    }
+    // note: can add some on load data here
+  
     printYellowLine('FINAL')
   })
   .then(() => {
