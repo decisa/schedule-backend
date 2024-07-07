@@ -1,11 +1,11 @@
 import { DataTypes, QueryTypes } from 'sequelize'
 import { Migration } from '../umzug'
-import { tableName } from '../src/models/Sales/MagentoAddressUnified/magentoAddress'
+// import { tableName } from '../src/models/Sales/MagentoAddress/magentoAddress'
 import { consoleLogBlue } from '../src/utils/utils'
 
 // create table for MagentoAddressesUnified
 
-// const tableName = 'MagentoAddressesUnified'
+const tableName = 'MagentoAddressesUnified'
 export const up: Migration = async ({ context: queryInterface }) => {
   let tableCreated = false
   // start a transaction

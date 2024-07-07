@@ -1,9 +1,7 @@
 import { DataTypes } from 'sequelize'
 import { Migration } from '../umzug'
-import { OrderAddress } from '../src/models/Sales/OrderAddress/orderAddress'
-import { Delivery } from '../src/models/Delivery/Delivery/Delivery'
 
-const { tableName } = Delivery
+const tableName = 'Deliveries'
 const titleColumn = 'title'
 
 // done: title: string
@@ -46,9 +44,9 @@ export const up: Migration = async ({ context: queryInterface }) => {
     // update all titles to be the name on the delivery address
     const updateTitleQuery = `
       UPDATE ${tableName} AS d
-      JOIN ${OrderAddress.tableName} AS oa 
-        ON oa.${OrderAddress.getAttributes().id.field || 'id'} = d.${Delivery.getAttributes().shippingAddressId.field || 'shippingAddressId'}
-      SET d.${titleColumn} = CONCAT(oa.${OrderAddress.getAttributes().firstName.field || 'firstName'}, ' ',  oa.${OrderAddress.getAttributes().lastName.field || 'lastName'})
+      JOIN OrderAddresses AS oa 
+        ON oa.id = d.shippingAddressId
+      SET d.${titleColumn} = CONCAT(oa.firstName, ' ',  oa.lastName)
     `
     await queryInterface.sequelize.query(updateTitleQuery, { transaction })
 
