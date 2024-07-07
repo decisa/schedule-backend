@@ -159,6 +159,7 @@ deliveryRouter.put('/:deliveryId/item', (req, res) => {
 
 // get delivery record edit form data: order, delivery, addresses
 
+// todo: fixme when deliveryController is updated
 deliveryRouter.get('/:deliveryId/edit', (req, res) => {
   try {
     DeliveryController.getEditFormData(req.params.deliveryId)

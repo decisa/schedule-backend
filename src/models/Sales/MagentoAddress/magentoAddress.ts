@@ -5,11 +5,15 @@ import {
   BelongsToSetAssociationMixin,
   DataTypes, ForeignKey, InferAttributes, InferCreationAttributes, Model, NonAttribute, Sequelize,
 } from 'sequelize'
-import type { Address } from '../Address/address'
-import { MagentoAddressType } from '../MagentoOrderAddress/magentoOrderAddress'
+import type { Address } from '../Address/Address'
+
+// export const tableName = 'MagentoAddressesUnified'
+
+export const magentoAddressTypes = ['billing', 'shipping'] as const
+export type MagentoAddressType = typeof magentoAddressTypes[number]
 
 export class MagentoAddress extends Model<InferAttributes<MagentoAddress>, InferCreationAttributes<MagentoAddress>> {
-  declare externalId: number
+  declare externalId: string
 
   // declare externalCustomerAddressId: number
 
@@ -35,7 +39,7 @@ export function initMagentoAddress(db: Sequelize) {
   MagentoAddress.init(
     {
       externalId: {
-        type: DataTypes.INTEGER,
+        type: DataTypes.STRING,
         // unique: true, // defined in indexes
         primaryKey: true,
       },
@@ -44,10 +48,15 @@ export function initMagentoAddress(db: Sequelize) {
       addressType: {
         type: DataTypes.STRING,
       },
-      addressId: DataTypes.INTEGER,
+      addressId: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+      },
     // FK addressId - id of internal address record
     },
     {
+      tableName: 'MagentoAddresses',
+      freezeTableName: true,
       timestamps: false,
       sequelize: db,
       indexes: [

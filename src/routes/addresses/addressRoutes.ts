@@ -20,6 +20,7 @@ addressRouter.post('/', (req, res) => {
 })
 
 // upsert address record including magento. magento externalId is required
+// fixme: need to be more generic and not depend on type
 addressRouter.put('/', (req, res) => {
   try {
     const address = req.body as unknown
@@ -51,7 +52,7 @@ addressRouter.get('/:id', (req, res) => {
 addressRouter.delete('/:addressId/magento', (req, res) => {
   try {
     const id = req.params.addressId
-    AddressController.deleteMagento(id)
+    AddressController.deleteMagentoRecord({ addressId: id, reason: 'API request' })
       .then((deletedRecord) => {
         handleResponse(res, deletedRecord)
       })
@@ -77,9 +78,12 @@ addressRouter.post('/:addressId/magento', (req, res) => {
 
 addressRouter.delete('/:id', (req, res) => {
   try {
-    AddressController.delete(req.params.id)
-      .then((numberOfItemsDeleted) => {
-        handleResponse(res, numberOfItemsDeleted)
+    AddressController.delete({
+      id: req.params.id,
+      reason: 'API request',
+    })
+      .then((deletedRecord) => {
+        handleResponse(res, AddressController.toJSON(deletedRecord))
       })
       .catch((err) => handleError(res, err))
   } catch (error) {

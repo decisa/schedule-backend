@@ -9,7 +9,6 @@ import brandRouter from './brands/brandRoutes'
 import productRouter from './products/productRoutes'
 import productConfigurationRouter from './productConfigurations/productConfigurationRoutes'
 import productOptionRouter from './options/optionRoutes'
-import orderAddressRouter from './orderAddresses/orderAddressRoutes'
 import orderRouter from './orders/orderRoutes'
 import deliveryMethodRouter from './deliveryMethods/deliveryMethodRoutes'
 import purchaseOrderRouter from './purchaseOrders/purchaseOrderRoutes'
@@ -21,7 +20,7 @@ import vehicleRouter from './vehicles/vehicleRoutes'
 import driverRouter from './driver/driverRoutes'
 import deliveryStopRouter from './deliveryStop/deliveryStopRoutes'
 import tripRouter from './trip/tripRoutes'
-import { printRedLine } from '../utils/utils'
+// import { printRedLine } from '../utils/utils'
 
 const rootRouter = express.Router()
 
@@ -36,7 +35,6 @@ rootRouter.use('/brand', brandRouter)
 rootRouter.use('/product', productRouter)
 rootRouter.use('/configuration', productConfigurationRouter)
 rootRouter.use('/option', productOptionRouter)
-rootRouter.use('/orderaddress', orderAddressRouter)
 rootRouter.use('/order', orderRouter)
 rootRouter.use('/deliverymethod', deliveryMethodRouter)
 rootRouter.use('/purchaseorder', purchaseOrderRouter)

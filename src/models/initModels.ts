@@ -3,10 +3,8 @@ import { initMagentoOrder } from './Sales/MagentoOrder/magentoOrder'
 import { initOrder } from './Sales/Order/order'
 import { initCustomer } from './Sales/Customer/customer'
 import { initMagentoCustomer } from './Sales/MagentoCustomer/magentoCustomer'
-import { initAddress } from './Sales/Address/address'
+import { initAddress } from './Sales/Address/Address'
 import { initMagentoAddress } from './Sales/MagentoAddress/magentoAddress'
-import { initOrderAddress } from './Sales/OrderAddress/orderAddress'
-import { initMagentoOrderAddress } from './Sales/MagentoOrderAddress/magentoOrderAddress'
 import { initOrderComment } from './Sales/OrderComment/orderComment'
 import { initBrands } from './Brand/brand'
 import { initProducts } from './Sales/Product/product'
@@ -19,11 +17,8 @@ import { initReceivedItem } from './Receiving/ReceivedItems/receivedItems'
 import { initShipment } from './Receiving/Shipment/shipment'
 import { initShipmentItem } from './Receiving/ShipmentItem/shipmentItem'
 import { initDriver } from './Delivery/Driver/driver'
-// import { initRouteDriver } from './Delivery/RouteDriver/routeDrivers'
 import { initDriverDowntime } from './Delivery/DriverDowntime/driverDowntime'
 import { initOrderAvailability } from './Delivery/OrderAvailability/orderAvailability'
-// import { initRouteStop } from './Delivery/RouteStop/routeStop'
-// import { initRouteStopItem } from './Delivery/RouteStopItem/routeStopItem'
 import { initVehicle } from './Delivery/Vehicle/vehicle'
 import { initDeliveryMethod } from './Sales/DeliveryMethod/deliveryMethod'
 import { initProductSummaryView } from '../views/ProductSummary/productSummary'
@@ -43,13 +38,11 @@ import { initDeliverySummaryView } from '../views/DeliverySummary/deliverySummar
 
 function initModels(db: Sequelize) {
   initMagentoOrder(db)
-  initOrderAddress(db)
   initOrder(db)
   initCustomer(db)
   initMagentoCustomer(db)
   initAddress(db)
   initMagentoAddress(db)
-  initMagentoOrderAddress(db)
   initOrderComment(db)
   initBrands(db)
   initProducts(db)
@@ -68,9 +61,6 @@ function initModels(db: Sequelize) {
   // Shipping:
   initDriverDowntime(db)
   initOrderAvailability(db)
-  // initRouteDriver(db)
-  // initRouteStop(db)
-  // initRouteStopItem(db)
 
   initVehicle(db)
   initDriver(db)

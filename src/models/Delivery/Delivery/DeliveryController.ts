@@ -1,12 +1,10 @@
 import * as yup from 'yup'
 import { ForeignKeyConstraintError, Transaction } from 'sequelize'
-// import { de } from 'date-fns/locale'
 import { Delivery, MinutesInterval, daysToNumber } from './Delivery'
 import {
   isId, printRedLine, printYellowLine, useTransaction,
 } from '../../../utils/utils'
 import OrderController, { FullOrder, OrderRead } from '../../Sales/Order/orderController'
-import OrderAddressController, { OrderAddressMagentoRead } from '../../Sales/OrderAddress/orderAddressContoller'
 import DeliveryItemController, { DeliveryItemRead } from '../DeliveryItem/DeliveryItemController'
 import { ProductConfiguration } from '../../Sales/ProductConfiguration/productConfiguration'
 import { ProductOption } from '../../Sales/ProductOption/productOption'
@@ -15,6 +13,7 @@ import { DBError } from '../../../ErrorManagement/errors'
 import DeliveryMethodController, { DeliveryMethodRead } from '../../Sales/DeliveryMethod/deliveryMethodController'
 import { ProductSummaryView } from '../../../views/ProductSummary/productSummary'
 import { Product } from '../../Sales/Product/product'
+import AddressController, { AddressMagentoRead } from '../../Sales/Address/addressController'
 
 // TODO: allow to update and create delivery, when availability is nested, same like when reading json. ie. update validateDeliveryCreate and validateDeliveryUpdate
 
@@ -60,7 +59,7 @@ type DeliveryFK = {
 
 type DeliveryAssociations = {
   order: OrderRead
-  shippingAddress: OrderAddressMagentoRead
+  shippingAddress: AddressMagentoRead
   // deliveryStop: DeliveryStopRead
   items: DeliveryItemRead[]
   deliveryMethod: DeliveryMethodRead
@@ -437,10 +436,9 @@ function deliveryToJson(deliveryRaw: Delivery): DeliveryRead {
       timePeriod,
     },
   }
-  // if address record is present in model instance, convert it to JSON using proper controller
-  // let shippingAddress: OrderAddressMagentoRead | null = null
+
   if (deliveryRaw.shippingAddress) {
-    result.shippingAddress = OrderAddressController.toJSON(deliveryRaw.shippingAddress)
+    result.shippingAddress = AddressController.toJSON(deliveryRaw.shippingAddress)
   }
 
   // if order record is present in model instance, convert it to JSON using proper controller
@@ -465,7 +463,7 @@ type DeliverySearchResult = {
 export type EditFormDataResult = {
   delivery?: DeliveryRead
   order: FullOrder
-  addresses: OrderAddressMagentoRead[]
+  addresses: AddressMagentoRead[]
   deliveryMethods: DeliveryMethodRead[]
 }
 export default class DeliveryController {
@@ -584,8 +582,8 @@ export default class DeliveryController {
     if (!order) {
       throw DBError.notFound(new Error('Order associated with the delivery was not found'))
     }
-    const orderAddresses = await OrderAddressController.getAllByOrderId(order.id, t)
-    if (!orderAddresses) {
+    const addresses = await AddressController.getByOrderId(order.id, t)
+    if (!addresses) {
       throw DBError.notFound(new Error('Order associated with the delivery has no addresses'))
     }
     const deliveryMethods = await DeliveryMethodController.getAll(t)
@@ -595,7 +593,7 @@ export default class DeliveryController {
     return {
       delivery: this.toJSON(delivery),
       order: OrderController.toJSON(order),
-      addresses: OrderAddressController.toJSON(orderAddresses),
+      addresses: AddressController.toJSON(addresses),
       deliveryMethods: DeliveryMethodController.toJSON(deliveryMethods),
     }
   }
@@ -947,6 +945,7 @@ export default class DeliveryController {
   }
 }
 
+// todo: finalize the function for reuseability
 async function cleanupDeliveryItems(fullDeliveryRecord: Delivery, transaction: Transaction) {
   // now that we have all detailed data, check if any delivery items don't belong to an order
   // and delete them if they don't

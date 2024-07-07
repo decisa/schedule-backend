@@ -2,11 +2,11 @@ import * as yup from 'yup'
 import { ForeignKeyConstraintError, Transaction } from 'sequelize'
 import { isId, useTransaction } from '../../../utils/utils'
 import { DeliveryStop, StopType, stopTypes } from './DeliveryStop'
-import { OrderAddressRead } from '../../Sales/OrderAddress/orderAddressContoller'
 import DeliveryController, { DeliveryRead } from '../Delivery/DeliveryController'
 import { Delivery } from '../Delivery/Delivery'
-import { OrderAddress } from '../../Sales/OrderAddress/orderAddress'
 import { DBError } from '../../../ErrorManagement/errors'
+import { AddressRead } from '../../Sales/Address/addressController'
+import { Address } from '../../Sales/Address/Address'
 
 type DeliveryStopCreational = {
   id: number
@@ -34,7 +34,7 @@ type DeliveryStopFK = {
 }
 
 type DeliveryStopAssociations = {
-  shippingAddress: OrderAddressRead
+  shippingAddress: AddressRead
   deliveries: DeliveryRead[]
 }
 
@@ -217,7 +217,7 @@ export default class DeliveryStopController {
           as: 'deliveries',
         },
         {
-          model: OrderAddress,
+          model: Address,
           as: 'shippingAddress',
         },
       ],

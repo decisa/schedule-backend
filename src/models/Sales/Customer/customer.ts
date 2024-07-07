@@ -27,7 +27,7 @@ import {
 } from 'sequelize'
 import type { MagentoCustomer } from '../MagentoCustomer/magentoCustomer'
 import type { Order } from '../Order/order'
-import type { Address } from '../Address/address'
+import type { Address } from '../Address/Address'
 
 console.log('running customers model module')
 

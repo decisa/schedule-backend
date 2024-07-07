@@ -15,13 +15,13 @@ import { ProductOption } from '../../Sales/ProductOption/productOption'
 import ProductConfigurationController, { ConfigurationAsProductRead } from '../../Sales/ProductConfiguration/productConfigurationController'
 import { BrandRead } from '../../Brand/brandController'
 import { OrderRead } from '../../Sales/Order/orderController'
-import { OrderAddress } from '../../Sales/OrderAddress/orderAddress'
 import { POSummaryRead, POSummaryView } from '../../../views/PurchaseOrders/poSummary'
 import { ShipmentItem } from '../ShipmentItem/shipmentItem'
 import { Shipment } from '../Shipment/shipment'
 import { ShipmentItemReceivedSummaryView } from '../../../views/ShipmentItemReceivedSummary/shipmentItemReceivedSummary'
 import { Carrier } from '../Carrier/carrier'
 import { DBError } from '../../../ErrorManagement/errors'
+import { Address } from '../../Sales/Address/Address'
 
 // building elements of the PurchaseOrder type
 type PurchaseOrderCreational = {
@@ -490,7 +490,7 @@ export default class PurchaseOrderController {
               },
             },
             {
-              model: OrderAddress,
+              model: Address,
               as: 'shippingAddress',
               attributes: ['firstName', 'lastName', 'state'],
             },

@@ -1,12 +1,10 @@
-import { Address } from './Sales/Address/address'
+import { Address } from './Sales/Address/Address'
 import { Brand } from './Brand/brand'
 import { Customer } from './Sales/Customer/customer'
 import { MagentoAddress } from './Sales/MagentoAddress/magentoAddress'
 import { MagentoCustomer } from './Sales/MagentoCustomer/magentoCustomer'
 import { MagentoOrder } from './Sales/MagentoOrder/magentoOrder'
-import { MagentoOrderAddress } from './Sales/MagentoOrderAddress/magentoOrderAddress'
 import { Order } from './Sales/Order/order'
-import { OrderAddress } from './Sales/OrderAddress/orderAddress'
 import { OrderComment } from './Sales/OrderComment/orderComment'
 import { Product } from './Sales/Product/product'
 import { ProductConfiguration } from './Sales/ProductConfiguration/productConfiguration'
@@ -17,14 +15,10 @@ import { PurchaseOrder } from './Receiving/PurchaseOrder/purchaseOrder'
 import { PurchaseOrderItem } from './Receiving/PurchaseOrderItem/purchaseOrderItem'
 import { ShipmentItem } from './Receiving/ShipmentItem/shipmentItem'
 import { ReceivedItem } from './Receiving/ReceivedItems/receivedItems'
-// import { TripRoute } from './Delivery/TripRoute/tripRoute'
 import { Driver } from './Delivery/Driver/driver'
-// import { RouteDriver } from './Delivery/RouteDriver/routeDrivers'
 import { DriverDowntime } from './Delivery/DriverDowntime/driverDowntime'
 import { OrderAvailability } from './Delivery/OrderAvailability/orderAvailability'
-// import { RouteStop } from './Delivery/RouteStop/routeStop'
 import { Vehicle } from './Delivery/Vehicle/vehicle'
-// import { RouteStopItem } from './Delivery/RouteStopItem/routeStopItem'
 import { DeliveryMethod } from './Sales/DeliveryMethod/deliveryMethod'
 import { ProductSummaryView } from '../views/ProductSummary/productSummary'
 import { Trip } from './Delivery/Trip/Trip'
@@ -81,7 +75,7 @@ function createAssociations() {
     sourceKey: 'id',
   })
 
-  Order.belongsTo(OrderAddress, {
+  Order.belongsTo(Address, {
     as: 'shippingAddress',
     targetKey: 'id',
     foreignKey: 'shippingAddressId',
@@ -90,15 +84,15 @@ function createAssociations() {
   })
 
   // BILLING ADDRESS FOR ORDER:
-  Order.belongsTo(OrderAddress, {
+  Order.belongsTo(Address, {
     as: 'billingAddress',
     foreignKey: 'billingAddressId',
     // onDelete: 'NO ACTION',
     constraints: false,
   })
 
-  // One-to-many relationship between Orders and OrderAddresses.
-  OrderAddress.belongsTo(Order, {
+  // One-to-many relationship between Orders and Addresses.
+  Address.belongsTo(Order, {
     as: 'order',
     targetKey: 'id',
     foreignKey: 'orderId',
@@ -106,26 +100,12 @@ function createAssociations() {
     onUpdate: 'CASCADE',
   })
 
-  Order.hasMany(OrderAddress, {
+  Order.hasMany(Address, {
     as: 'addresses',
     sourceKey: 'id',
     foreignKey: 'orderId',
     onDelete: 'CASCADE',
     onUpdate: 'CASCADE',
-  })
-
-  // some addresses have a magento record:
-  // One-to-one relationship between OrderAddresses and MagentoOrderAddresses
-  OrderAddress.hasOne(MagentoOrderAddress, {
-    as: 'magento',
-    sourceKey: 'id',
-    foreignKey: 'orderAddressId',
-    onDelete: 'CASCADE',
-    onUpdate: 'CASCADE',
-  })
-  MagentoOrderAddress.belongsTo(OrderAddress, {
-    as: 'orderAddress',
-    foreignKey: 'orderAddressId',
   })
 
   // Customer has many Addresses
@@ -376,61 +356,6 @@ function createAssociations() {
     as: 'order',
     foreignKey: 'orderId',
   })
-  // One-to-many relationship between TripRoute and RouteStops.
-  // TripRoute.hasMany(RouteStop, {
-  //   as: 'routeStops',
-  //   foreignKey: 'tripRouteId',
-  //   onDelete: 'NO ACTION',
-  //   onUpdate: 'CASCADE',
-  // })
-  // RouteStop.belongsTo(TripRoute, {
-  //   as: 'tripRoute',
-  //   foreignKey: 'tripRouteId',
-  // })
-  // One-to-many relationship between Orders and RouteStops.
-  // Order.hasMany(RouteStop, {
-  //   as: 'routeStops',
-  //   foreignKey: 'orderId',
-  //   onDelete: 'NO ACTION',
-  //   onUpdate: 'CASCADE',
-  // })
-  // RouteStop.belongsTo(Order, {
-  //   as: 'order',
-  //   foreignKey: 'orderId',
-  // })
-  // One-to-many relationship between OrderAddresses and RouteStops. (nullable)
-  // OrderAddress.hasMany(RouteStop, {
-  //   as: 'routeStops',
-  //   foreignKey: 'orderAddressId',
-  //   onDelete: 'NO ACTION',
-  //   onUpdate: 'CASCADE',
-  // })
-  // RouteStop.belongsTo(OrderAddress, {
-  //   as: 'orderAddress',
-  //   foreignKey: 'orderAddressId',
-  // })
-  // Many-to-many relationship between RouteStops and ProductConfigurations through RouteStopItems
-  // RouteStop.belongsToMany(ProductConfiguration, {
-  //   through: RouteStopItem,
-  //   foreignKey: 'routeStopId',
-  //   otherKey: 'productConfigurationId',
-  // })
-  // ProductConfiguration.belongsToMany(RouteStop, {
-  //   through: RouteStopItem,
-  //   foreignKey: 'productConfigurationId',
-  //   otherKey: 'routeStopId',
-  // })
-  // One-to-many relationship between Vehicles and TripRoutes.
-  // Vehicle.hasMany(TripRoute, {
-  //   as: 'tripRoutes',
-  //   foreignKey: 'vehicleId',
-  //   onDelete: 'NO ACTION',
-  //   onUpdate: 'CASCADE',
-  // })
-  // TripRoute.belongsTo(Vehicle, {
-  //   as: 'vehicle',
-  //   foreignKey: 'vehicleId',
-  // })
 
   // associations for the Product Summary View:
   ProductConfiguration.hasOne(ProductSummaryView, {
@@ -508,12 +433,12 @@ function createAssociations() {
     foreignKey: 'deliveryMethodId',
   })
 
-  // one-to-many relationship between OrderAddress and Delivery
-  OrderAddress.hasMany(Delivery, {
+  // one-to-many relationship between Address and Delivery
+  Address.hasMany(Delivery, {
     as: 'deliveries',
     foreignKey: 'shippingAddressId',
   })
-  Delivery.belongsTo(OrderAddress, {
+  Delivery.belongsTo(Address, {
     as: 'shippingAddress',
     foreignKey: 'shippingAddressId',
   })
@@ -529,12 +454,12 @@ function createAssociations() {
     foreignKey: 'orderId',
   })
 
-  // done: one-to-many relationship between OrderAddress and DeliveryStops
-  OrderAddress.hasMany(DeliveryStop, {
+  // done: one-to-many relationship between Address and DeliveryStops
+  Address.hasMany(DeliveryStop, {
     as: 'deliveryStops',
     foreignKey: 'shippingAddressId',
   })
-  DeliveryStop.belongsTo(OrderAddress, {
+  DeliveryStop.belongsTo(Address, {
     as: 'shippingAddress',
     foreignKey: 'shippingAddressId',
   })

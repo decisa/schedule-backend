@@ -30,18 +30,14 @@ import {
   HasManyRemoveAssociationMixin,
   HasManyRemoveAssociationsMixin,
 } from 'sequelize'
-
-// import db from '..'
 import type { MagentoOrder } from '../MagentoOrder/magentoOrder'
 import type { Customer } from '../Customer/customer'
-import type { OrderAddress } from '../OrderAddress/orderAddress'
 import type { OrderComment } from '../OrderComment/orderComment'
 import type { ProductConfiguration } from '../ProductConfiguration/productConfiguration'
 import type { OrderAvailability } from '../../Delivery/OrderAvailability/orderAvailability'
 import type { DeliveryMethod } from '../DeliveryMethod/deliveryMethod'
 import type { Delivery } from '../../Delivery/Delivery/Delivery'
-
-console.log('running model module')
+import type { Address } from '../Address/Address'
 
 export class Order extends Model<InferAttributes<Order>, InferCreationAttributes<Order>> {
   // id can be undefined during creation when using `autoIncrement`
@@ -67,21 +63,29 @@ export class Order extends Model<InferAttributes<Order>, InferCreationAttributes
 
   declare deliveryMethodId: ForeignKey<DeliveryMethod['id']> | null
 
-  declare shippingAddressId: ForeignKey<OrderAddress['id']> | null
+  declare shippingAddressId: ForeignKey<Address['id']> | null
 
-  declare billingAddressId: ForeignKey<OrderAddress['id']> | null
+  declare shippingAddressIdNew: ForeignKey<Address['id']> | null
+
+  declare billingAddressId: ForeignKey<Address['id']> | null
+
+  declare billingAddressIdNew: ForeignKey<Address['id']> | null
 
   declare customer?: NonAttribute<Customer>
 
   declare deliveryMethod?: NonAttribute<DeliveryMethod>
 
-  declare shippingAddress?: NonAttribute<OrderAddress>
+  declare shippingAddress?: NonAttribute<Address>
 
-  declare billingAddress?: NonAttribute<OrderAddress>
+  declare billingAddress?: NonAttribute<Address>
+
+  declare shippingAddress2?: NonAttribute<Address>
+
+  declare billingAddress2?: NonAttribute<Address>
 
   declare magento?: NonAttribute<MagentoOrder>
 
-  declare addresses?: NonAttribute<OrderAddress[]>
+  declare addresses?: NonAttribute<Address[]>
 
   declare comments?: NonAttribute<OrderComment[]>
 
@@ -94,10 +98,10 @@ export class Order extends Model<InferAttributes<Order>, InferCreationAttributes
   declare public static associations: {
     magento: Association<Order, MagentoOrder>,
     customer: Association<Order, Customer>,
-    addresses: Association<Order, OrderAddress>,
+    addresses: Association<Order, Address>,
     comments: Association<Order, OrderComment>,
-    billingAddress: Association<Order, OrderAddress>,
-    shippingAddress: Association<Order, OrderAddress>,
+    billingAddress: Association<Order, Address>,
+    shippingAddress: Association<Order, Address>,
     products: Association<Order, ProductConfiguration>,
     orderAvailabilities: Association<Order, OrderAvailability>,
     deliveryMethod: Association<Order, DeliveryMethod>,
@@ -150,40 +154,37 @@ export class Order extends Model<InferAttributes<Order>, InferCreationAttributes
   // declare createDeliveryMethod: BelongsToCreateAssociationMixin<DeliveryMethod>
 
   // addresses:
-  declare createAddress: HasManyCreateAssociationMixin<OrderAddress, 'orderId'>
+  declare createAddress: HasManyCreateAssociationMixin<Address, 'orderId'>
 
-  declare getAddresses: HasManyGetAssociationsMixin<OrderAddress>
+  declare getAddresses: HasManyGetAssociationsMixin<Address>
 
   declare countAddresses: HasManyCountAssociationsMixin
 
-  declare hasAddress: HasManyHasAssociationMixin<OrderAddress, number>
+  declare hasAddress: HasManyHasAssociationMixin<Address, number>
 
-  declare hasAddresses: HasManyHasAssociationsMixin<OrderAddress, number>
+  declare hasAddresses: HasManyHasAssociationsMixin<Address, number>
 
-  declare setAddresses: HasManySetAssociationsMixin<OrderAddress, number>
+  declare setAddresses: HasManySetAssociationsMixin<Address, number>
 
-  declare addAddress: HasManyAddAssociationMixin<OrderAddress, number>
+  declare addAddress: HasManyAddAssociationMixin<Address, number>
 
-  declare addAddresses: HasManyAddAssociationsMixin<OrderAddress, number>
+  declare addAddresses: HasManyAddAssociationsMixin<Address, number>
 
-  declare removeAddress: HasManyRemoveAssociationMixin<OrderAddress, number>
+  declare removeAddress: HasManyRemoveAssociationMixin<Address, number>
 
-  declare removeAddresses: HasManyRemoveAssociationsMixin<OrderAddress, number>
+  declare removeAddresses: HasManyRemoveAssociationsMixin<Address, number>
 
   // billingAddress:
-  declare getBillingAddress: BelongsToGetAssociationMixin<OrderAddress>
+  declare getBillingAddress: BelongsToGetAssociationMixin<Address>
 
-  declare setBillingAddress: BelongsToSetAssociationMixin<OrderAddress, number>
+  declare setBillingAddress: BelongsToSetAssociationMixin<Address, number>
 
   // disable createBillingAddress, since sequelize could not create proper foreign key constraint:
-  // declare createBillingAddress: BelongsToCreateAssociationMixin<OrderAddress>
 
   // shippingAddress:
-  declare getShippingAddress: BelongsToGetAssociationMixin<OrderAddress>
+  declare getShippingAddress: BelongsToGetAssociationMixin<Address>
 
-  declare setShippingAddress: BelongsToSetAssociationMixin<OrderAddress, number>
-
-  // declare createShippingAddress: BelongsToCreateAssociationMixin<OrderAddress>
+  declare setShippingAddress: BelongsToSetAssociationMixin<Address, number>
 
   // comments:
   declare createComment: HasManyCreateAssociationMixin<OrderComment, 'orderId'>

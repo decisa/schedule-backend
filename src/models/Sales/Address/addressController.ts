@@ -1,13 +1,14 @@
 import * as yup from 'yup'
 import { Transaction } from 'sequelize'
 import {
-  isId, printYellowLine, useTransaction,
+  isId, printRedLine, printYellowLine, useTransaction,
 } from '../../../utils/utils'
-import { MagentoAddressType, magentoAddressTypes } from '../MagentoOrderAddress/magentoOrderAddress'
-import { Address } from './address'
-import { MagentoAddress } from '../MagentoAddress/magentoAddress'
-import { OrderAddress } from '../OrderAddress/orderAddress'
-import OrderAddressController from '../OrderAddress/orderAddressContoller'
+import { MagentoAddress, MagentoAddressType, magentoAddressTypes } from '../MagentoAddress/magentoAddress'
+import { Address } from './Address'
+import { DBError } from '../../../ErrorManagement/errors'
+
+const addressTypes = ['order', 'customer'] as const
+export type AddressType = typeof addressTypes[number]
 
 type AddressCreational = {
   id: number
@@ -15,6 +16,7 @@ type AddressCreational = {
 
 // street1 is required but will be addressed later
 type AddressRequired = {
+  type: AddressType
   firstName: string
   lastName: string
   city: string
@@ -42,13 +44,19 @@ type AddressTimeStamps = {
 }
 
 type AddressFK = {
-  customerId: number
+  customerId: number | null
+  orderId: number | null
+  customerAddressId: number | null
 }
 
 type AddressMagentoRecord = {
-  externalId: number
+  externalId: string | number
   addressType: MagentoAddressType
-  addressId?: number
+  addressId: number
+}
+
+type AddressMagentoRecordRead = Omit<Required<AddressMagentoRecord>, 'externalId'> & {
+  externalId: string
 }
 
 // type AddressAssociations = {
@@ -62,24 +70,32 @@ export type AddressCreate =
   & Required<AddressRequired>
   & Partial<AddressOptional>
   & Partial<AddressTimeStamps>
+  & AddressFK
   // & Partial<AddressAssociations>
-export type AddressRead = Required<AddressCreate> & AddressFK
+export type AddressRead = Required<AddressCreate> // & AddressFK
 
 export type AddressMagentoRead = Omit<AddressRead, 'latitude' | 'longitude' | 'street1' | 'street2'> & {
-  magento?: Omit<AddressMagentoRecord, 'addressId'>
+  magento?: AddressMagentoRecordRead
 }
 
 const addressMagentoSchema: yup.ObjectSchema<AddressMagentoRecord> = yup.object({
   // externalId: number
   // addressType: MagentoAddressType
   // addressId: number
-  externalId: yup
-    .number()
-    .integer()
-    .positive()
-    .nonNullable()
-    .required()
-    .label('Malformed data: magento > externalId'),
+  externalId: yup.lazy((value) => {
+    if (typeof value === 'number') {
+      return yup.number()
+        .integer()
+        .positive()
+        .nonNullable()
+        .required()
+        .label('Malformed data: magento > externalId')
+    }
+    return yup.string()
+      .nonNullable()
+      .required()
+      .label('Malformed data: magento > externalId')
+  }),
   addressType: yup
     .mixed<MagentoAddressType>()
     .oneOf(magentoAddressTypes)
@@ -89,6 +105,7 @@ const addressMagentoSchema: yup.ObjectSchema<AddressMagentoRecord> = yup.object(
     .integer()
     .positive()
     .nonNullable()
+    .required()
     .label('Malformed data: magento > addressId'),
 })
 
@@ -96,17 +113,28 @@ const addressMagentoUpdateSchema: yup.ObjectSchema<Partial<Omit<AddressMagentoRe
   // externalId: number
   // addressType: MagentoAddressType
   // addressId: number
-  externalId: yup
-    .number()
-    .integer()
-    .positive()
-    .nonNullable()
-    .label('Malformed data: magento > externalId'),
+  externalId: yup.lazy((value) => {
+    if (typeof value === 'number') {
+      return yup.number()
+        .integer()
+        .positive()
+        .nonNullable()
+        .label('Malformed data: magento > externalId')
+    }
+    return yup.string()
+      .nonNullable()
+      .label('Malformed data: magento > externalId')
+  }),
   addressType: yup
     .mixed<MagentoAddressType>()
     .oneOf(magentoAddressTypes)
     .label('Malformed data: magento > addressType')
     .nonNullable(),
+  addressId: yup.number()
+    .integer()
+    .positive()
+    .nonNullable()
+    .label('Malformed data: magento > addressId'),
 })
 
 // when data is sent to DB, all virtual fields like street[] and coordinates, should be converted
@@ -118,9 +146,25 @@ const addressSchemaCreate: yup.ObjectSchema<AddressCreate> = yup.object({
     .number()
     .integer()
     .positive()
-    .required()
+    .nullable()
+    .default(null)
     .label('Malformed data: customerId'),
+  orderId: yup
+    .number()
+    .integer()
+    .positive()
+    .nullable()
+    .default(null)
+    .label('Malformed data: orderId'),
+  customerAddressId: yup
+    .number()
+    .integer()
+    .positive()
+    .nullable()
+    .default(null)
+    .label('Malformed data: customerAddressId'),
   // required
+  // type: AddressType
   // firstName: string
   // lastName: string
   // phone: string
@@ -130,6 +174,11 @@ const addressSchemaCreate: yup.ObjectSchema<AddressCreate> = yup.object({
   // state: string
   // zipCode: string
   // country: string
+  type: yup
+    .mixed<AddressType>()
+    .oneOf(addressTypes)
+    .label('Malformed data: address type')
+    .required(),
   firstName: yup.string()
     .label('Malformed data: firstName')
     .nonNullable()
@@ -145,7 +194,7 @@ const addressSchemaCreate: yup.ObjectSchema<AddressCreate> = yup.object({
     .required(),
   street1: yup.string().nonNullable(),
   // .label('Malformed data: street1'),
-  street2: yup.string(),
+  street2: yup.string().nullable(),
   // .label('Malformed data: street2'),
   street: yup.array()
     .of(yup.string().required())
@@ -211,103 +260,71 @@ const addressSchemaCreate: yup.ObjectSchema<AddressCreate> = yup.object({
   updatedAt: yup.date().nonNullable().label('Malformed data: updatedAt'),
 })
 
-const addressSchemaUpdate: yup.ObjectSchema<Partial<AddressCreate>> = yup.object({
-  // AddressFK
-  // customerId: number
-  customerId: yup
-    .number()
-    .integer()
-    .positive()
-    .nonNullable()
-    .label('Malformed data: customerId'),
-  // required
-  // firstName: string
-  // lastName: string
-  // phone: string
-  // street1: string
-  // street: string[]
-  // city: string
-  // state: string
-  // zipCode: string
-  // country: string
-  firstName: yup.string()
-    .label('Malformed data: firstName')
-    .nonNullable(),
-  lastName: yup.string()
-    .label('Malformed data: lastName')
-    .nonNullable(),
-  phone: yup.string()
-    .min(10)
-    .label('Malformed data: phone')
-    .nonNullable(),
-  street1: yup.string().nonNullable(),
-  // .label('Malformed data: street1'),
-  street2: yup.string(),
-  // .label('Malformed data: street2'),
-  street: yup.array()
-    .of(yup.string().required())
-    .min(1)
-    .nonNullable(),
-  // .label('Malformed data: street'),
-  city: yup.string()
-    .nonNullable()
-    .label('Malformed data: city'),
-  state: yup.string()
-    .nonNullable()
-    .label('Malformed data: state'),
-  zipCode: yup.string()
-    .nonNullable()
-    .label('Malformed data: zipCode'),
-  country: yup.string()
-    .nonNullable()
-    .label('Malformed data: country'),
-  // AddressOptional
-  //   company: string | null
-  //   altPhone: string | null
-  //   notes: string | null
-  //   latitude: number | null
-  //   longitude: number | null
-  //   coordinates: [number, number] | null
-  company: yup.string().nullable()
-    .label('Malformed data: company'),
-  altPhone: yup.string().nullable()
-    .label('Malformed data: altPhone'),
-  notes: yup.string()
-    .nullable()
-    .label('Malformed data: notes'),
-  latitude: yup.number()
-    .min(-90)
-    .max(90)
-    .nullable()
-    .label('Malformed data: latitude'),
-  longitude: yup.number()
-    .min(-180)
-    .max(180)
-    .nullable()
-    .label('Malformed data: longitude'),
-  coordinates: yup.tuple([
-    yup.number().min(-90).max(90).required(),
-    yup.number().min(-180).max(180).required(),
-  ])
-    .nullable()
-    .label('Malformed data: coordinates'),
-  // id: number
-  id: yup.number().integer().positive().nonNullable(),
-  // createdAt: Date
-  // updatedAt: Date
-  createdAt: yup.date().nonNullable().label('Malformed data: createdAt'),
-  updatedAt: yup.date().nonNullable().label('Malformed data: updatedAt'),
-})
+const addressSchemaUpdate: yup.ObjectSchema<Partial<AddressCreate>> = addressSchemaCreate.clone()
+  .shape({
+    type: yup
+      .mixed<AddressType>()
+      .oneOf(addressTypes)
+      .label('Malformed data: address type')
+      .nonNullable(),
+    firstName: yup.string()
+      .label('Malformed data: firstName')
+      .nonNullable(),
+    lastName: yup.string()
+      .label('Malformed data: lastName')
+      .nonNullable(),
+    phone: yup.string()
+      .min(10)
+      .label('Malformed data: phone')
+      .nonNullable(),
+    // .label('Malformed data: street'),
+    city: yup.string()
+      .nonNullable()
+      .label('Malformed data: city'),
+    state: yup.string()
+      .nonNullable()
+      .label('Malformed data: state'),
+    zipCode: yup.string()
+      .nonNullable()
+      .label('Malformed data: zipCode'),
+    country: yup.string()
+      .nonNullable()
+      .label('Malformed data: country'),
+  })
 
 // type RequiredExceptFor<T, K extends keyof T> = Omit<T, K> & {
 //   [P in K]+?: T[P]
 // };
 
-export function validateAddressCreate(object: unknown): Omit<AddressCreate, 'street' | 'coordinates' | 'street1'> & { street1: string } {
-  const address = addressSchemaCreate.validateSync(object, {
+function extractAddressType(address: unknown): AddressType {
+  const { type } = addressSchemaCreate.pick(['type']).validateSync(address, {
+    stripUnknown: true,
+    abortEarly: true,
+  }) satisfies { type: AddressType }
+  return type
+}
+
+export function validateAddressCreate(object: unknown): Omit<AddressCreate, 'street' | 'coordinates' | 'street1' | 'id'> & { street1: string } {
+  const address = addressSchemaCreate.omit(['id']).validateSync(object, {
     stripUnknown: true,
     abortEarly: false,
   }) satisfies AddressCreate
+
+  // check type: customer vs order
+  if (address.type === 'order') {
+    if (!address.orderId) {
+      throw new Error('Malformed data: orderId is required for order address')
+    }
+    address.customerId = null
+  }
+
+  if (address.type === 'customer') {
+    if (!address.customerId) {
+      throw new Error('Malformed data: customerId is required for customer address')
+    }
+    address.orderId = null
+    address.customerAddressId = null
+  }
 
   if (address.street && address.street.length) {
     // if address street array is provided, copy its values to street1 and street2 if those are empty
@@ -371,6 +388,29 @@ export function validateAddressUpdate(object: unknown): Omit<Partial<AddressCrea
     abortEarly: false,
   }) satisfies Partial<AddressCreate>
 
+  // check type: customer vs order
+  if (address.type === 'order') {
+    if (!address.orderId) {
+      throw new Error('Malformed data: orderId is required for order address')
+    }
+    address.customerId = null
+  }
+
+  if (address.type === 'customer') {
+    if (!address.customerId) {
+      throw new Error('Malformed data: customerId is required for customer address')
+    }
+    address.orderId = null
+    address.customerAddressId = null
+  }
+
+  // if type is not provided, cannot update FKs
+  if (!address.type) {
+    delete address.customerId
+    delete address.orderId
+    delete address.customerAddressId
+  }
+
   // check street1,2 []
   if (address.street && address.street.length) {
     // if address street array is provided, copy its values to street1 and street2 if those are empty
@@ -413,11 +453,12 @@ export function validateAddressUpdate(object: unknown): Omit<Partial<AddressCrea
   return address
 }
 
-export function validateAddressMagento(object: unknown): AddressMagentoRecord {
-  const magento = addressMagentoSchema.validateSync(object, {
-    stripUnknown: true,
-    abortEarly: false,
-  }) satisfies AddressMagentoRecord
+export function validateAddressMagento(object: unknown): Omit<AddressMagentoRecord, 'addressId'> {
+  const magento = addressMagentoSchema.omit(['addressId'])
+    .validateSync(object, {
+      stripUnknown: true,
+      abortEarly: false,
+    }) satisfies Omit<AddressMagentoRecord, 'addressId'>
   return magento
 }
 
@@ -429,11 +470,18 @@ export function validateAddressMagentoUpdate(object: unknown): Partial<Omit<Addr
   return magento
 }
 
+function getExternalIdString(externalId: string | number, type: AddressType): string {
+  if (typeof externalId === 'number') {
+    return `${type}.${externalId}`
+  }
+  return externalId
+}
+
 function addressToJson(address: Address): AddressMagentoRead {
-  let magento: AddressMagentoRecord | undefined
+  let magento: AddressMagentoRecordRead | undefined
   if (address.magento && address.magento instanceof MagentoAddress) {
     magento = address.magento.toJSON()
-    delete magento.addressId
+    // delete magento.addressId
   }
   const addressData = address.toJSON()
   const result: AddressMagentoRead & {
@@ -479,6 +527,11 @@ export default class AddressController {
    * @param data - Addresss, array of Addresses or null
    * @returns {AddressMagentoRead | AddressMagentoRead[] | null} JSON format nullable.
    */
+  static toJSON(data: Address): AddressMagentoRead
+  static toJSON(data: Address | null): AddressMagentoRead | null
+  static toJSON(data: Address[]): AddressMagentoRead[]
+  static toJSON(data: Address[] | null): AddressMagentoRead[] | null
+  static toJSON(data: null): null
   static toJSON(data: Address | Address[] | null): AddressMagentoRead | AddressMagentoRead[] | null {
     try {
       if (data instanceof Address) {
@@ -507,13 +560,14 @@ export default class AddressController {
   /**
    * get all addresses associated with a given customerId. Will include magento record if available
    * @param {unknown} id - customerId
-   * @returns {Address | Address[] | null} Address object or null
+   * @returns {Address[]} Address[]
    */
-  static async getByCustomerId(id: number | unknown, t?: Transaction): Promise<Address | Address[] | null> {
-    const customerId = isId.validateSync(id)
+  static async getByCustomerId(customerId: number | unknown, t?: Transaction): Promise<Address[]> {
+    const id = isId.validateSync(customerId)
     const final = await Address.findAll({
       where: {
-        customerId,
+        customerId: id,
+        type: 'customer',
       },
       include: 'magento',
       transaction: t,
@@ -522,7 +576,25 @@ export default class AddressController {
   }
 
   /**
-   * insert address record to DB. Will include magento record if provided.
+   * get all addresses associated with a given orderId. Will include magento record if available
+   * @param {unknown} orderId - orderId
+   * @returns {Address[]} Address object or null
+   */
+  static async getByOrderId(orderId: number | unknown, t?: Transaction): Promise<Address[]> {
+    const id = isId.validateSync(orderId)
+    const final = await Address.findAll({
+      where: {
+        orderId: id,
+        type: 'order',
+      },
+      include: 'magento',
+      transaction: t,
+    })
+    return final
+  }
+
+  /**
+   * insert address record to DB. Will include magento record if provided. address type is required (customer or order)
    * FK addressId will be ignored on magento record and generated automatically.
    * @param {unknown} address - customer address record to insert to DB
    * @returns {Address} Address object or throws error
@@ -530,77 +602,30 @@ export default class AddressController {
   static async create(address: unknown, t?: Transaction): Promise<Address> {
     const [transaction, commit, rollback] = await useTransaction(t)
     try {
-      let magento: AddressMagentoRecord | undefined
+      // consoleLogBlue('start new address')
+      let magento: unknown
       if (address && typeof address === 'object' && 'magento' in address) {
-        magento = validateAddressMagento(address.magento)
+        magento = address.magento
       }
+      // console.log('validating address')
       const parsedAddress = validateAddressCreate(address)
 
+      // console.log('creating address', parsedAddress)
       const result: Address | null = await Address.create(parsedAddress, {
         transaction,
       })
 
+      console.log('address created. creating magento')
       if (result && magento) {
-        const x = await result.createMagento(magento, { transaction })
-        result.magento = x
+        result.magento = await this.createMagento(result.id, magento, transaction)
       }
-      if (result) {
-        const final = await this.get(result.id, transaction)
-        // return result
-        if (final) {
-          await commit()
-          return final
-        }
-      }
-      throw new Error('Internal Error: Address was not created')
-    } catch (error) {
-      await rollback()
-      // rethrow the error for further handling
-      throw error
-    }
-  }
 
-  /**
-   * insert address record to DB based on order address. Will include magento record if provided.
-   * FK addressId will be ignored on magento record and generated automatically.
-   * @param {OrderAddress} orderAddress - customer address record to insert to DB
-   * @returns {Address} Address object or throws error
-   */
-  static async createFromOrderAddress(customerId: number, orderAddress: OrderAddress, t?: Transaction): Promise<Address> {
-    const [transaction, commit, rollback] = await useTransaction(t)
-    try {
-      const parsedOrderAddress = OrderAddressController.toJSON(orderAddress)
-
-      let customerAddressParsed
-      if (parsedOrderAddress.magento) {
-        customerAddressParsed = {
-          ...parsedOrderAddress,
-          id: undefined,
-          customerId,
-          magento: {
-            externalId: parsedOrderAddress.magento.externalCustomerAddressId,
-            addressType: parsedOrderAddress.magento.addressType,
-          },
-        }
-      } else {
-        customerAddressParsed = {
-          ...parsedOrderAddress,
-          customerId,
-          id: undefined,
-        }
-      }
-      let final: Address
-      if (parsedOrderAddress.magento) {
-        printYellowLine('upserting')
-        console.log(customerAddressParsed)
-        final = await this.upsert(customerAddressParsed, transaction)
-      } else {
-        printYellowLine('creating')
-        final = await this.create(customerAddressParsed, transaction)
+      if (!result) {
+        throw new Error('Internal Error: Address was not created')
       }
 
       await commit()
-      return final
+      return result
     } catch (error) {
       await rollback()
       // rethrow the error for further handling
@@ -645,7 +670,7 @@ export default class AddressController {
 
       if (magento) {
         if (addressRecord.magento) {
-          await addressRecord.magento.update(magento, { transaction })
+          addressRecord.magento = await this.updateMagento(addressRecord.id, magento, transaction)
         } else {
           addressRecord.magento = await this.createMagento(addressRecord.id, magento, transaction)
         }
@@ -667,18 +692,22 @@ export default class AddressController {
   static async upsert(addressData: unknown, t?: Transaction): Promise<Address> {
     const [transaction, commit, rollback] = await useTransaction(t)
     try {
-      let magento: AddressMagentoRecord | undefined
+      let magento: Omit<AddressMagentoRecord, 'addressId'> | undefined
       if (addressData && typeof addressData === 'object' && 'magento' in addressData) {
         magento = validateAddressMagento(addressData.magento)
       }
       if (!magento) {
         throw new Error('Magento record is required for upsert')
       }
+
+      const type = extractAddressType(addressData)
+
       const addressRecord = await Address.findOne({
         include: [{
-          association: 'magento',
+          model: MagentoAddress,
+          as: 'magento',
           where: {
-            externalId: magento.externalId,
+            externalId: getExternalIdString(magento.externalId, type),
           },
         }],
         transaction,
@@ -686,8 +715,10 @@ export default class AddressController {
 
       let result: Address
       if (!addressRecord) {
+        printRedLine('create address')
         result = await this.create(addressData, transaction)
       } else {
+        printRedLine('update address')
         result = await this.update(addressRecord.id, addressData, transaction)
       }
 
@@ -701,23 +732,38 @@ export default class AddressController {
   }
 
   /**
-   * delete address record with a given id from DB.
-   * @param {unknown} id - addressId
-   * @returns {number} number of objects deleted.
+   * delete Address record with a given id from DB.
+   * @param {Object} options - The options for deleting an Address record.
+   * @param {(number|unknown)} options.id - The ID of the Delivery to delete.
+   * @param {string} [options.reason] - (optional) The reason for deleting the Address record.
+   * @param {Transaction} [options.transaction] - (optional) The transaction within which to perform the deletion.
+   * @returns {Address} Address record that was deleted
    */
-  static async delete(id: number | unknown, t?: Transaction): Promise<boolean> {
+  static async delete({
+    id,
+    reason,
+    transaction: t,
+  }: {
+    id: number | unknown
+    reason?: string
+    transaction?: Transaction
+  }): Promise<Address> {
     const [transaction, commit, rollback] = await useTransaction(t)
     try {
       const addressId = isId.validateSync(id)
-      const final = await Address.destroy({
+      const addressRecord = await this.get(addressId, transaction)
+      if (!addressRecord) {
+        throw DBError.notFound(new Error(`Address with id ${addressId} was not found`))
+      }
+      printRedLine(`delete address${reason ? `: ${reason}` : ''}`)
+      await Address.destroy({
         where: {
           id: addressId,
         },
         transaction,
       })
-      console.log('deletion result: ', final)
       await commit()
-      return final === 1
+      return addressRecord
     } catch (error) {
       await rollback()
       // rethrow the error for further handling
@@ -726,23 +772,41 @@ export default class AddressController {
   }
 
   /**
-   * delete corresponding address Magento record with a given addressID from DB.
-   * @param {unknown} addressId - addressId to delete
-   * @returns {AddressMagentoRecord | null} AddressMagentoRecord that was deleted or null if record did not exist.
+   * delete Magento record of the address with a given id from DB.
+   * @param {Object} options - The options for deleting a Magento address record.
+   * @param {(number|unknown)} options.addressId - The ID of the address for which Magento record needs to be deleted.
+   * @param {string} [options.reason] - (optional) The reason for deleting the Magento address record.
+   * @param {Transaction} [options.transaction] - (optional) The transaction within which to perform the deletion.
+   * @returns {AddressMagentoRecordRead} Magento address record that was deleted
+   * @throws {DBError} If the address with the given ID does not exist or does not have a Magento record.
    */
-  static async deleteMagento(addressId: number | unknown, t?: Transaction): Promise<AddressMagentoRecord | null> {
+  static async deleteMagentoRecord({
+    addressId,
+    reason,
+    transaction: t,
+  }:{
+    addressId: number | unknown,
+    reason?: string,
+    transaction?: Transaction
+  }): Promise<AddressMagentoRecordRead> {
     const [transaction, commit, rollback] = await useTransaction(t)
     try {
       const id = isId.validateSync(addressId)
       const record = await this.get(id, transaction)
-      let magento: AddressMagentoRecord | null = null
 
-      if (record && record.magento) {
-        magento = record.magento.toJSON()
-        await record.magento.destroy({ transaction })
+      if (!record) {
+        throw DBError.notFound(new Error(`Address with id ${id} does not exist`))
       }
+
+      if (!record.magento) {
+        throw DBError.notFound(new Error(`Address with id ${id} does not have a Magento record`))
+      }
+      printRedLine(`delete magento record for address id=${id}${reason ? `: ${reason}` : ''}`)
+      const deletedMagentoRecord = record.magento.toJSON()
+      await record.magento.destroy({ transaction })
+
       await commit()
-      return magento
+      return deletedMagentoRecord
     } catch (error) {
       await rollback()
       // rethrow the error for further handling
@@ -759,10 +823,25 @@ export default class AddressController {
   static async createMagento(addressId: number | unknown, addressMagentoData: AddressMagentoRecord | unknown, t?: Transaction): Promise<MagentoAddress> {
     const [transaction, commit, rollback] = await useTransaction(t)
     try {
-      const magento = validateAddressMagento(addressMagentoData)
       const id = isId.validateSync(addressId)
-      magento.addressId = id
-      const record = await MagentoAddress.create(magento, { transaction })
+      const magento = validateAddressMagento(addressMagentoData)
+
+      // find the address record
+      const addressRecord = await this.get(id, transaction)
+      if (!addressRecord) {
+        throw DBError.notFound(new Error(`Address with id ${id} does not exist`))
+      }
+      if (addressRecord.magento) {
+        throw DBError.badData(new Error(`Address with id ${id} already has a Magento record`))
+      }
+
+      const parsedMagentoRecord = {
+        ...magento,
+        addressId: id,
+        externalId: getExternalIdString(magento.externalId, addressRecord.type),
+      }
+
+      const record = await MagentoAddress.create(parsedMagentoRecord, { transaction })
       await commit()
       return record
     } catch (error) {
@@ -771,7 +850,52 @@ export default class AddressController {
       throw error
     }
   }
+
+  /**
+   * update address Magento record for the given ID.
+   * @param {number | unknown} addressId id of the address that needs magento data updated
+   * @param {AddressMagentoRecord | unknown} addressMagentoData magento record to update
+   * @returns {MagentoAddress} MagentoAddress instance that was created
+   */
+  static async updateMagento(addressId: number | unknown, addressMagentoData: AddressMagentoRecord | unknown, t?: Transaction): Promise<MagentoAddress> {
+    const [transaction, commit, rollback] = await useTransaction(t)
+    try {
+      const id = isId.validateSync(addressId)
+      const currentMagentoRecord = await MagentoAddress.findOne({
+        where: {
+          addressId: id,
+        },
+        transaction,
+      })
+      if (!currentMagentoRecord) {
+        throw new Error(`Address with id ${id} does not have a Magento record. Nothing to update`)
+      }
+
+      const addressRecord = await this.get(id, transaction)
+      if (!addressRecord) {
+        throw DBError.notFound(new Error(`Address with id ${id} does not exist`))
+      }
+
+      const { type } = addressRecord
+      const magento = validateAddressMagento(addressMagentoData)
+
+      const parsedMagentoRecord = {
+        ...magento,
+        addressId: id,
+        externalId: getExternalIdString(magento.externalId, type),
+      }
+      await currentMagentoRecord.update(parsedMagentoRecord, { transaction })
+      await currentMagentoRecord.reload({ transaction }) // MagentoAddress.create(parsedMagentoRecord, { transaction })
+      await commit()
+      return currentMagentoRecord
+    } catch (error) {
+      await rollback()
+      // rethrow the error for further handling
+      throw error
+    }
+  }
 }
+
 // done: get address (by id)
 // done: create address
 // done: update address

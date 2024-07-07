@@ -16,12 +16,12 @@ import {
   BelongsToCreateAssociationMixin,
 
 } from 'sequelize'
-import type { OrderAddress } from '../../Sales/OrderAddress/orderAddress'
 import type { Order } from '../../Sales/Order/order'
 import type { DeliveryStop } from '../DeliveryStop/DeliveryStop'
 import type { DeliveryItem } from '../DeliveryItem/DeliveryItem'
 import type { DeliveryStatus } from './DeliveryController'
 import type { DeliveryMethod } from '../../Sales/DeliveryMethod/deliveryMethod'
+import { Address } from '../../Sales/Address/Address'
 
 export type MinutesInterval = {
   start: number
@@ -87,9 +87,9 @@ export class Delivery extends Model<InferAttributes<Delivery>, InferCreationAttr
 
   declare order?: NonAttribute<Order>
 
-  declare shippingAddressId: ForeignKey<OrderAddress['id']>
+  declare shippingAddressId: ForeignKey<Address['id']>
 
-  declare shippingAddress?: NonAttribute<OrderAddress>
+  declare shippingAddress?: NonAttribute<Address>
 
   declare deliveryStopId: ForeignKey<DeliveryStop['id']> | null
 
@@ -103,7 +103,7 @@ export class Delivery extends Model<InferAttributes<Delivery>, InferCreationAttr
 
   declare public static associations: {
     order: Association<Delivery, Order>,
-    shippingAddress: Association<Delivery, OrderAddress>,
+    shippingAddress: Association<Delivery, Address>,
     deliveryStop: Association<Delivery, DeliveryStop>,
     items: Association<Delivery, DeliveryItem>,
     deliveryMethod: Association<Delivery, DeliveryMethod>,
@@ -118,13 +118,13 @@ export class Delivery extends Model<InferAttributes<Delivery>, InferCreationAttr
 
   declare createOrder: BelongsToCreateAssociationMixin<Order>
 
-  // done: one-to-many relationship between OrderAddress and Delivery
+  // done: one-to-many relationship between Address and Delivery
   // shippingAddress:
-  declare getShippingAddress: BelongsToGetAssociationMixin<OrderAddress>
+  declare getShippingAddress: BelongsToGetAssociationMixin<Address>
 
-  declare setShippingAddress: BelongsToSetAssociationMixin<OrderAddress, number>
+  declare setShippingAddress: BelongsToSetAssociationMixin<Address, number>
 
-  declare createShippingAddress: BelongsToCreateAssociationMixin<OrderAddress>
+  declare createShippingAddress: BelongsToCreateAssociationMixin<Address>
 
   // done: one-to-many relationship between DeliveryStop and Delivery
   // deliveryStop:

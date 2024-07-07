@@ -256,7 +256,17 @@ export default class CustomerController {
    */
   static async get(id: number | unknown, t?: Transaction): Promise<Customer | null> {
     const customerId = isId.validateSync(id)
-    const final = await Customer.findByPk(customerId, { include: 'magento', transaction: t })
+    const final = await Customer.findByPk(customerId, {
+      include: [
+        {
+          association: 'magento',
+        },
+        // {
+        //   association: 'addresses',
+        // },
+      ],
+      transaction: t,
+    })
     return final
   }
 

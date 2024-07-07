@@ -1,8 +1,8 @@
 import express from 'express'
 import { handleError, handleResponse } from '../routeUtils'
 import OrderController from '../../models/Sales/Order/orderController'
-import OrderAddressController from '../../models/Sales/OrderAddress/orderAddressContoller'
 import { DBError } from '../../ErrorManagement/errors'
+import AddressController from '../../models/Sales/Address/addressController'
 
 const orderRouter = express.Router()
 
@@ -135,7 +135,6 @@ orderRouter.get('/:orderId/deliverycreate', (req, res) => {
   try {
     OrderController.getEditFormData(req.params.orderId)
       .then((result) => {
-        // const brandResult = OrderAddressController.toJSON(result)
         handleResponse(res, result)
       })
       .catch((err) => handleError(res, err))
@@ -147,9 +146,9 @@ orderRouter.get('/:orderId/deliverycreate', (req, res) => {
 // get all addresses of the order by orderId
 orderRouter.get('/:orderId/address/all', (req, res) => {
   try {
-    OrderAddressController.getAllByOrderId(req.params.orderId)
+    AddressController.getByOrderId(req.params.orderId)
       .then((result) => {
-        const brandResult = OrderAddressController.toJSON(result)
+        const brandResult = AddressController.toJSON(result)
         handleResponse(res, brandResult)
       })
       .catch((err) => handleError(res, err))
@@ -161,17 +160,18 @@ orderRouter.get('/:orderId/address/all', (req, res) => {
 // get all addresses of the order by orderId
 orderRouter.post('/:orderId/address', (req, res) => {
   try {
-    const orderAddressData = req.body as unknown
-    if (!orderAddressData || typeof orderAddressData !== 'object') {
+    const addressData = req.body as unknown
+    if (!addressData || typeof addressData !== 'object') {
       throw DBError.badData(new Error('order address data is missing'))
     }
-    OrderAddressController.create({
-      ...orderAddressData,
+    AddressController.create({
+      ...addressData,
+      type: 'order',
       orderId: req.params.orderId,
     })
       .then((result) => {
-        const brandResult = OrderAddressController.toJSON(result)
-        handleResponse(res, brandResult)
+        const addressResult = AddressController.toJSON(result)
+        handleResponse(res, addressResult)
       })
       .catch((err) => {
         console.log('error', err)
@@ -181,20 +181,6 @@ orderRouter.post('/:orderId/address', (req, res) => {
     handleError(res, error)
   }
 })
-
-// // get full order info by id
-// orderRouter.get('/:id', (req, res) => {
-//   try {
-//     OrderController.get(req.params.id)
-//       .then((result) => {
-//         const brandResult = OrderController.toJSON(result)
-//         handleResponse(res, brandResult)
-//       })
-//       .catch((err) => handleError(res, err))
-//   } catch (error) {
-//     handleError(res, error)
-//   }
-// })
 
 // delete magento record of the given orderId
 // returns the deleted record or null if it did not exist
@@ -210,20 +196,6 @@ orderRouter.delete('/:orderId/magento', (req, res) => {
     handleError(res, error)
   }
 })
-
-// brandRouter.post('/:addressId/magento', (req, res) => {
-//   try {
-//     const id = req.params.addressId
-//     const magentoData = req.body as unknown
-//     AddressController.createMagento(id, magentoData)
-//       .then((magentoRecord) => {
-//         handleResponse(res, magentoRecord)
-//       })
-//       .catch((err) => handleError(res, err))
-//   } catch (error) {
-//     handleError(res, error)
-//   }
-// })
 
 orderRouter.delete('/:id', (req, res) => {
   try {

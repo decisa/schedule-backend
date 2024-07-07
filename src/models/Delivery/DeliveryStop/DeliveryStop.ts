@@ -14,9 +14,9 @@ import {
   BelongsToSetAssociationMixin,
   BelongsToCreateAssociationMixin,
 } from 'sequelize'
-import type { OrderAddress } from '../../Sales/OrderAddress/orderAddress'
 import type { Trip } from '../Trip/Trip'
 import type { Delivery } from '../Delivery/Delivery'
+import { Address } from '../../Sales/Address/Address'
 
 export const stopTypes = ['break', 'hotel', 'delivery'] as const
 export type StopType = typeof stopTypes[number]
@@ -46,15 +46,15 @@ export class DeliveryStop extends Model<InferAttributes<DeliveryStop>, InferCrea
   declare trip?: NonAttribute<Trip>
 
   // shippingAddressId can be null
-  declare shippingAddressId: ForeignKey<OrderAddress['id']> | null
+  declare shippingAddressId: ForeignKey<Address['id']> | null
 
-  declare shippingAddress?: NonAttribute<OrderAddress>
+  declare shippingAddress?: NonAttribute<Address>
 
   declare deliveries?: NonAttribute<Delivery[]>
 
   declare public static associations: {
     trip: Association<DeliveryStop, Trip>,
-    shippingAddress: Association<DeliveryStop, OrderAddress>,
+    shippingAddress: Association<DeliveryStop, Address>,
     deliveries: Association<DeliveryStop, Delivery>,
   }
 
@@ -67,13 +67,13 @@ export class DeliveryStop extends Model<InferAttributes<DeliveryStop>, InferCrea
 
   declare createTrip: BelongsToCreateAssociationMixin<Trip>
 
-  // done: one-to-many relationship between OrderAddress and DeliveryStops
+  // done: one-to-many relationship between Address and DeliveryStops
   // shippingAddress:
-  declare getShippingAddress: BelongsToGetAssociationMixin<OrderAddress>
+  declare getShippingAddress: BelongsToGetAssociationMixin<Address>
 
-  declare setShippingAddress: BelongsToSetAssociationMixin<OrderAddress, number>
+  declare setShippingAddress: BelongsToSetAssociationMixin<Address, number>
 
-  declare createShippingAddress: BelongsToCreateAssociationMixin<OrderAddress>
+  declare createShippingAddress: BelongsToCreateAssociationMixin<Address>
 
   // done: one-to-many relationship between DeliveryStop and Delivery
   // deliveries:

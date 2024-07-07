@@ -6,9 +6,16 @@ import {
   CreationOptional, DataTypes, ForeignKey, HasOneCreateAssociationMixin, HasOneGetAssociationMixin, HasOneSetAssociationMixin, InferAttributes, InferCreationAttributes, Model, NonAttribute, Sequelize,
 } from 'sequelize'
 import type { Customer } from '../Customer/customer'
+import type { Order } from '../Order/order'
 import type { MagentoAddress } from '../MagentoAddress/magentoAddress'
 
+const addressTypes = ['order', 'customer'] as const
+export type AddressType = typeof addressTypes[number]
+
 export class Address extends Model<InferAttributes<Address>, InferCreationAttributes<Address>> {
+  // ADDRESS SPECIFIC FIELDS:
+  declare type: AddressType
+
   declare id: CreationOptional<number>
 
   declare createdAt: CreationOptional<Date>
@@ -48,15 +55,27 @@ export class Address extends Model<InferAttributes<Address>, InferCreationAttrib
   declare street: CreationOptional<string[]>
 
   // ASSOCIATIONS:
+  // customer address will have customerId defined
+  declare customerId: ForeignKey<Customer['id']> | null
 
-  declare customerId: ForeignKey<Customer['id']>
+  // order address will have orderId defined
+  declare orderId: ForeignKey<Order['id']> | null
+
+  // when order address is created from customer address, this field will be the source id
+  declare customerAddressId: ForeignKey<Address['id']> | null
 
   declare customer?: NonAttribute<Customer>
+
+  declare customerAddress?: NonAttribute<Address>
+
+  declare order?: NonAttribute<Order>
 
   declare magento?: NonAttribute<MagentoAddress>
 
   declare public static associations: {
     customer: Association<Address, Customer>,
+    order: Association<Address, Order>,
+    customerAddress: Association<Address, Address>,
     magento: Association<Address, MagentoAddress>,
   }
 
@@ -79,6 +98,10 @@ export class Address extends Model<InferAttributes<Address>, InferCreationAttrib
 export function initAddress(db: Sequelize) {
   Address.init(
     {
+      type: {
+        type: DataTypes.STRING,
+        allowNull: false,
+      },
       id: {
         type: DataTypes.INTEGER,
         unique: true,
@@ -163,7 +186,20 @@ export function initAddress(db: Sequelize) {
           return rawValue !== null ? Number(rawValue) : null
         },
       },
-      customerId: DataTypes.INTEGER,
+      customerId: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+      },
+      orderId: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+      },
+      customerAddressId: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+      },
+
+      // fixme: add orderId and customerAddressId
       coordinates: {
         type: DataTypes.VIRTUAL,
         get() {

@@ -5,7 +5,7 @@ import { Order } from './order'
 import {
   isId, useTransaction, isString, printYellowLine,
 } from '../../../utils/utils'
-import { OrderAddress } from '../OrderAddress/orderAddress'
+import { Address } from '../Address/Address'
 import { OrderComment, OrderCommentCreate } from '../OrderComment/orderComment'
 import { Customer } from '../Customer/customer'
 import { MagentoCustomer } from '../MagentoCustomer/magentoCustomer'
@@ -15,8 +15,7 @@ import { ProductOption } from '../ProductOption/productOption'
 import ProductConfigurationController, { ConfigurationAsProductRead } from '../ProductConfiguration/productConfigurationController'
 import OrderCommentController from '../OrderComment/orderCommentController'
 import CustomerController, { CustomerCreate } from '../Customer/customerController'
-import OrderAddressController, { OrderAddressCreate } from '../OrderAddress/orderAddressContoller'
-import AddressController from '../Address/addressController'
+import AddressController, { AddressCreate } from '../Address/addressController'
 import { Brand } from '../../Brand/brand'
 import { DeliveryMethod } from '../DeliveryMethod/deliveryMethod'
 import { ProductSummaryView } from '../../../views/ProductSummary/productSummary'
@@ -65,10 +64,10 @@ type OrderMagentoRecord = {
 type OrderAssociations = {
   magento: OrderMagentoRecord,
   customer?: CustomerCreate,
-  addresses?: OrderAddressCreate[],
+  addresses?: AddressCreate[],
   comments?: OrderCommentCreate[],
-  billingAddress?: OrderAddressCreate,
-  shippingAddress?: OrderAddressCreate,
+  billingAddress?: AddressCreate,
+  shippingAddress?: AddressCreate,
   products?: ConfigurationAsProductRead,
   // orderAvailabilities?: Association<Order, OrderAvailability>,
 }
@@ -262,17 +261,6 @@ const orderSchemaUpdate = orderSchemaCreate.clone().shape({
     .label('Malformed data: taxRate'),
 })
 
-// const fullOrderSchemaCreate: yup.ObjectSchema<FullOrder> = orderSchemaCreate.clone().shape({
-//   magento: orderMagentoSchema,
-//   customer: customerSchemaCreate,
-//   addresses: yup.array().of(orderAddressSchemaCreate),
-//   comments: yup.array().of(commentSchemaCreate),
-//   billingAddress: orderAddressSchemaCreate,
-//   shippingAddress: orderAddressSchemaCreate,
-//   products: yup.array().of(productConfigurationSchemaCreate),
-
-// })
-
 export function validateOrderCreate(object: unknown): OrderCreate {
   const order = orderSchemaCreate.validateSync(object, {
     stripUnknown: true,
@@ -354,7 +342,7 @@ export default class OrderController {
   }
 
   /**
-   * get Order record by id from DB. Will include ???
+   * get Order record by id from DB. Will include magetnto record if exists
    * @param {unknown} id - orderId
    * @returns {Order} ProductConfiguration object or null
    */
@@ -381,13 +369,13 @@ export default class OrderController {
         id: orderId,
       },
       include: [{
-        model: OrderAddress,
+        model: Address,
         as: 'billingAddress',
         include: [
           {
             association: 'magento',
             attributes: {
-              exclude: ['orderAddressId'],
+              exclude: ['addressId'],
             },
           },
 
@@ -397,13 +385,13 @@ export default class OrderController {
         },
       },
       {
-        model: OrderAddress,
+        model: Address,
         as: 'shippingAddress',
         include: [
           {
             association: 'magento',
             attributes: {
-              exclude: ['orderAddressId'],
+              exclude: ['addressId'],
             },
           },
 
@@ -564,8 +552,8 @@ export default class OrderController {
   /**
      * update order record in DB. Will update magento record if provided.If magento record does not exist in DB, it will be created
      * @param {number | unknown} orderId - id of the order record to update in DB
-     * @param {unknown} orderData - update data for address record
-     * @returns {address} complete Updated address object or throws error
+     * @param {unknown} orderData - update data for order record
+     * @returns {address} complete Updated order object or throws error
      */
   static async update(orderId: number | unknown, orderData: unknown, t?: Transaction): Promise<Order> {
     const [transaction, commit, rollback] = await useTransaction(t)
@@ -579,7 +567,7 @@ export default class OrderController {
       const id = isId.validateSync(orderId)
       const orderRecord = await Order.findByPk(id, { include: 'magento', transaction })
       if (!orderRecord) {
-        throw new Error('order does not exist')
+        throw DBError.notFound(new Error(`order with id ${id} does not exist`))
       }
 
       await orderRecord.update(parsedOrderUpdate, { transaction })
@@ -602,7 +590,7 @@ export default class OrderController {
 
   /**
    * create Magento order record for the given ID.
-   * @param {number | unknown} orderId id of the address that needs magento data inserted
+   * @param {number | unknown} orderId id of the order that needs magento data inserted
    * @param {OrderMagentoRecord | unknown} orderMagentoData magento record to add
    * @returns {MagentoOrder} MagentoOrder instance that was created
    */
@@ -624,20 +612,21 @@ export default class OrderController {
 
   /**
    * delete corresponding order Magento record with a given orderId from DB.
-   * @param {number | unknown} orderId - orderAddressId to delete
-   * @returns {OrderMagentoRecord | null} AddressMagentoRecord that was deleted or null if record did not exist.
+   * @param {number | unknown} orderId - orderId to delete
+   * @returns {OrderMagentoRecord | null} MagentoRecord that was deleted or thows error
    */
-  static async deleteMagento(orderId: number | unknown, t?: Transaction): Promise<OrderMagentoRecord | null> {
+  static async deleteMagento(orderId: number | unknown, t?: Transaction): Promise<OrderMagentoRecord> {
     const [transaction, commit, rollback] = await useTransaction(t)
     try {
       const id = isId.validateSync(orderId)
       const record = await this.get(id, transaction)
-      let magento: OrderMagentoRecord | null = null
 
-      if (record && record.magento) {
-        magento = record.magento.toJSON()
-        await record.magento.destroy({ transaction })
+      if (!record?.magento) {
+        throw DBError.notFound(new Error(`Magento record for order with id ${id} does not exist`))
       }
+      const magento = record.magento.toJSON()
+      await record.magento.destroy({ transaction })
+
       await commit()
       return magento
     } catch (error) {
@@ -649,8 +638,8 @@ export default class OrderController {
 
   /**
    * upsert(insert or create) order record in DB. magento externalId is required
-   * @param {unknown} orderData - update/create data for productConfiguration record
-   * @returns {productConfiguration} updated or created productConfiguration object with Brand Record if available
+   * @param {unknown} orderData - update/create data for order record
+   * @returns {Order} updated or created order object with Brand Record if available
    */
   static async upsert(orderData: unknown, t?: Transaction): Promise<Order> {
     const [transaction, commit, rollback] = await useTransaction(t)
@@ -691,23 +680,26 @@ export default class OrderController {
   /**
    * delete Order record with a given id from DB.
    * @param {unknown} id - orderId
-   * @returns {boolean} true if configuration was deleted
+   * @returns {OrderRead} deleted Order record or throws error
    */
-  static async delete(id: number | unknown, t?: Transaction): Promise<boolean> {
+  static async delete(id: number | unknown, t?: Transaction): Promise<OrderRead> {
     const [transaction, commit, rollback] = await useTransaction(t)
     try {
       const orderId = isId.validateSync(id)
-      // delete all configuration options first:
-      // await OrderController.deleteConfigurationOptions(id, transaction)
-      // then delete the configuration itself
-      const final = await Order.destroy({
+      const orderRecord = await this.getFullOrderInfo(orderId, transaction)
+      if (!orderRecord) {
+        throw DBError.notFound(new Error(`Order with id ${orderId} does not exist`))
+      }
+
+      const deletedRecord = this.toJSON(orderRecord)
+      await Order.destroy({
         where: {
           id: orderId,
         },
         transaction,
       })
       await commit()
-      return final === 1
+      return deletedRecord
     } catch (error) {
       await rollback()
       // rethrow the error for further handling
@@ -726,7 +718,7 @@ export default class OrderController {
     try {
       // let magento: OrderMagentoRecord | undefined
       if (!orderData || typeof orderData !== 'object') {
-        throw new Error('orderData object is missing')
+        throw DBError.badData(new Error('orderData object is missing'))
       }
 
       const orderRaw: {
@@ -737,53 +729,77 @@ export default class OrderController {
 
       // section: CUSTOMER INFO
       if (!('customer' in orderRaw)) {
-        throw new Error('Customer record is required')
+        throw DBError.badData(new Error('Customer record is required'))
       }
-      // printYellowLine('upsert CUSTOMER')
+      printYellowLine('upsert CUSTOMER')
       const customerRecord = await CustomerController.upsert(orderRaw.customer, transaction)
       orderRaw.customerId = customerRecord.id
+
       // section: ORDER
-      // printYellowLine('upsert ORDER')
+      printYellowLine('upsert ORDER')
       const orderRecord = await this.upsert(orderRaw, transaction)
 
       // section: ORDER ADDRESSES
       if (!('billingAddress' in orderRaw) || (typeof orderRaw.billingAddress !== 'object')) {
-        throw new Error('billingAddress record is required')
+        throw DBError.badData(new Error('billingAddress record is required'))
       }
       // if (!(typeof 'billingAddress' !== 'object')) {
       //   throw new Error('billingAddress record is required')
       // }
       if (!('shippingAddress' in orderRaw) || (typeof orderRaw.shippingAddress !== 'object')) {
-        throw new Error('shippingAddress record is required')
+        throw DBError.badData(new Error('shippingAddress record is required'))
       }
-      const billingAddressRaw: { orderId: number } = {
+      const billingAddressRaw = {
         ...orderRaw.billingAddress,
+        type: 'order',
         orderId: orderRecord.id,
       }
-      const shippingAddressRaw: { orderId: number } = {
+      const shippingAddressRaw = {
         ...orderRaw.shippingAddress,
+        type: 'order',
         orderId: orderRecord.id,
       }
-      // printYellowLine('upsert BILLING')
-      const billingRecord = await OrderAddressController.upsert(billingAddressRaw, transaction)
-      // printYellowLine('upsert SHIPPING')
-      const shippingRecord = await OrderAddressController.upsert(shippingAddressRaw, transaction)
+      printYellowLine('upsert BILLING')
+      const billingRecord = await AddressController.upsert(billingAddressRaw, transaction)
+      printYellowLine('upsert SHIPPING')
+      const shippingRecord = await AddressController.upsert(shippingAddressRaw, transaction)
+      printYellowLine('SET BILLING')
+      console.log('billingRecord:', billingRecord.toJSON())
       // printYellowLine('SET BILLING')
-      await orderRecord.setBillingAddress(billingRecord, { transaction })
-      // printYellowLine('SET SHIPPING')
-      await orderRecord.setShippingAddress(shippingRecord, { transaction })
+      await orderRecord.setBillingAddress(billingRecord.id, { transaction })
+      printYellowLine('SET SHIPPING')
+      await orderRecord.setShippingAddress(shippingRecord.id, { transaction })
       // section: CUSTOMER ADDRESSES
       if (!billingRecord.magento || !shippingRecord.magento) {
         // should never happen:
-        throw new Error('magento record missing on billing or shipping address')
+        throw DBError.badData(new Error('magento record missing on billing or shipping address'))
       }
-      if (billingRecord.magento.externalCustomerAddressId) {
-        // printYellowLine('CREATE CUSTOMER ADDRESS: billing')
-        await AddressController.createFromOrderAddress(customerRecord.id, billingRecord, transaction)
+      // printYellowLine('CREATE CUSTOMER ADDRESS: billing')
+      // if externalCustomerAddressId is present, then add this address to customer record and save its externalId
+      if ('magento' in billingAddressRaw && billingAddressRaw.magento && typeof billingAddressRaw.magento === 'object' && 'externalCustomerAddressId' in billingAddressRaw.magento) {
+        await AddressController.upsert({
+          ...billingAddressRaw,
+          type: 'customer',
+          customerId: customerRecord.id,
+          magento: {
+            ...billingAddressRaw.magento,
+            externalId: billingAddressRaw.magento.externalCustomerAddressId,
+          },
+        }, transaction)
       }
-      if (shippingRecord.magento.externalCustomerAddressId) {
-        // printYellowLine('CREATE CUSTOMER ADDRESS: shipping')
-        await AddressController.createFromOrderAddress(customerRecord.id, shippingRecord, transaction)
+
+      // printYellowLine('CREATE CUSTOMER ADDRESS: shipping')
+      // if externalCustomerAddressId is present, then add this address to customer record and save its externalId
+      if ('magento' in shippingAddressRaw && shippingAddressRaw.magento && typeof shippingAddressRaw.magento === 'object' && 'externalCustomerAddressId' in shippingAddressRaw.magento) {
+        await AddressController.upsert({
+          ...shippingAddressRaw,
+          type: 'customer',
+          customerId: customerRecord.id,
+          magento: {
+            ...shippingAddressRaw.magento,
+            externalId: shippingAddressRaw.magento.externalCustomerAddressId,
+          },
+        }, transaction)
       }
 
       // section: COMMENTS
@@ -792,11 +808,13 @@ export default class OrderController {
       }
 
       // section: A. PRODUCTS
+      printYellowLine('PRODUCTS')
       if ('products' in orderRaw) {
         await ProductConfigurationController.bulkUpsertMagentoProducts(orderRecord.id, orderRaw.products, transaction)
       }
       // section: A. PRODUCT CONFIGURATIONS & OPTIONS
 
+      printYellowLine('FETCHING FINAL ORDER')
       const result = await this.getFullOrderInfo(orderRecord.id, transaction)
 
       if (!result) {
@@ -995,8 +1013,8 @@ export default class OrderController {
       throw DBError.notFound(new Error('Order not found'))
     }
 
-    const orderAddresses = await OrderAddressController.getAllByOrderId(orderRecord.id, t)
-    if (!orderAddresses) {
+    const addresses = await AddressController.getByOrderId(orderRecord.id, t)
+    if (!addresses) {
       throw DBError.notFound(new Error('Order associated with the delivery has no addresses'))
     }
     const deliveryMethods = await DeliveryMethodController.getAll(t)
@@ -1006,7 +1024,7 @@ export default class OrderController {
     return {
       // delivery: this.toJSON(delivery),
       order: OrderController.toJSON(orderRecord),
-      addresses: OrderAddressController.toJSON(orderAddresses),
+      addresses: AddressController.toJSON(addresses),
       deliveryMethods: DeliveryMethodController.toJSON(deliveryMethods),
     }
   }

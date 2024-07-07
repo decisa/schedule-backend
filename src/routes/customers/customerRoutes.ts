@@ -2,19 +2,21 @@ import express from 'express'
 import { handleError, handleResponse } from '../routeUtils'
 import CustomerController from '../../models/Sales/Customer/customerController'
 import AddressController from '../../models/Sales/Address/addressController'
+import addressRouter from '../addresses/addressRoutes'
 
 const customerRouter = express.Router()
 
-// create customer record including magento, if provided
+// get customer record by email, will include Magento record if exists
 customerRouter.get('/', (req, res) => {
   try {
-    // const id = 1
-    // console.log('params', req.params)
-    // const { query } = req// as unknown
-    // console.log('query:', query, Object.keys(req))
-    // handleResponse(res, query)
-    CustomerController.getByEmail(req.query)
+    CustomerController.getByEmail({
+      email: req.query.email as string,
+    })
       .then((result) => {
+        if (!result) {
+          res.status(404).json({ message: `Customer with email ${String(req.query.email)} does not exist` })
+          return
+        }
         const customerResult = CustomerController.toJSON(result)
         handleResponse(res, customerResult)
       })
@@ -27,8 +29,6 @@ customerRouter.get('/', (req, res) => {
 // create customer record including magento, if provided
 customerRouter.post('/', (req, res) => {
   try {
-    // const id = 1
-    // console.log('params', req.params)
     const customer = req.body as unknown
     CustomerController.create(customer)
       .then((result) => {
@@ -44,8 +44,6 @@ customerRouter.post('/', (req, res) => {
 // upsert customer record including magento, if provided. email required
 customerRouter.put('/', (req, res) => {
   try {
-    // const id = 1
-    // console.log('params', req.params)
     const customer = req.body as unknown
     CustomerController.upsert(customer)
       .then((result) => {
@@ -75,6 +73,10 @@ customerRouter.get('/:id', (req, res) => {
   try {
     CustomerController.get(req.params.id)
       .then((result) => {
+        if (!result) {
+          res.status(404).json({ message: `Customer id "${req.params.id}" was not found` })
+          return
+        }
         const customerResult = CustomerController.toJSON(result)
         handleResponse(res, customerResult)
       })
@@ -149,5 +151,8 @@ customerRouter.patch('/:id', (req, res) => {
     handleError(res, error)
   }
 })
+
+// routes to work with addresses
+customerRouter.use('/address', addressRouter)
 
 export default customerRouter
