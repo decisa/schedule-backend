@@ -1,4 +1,4 @@
-import { DataTypes, QueryInterface, QueryTypes } from 'sequelize'
+import { DataTypes, QueryInterface } from 'sequelize'
 import { Migration } from '../umzug'
 import { consoleLogBlue } from '../src/utils/utils'
 

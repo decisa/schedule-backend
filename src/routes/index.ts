@@ -49,12 +49,16 @@ rootRouter.use('/trip', tripRouter)
 
 // create proxy to forward requests to magento:
 rootRouter.use('/2031360', (req, res, next) => {
+  console.log('requesting Magento Live data through proxy')
   // printRedLine()
   // console.log('requesting data through proxy')
   // Set CORS headers
   res.header('Access-Control-Allow-Origin', '*')
   res.header('Access-Control-Allow-Methods', 'GET,POST,OPTIONS,HEAD')
-  res.header('Access-Control-Allow-Headers', 'Authorization, Origin, X-Requested-With, Content-Type, Accept')
+  res.header(
+    'Access-Control-Allow-Headers',
+    'Authorization, Origin, X-Requested-With, Content-Type, Accept'
+  )
   if (req.method === 'OPTIONS') {
     // console.log('sending 200 for options request')
     res.sendStatus(200)
@@ -81,7 +85,11 @@ rootRouter.use('/2031360', (req, res, next) => {
   let { body } = req
   // console.log('!!req.body size:', (req.body as string)?.length)
   // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-  if (req.body && typeof req.body === 'object' && Object.keys(req.body).length === 0) {
+  if (
+    req.body &&
+    typeof req.body === 'object' &&
+    Object.keys(req.body).length === 0
+  ) {
     body = undefined
   }
 
@@ -93,31 +101,42 @@ rootRouter.use('/2031360', (req, res, next) => {
     },
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     data: body,
-  }).then((response) => {
-    const { data } = response
-    // console.log('response:', response)
-    res.json(data)
-  }).catch((error) => {
-    console.error('error:', error)
-    // console.error('error:')
-
-    // handle unauthorized error
-    if (error && error instanceof AxiosError && error.response && error.response.status === 401) {
-      res.status(401).send({
-        status: error.response.status,
-        statusText: error.response.statusText,
-        ...error.response.data,
-      })
-    } else res.status(500).send('Proxy error')
   })
+    .then((response) => {
+      const { data } = response
+      // console.log('response:', response)
+      res.json(data)
+    })
+    .catch((error) => {
+      console.error('error:', error)
+      // console.error('error:')
+
+      // handle unauthorized error
+      if (
+        error &&
+        error instanceof AxiosError &&
+        error.response &&
+        error.response.status === 401
+      ) {
+        res.status(401).send({
+          status: error.response.status,
+          statusText: error.response.statusText,
+          ...error.response.data,
+        })
+      } else res.status(500).send('Proxy error')
+    })
 })
 
 // create proxy to forward requests to dev2 magento:
 rootRouter.use('/2031361', (req, res, next) => {
+  console.log('requesting data through dev2 proxy')
   // Set CORS headers
   res.header('Access-Control-Allow-Origin', '*')
   res.header('Access-Control-Allow-Methods', 'GET,POST,OPTIONS,HEAD')
-  res.header('Access-Control-Allow-Headers', 'Authorization, Origin, X-Requested-With, Content-Type, Accept')
+  res.header(
+    'Access-Control-Allow-Headers',
+    'Authorization, Origin, X-Requested-With, Content-Type, Accept'
+  )
   if (req.method === 'OPTIONS') {
     // console.log('sending 200 for options request')
     res.sendStatus(200)
@@ -141,35 +160,46 @@ rootRouter.use('/2031361', (req, res, next) => {
   // so we need to set it to undefined
   let { body } = req
   // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-  if (req.body && typeof req.body === 'object' && Object.keys(req.body).length === 0) {
+  if (
+    req.body &&
+    typeof req.body === 'object' &&
+    Object.keys(req.body).length === 0
+  ) {
     body = undefined
   }
 
   axios({
     method: req.method,
-    url: `https://dev2.roomservice360.com${req.originalUrl.replace('/2031361', '')}`,
+    url: `https://dev.roomservice360.com${req.originalUrl.replace('/2031361', '')}`,
     headers: {
       ...newHeaders,
     },
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     data: body,
-  }).then((response) => {
-    const { data } = response
-    // console.log('response:', response)
-    res.json(data)
-  }).catch((error) => {
-    console.error('error:', error)
-    // console.error('error:')
-
-    // handle unauthorized error
-    if (error && error instanceof AxiosError && error.response && error.response.status === 401) {
-      res.status(401).send({
-        status: error.response.status,
-        statusText: error.response.statusText,
-        ...error.response.data,
-      })
-    } else res.status(500).send('Proxy error')
   })
+    .then((response) => {
+      const { data } = response
+      // console.log('response:', response)
+      res.json(data)
+    })
+    .catch((error) => {
+      console.error('error:', error)
+      // console.error('error:')
+
+      // handle unauthorized error
+      if (
+        error &&
+        error instanceof AxiosError &&
+        error.response &&
+        error.response.status === 401
+      ) {
+        res.status(401).send({
+          status: error.response.status,
+          statusText: error.response.statusText,
+          ...error.response.data,
+        })
+      } else res.status(500).send('Proxy error')
+    })
 })
 
 // create proxy to forward requests to magento (using http-proxy-middleware):
